@@ -21,11 +21,11 @@ const RANK_GRAD := ["#ff5d73", "#ffc83d", "#5fd39a", "#6fe0ff", "#b388ff", "#ff7
 const BOSS_INFO := {
 	"croc": {"title": "⚠ Boss: Doc Croc", "stats": [["Level", "25"], ["HP", "16,000"], ["Attack", "62"], ["Defense", "18"]],
 		"paras": ["**Attacks:** lunging bite on all fours · claw swipe when standing (lie prone with ↓ to duck under it) · stomp that brings rocks down on the red markers · mixes and throws poison vials that leave toxic puddles · enrages below 45% HP.",
-			"**Reward:** 4,200 EXP · a shower of coins · 1 Boss Coin"],
+			"**Reward:** 4,200 EXP · a shower of coins · a **Crocbox** (500–2,500 coins, 1–5 Boss Coins, maybe a rare treasure, and very rarely his Potion Throw skill)"],
 		"rec": "Recommended: Lv 20+ with Swordsman skills. Walk right into the portal to enter."},
 	"warlord": {"title": "⚠ Boss: Crimson Warlord", "stats": [["Level", "50"], ["HP", "60,000"], ["Attack", "150"], ["Defense", "40"]],
 		"paras": ["**Attacks:** sword-and-shield cuts and a shield charge that knocks you flat · greatsword cleaves and leaping slams · throws his greatsword and walks over to fetch it · sends his own eyes after you (hit them and they fly home) · **Crimson Rain:** blood falls everywhere except beneath the two ledges, and it makes you bleed.",
-			"**Reward:** 30,000 EXP · a hoard of coins · 1 Boss Coin · a trophy"],
+			"**Reward:** 30,000 EXP · a hoard of coins · a trophy · a **Crimsonbox** (500–2,500 coins, 1–5 Boss Coins, maybe a rare treasure, and very rarely his Crimson Rain skill)"],
 		"rec": "Recommended: Lv 45+. Walk right into the portal to enter."},
 }
 
@@ -262,6 +262,8 @@ func renderHud(ci: CanvasItem) -> void:
 	_flashText(comboMsg, 2.4, UH * 0.64, false)
 	if scene != null:
 		_dialog()
+	if loot != null:
+		_lootPanel()
 	if vignette > 0:
 		_vignette(vignette)
 
@@ -624,6 +626,61 @@ func _dialog() -> void:
 	var txt: String = L.text.substr(0, floori(Sc.shown))
 	uPara(txt, r.position.x + 13, r.position.y + 22, w - 26, 11, Color.WHITE, true, false, 15)
 	uText("Z ▶", r.end.x - 10, r.end.y - 14 + sin(realTime * 6) * 1.5, 8, css("#ffb8c4"), UB, 2)
+
+
+## a boss box popping open: the box shakes, the lid flies up, then each prize appears in turn
+func _lootPanel() -> void:
+	var L: Dictionary = loot
+	var red: bool = L.kind == "warlord"
+	var t: float = L.t
+	var n: int = L.rows.size()
+	var shown: int = L.get("shown", 0)
+	uci.draw_rect(Rect2(0, 0, UW, UH), Color(0.04, 0.02, 0.08, minf(0.6, t * 2)))
+	var w = 340.0
+	var h = 140.0 + n * 22
+	var r = Rect2(UW / 2 - w / 2, UH / 2 - h / 2, w, h)
+	var edge = css("#ff5d73") if red else css("#e8b830")
+	uGlow(r, Color(edge, 0.45), 14, 12)
+	uBox(r, css("#1c0a10") if red else css("#10200e"), edge, 3, 12)
+	uText(String(L.name).to_upper(), UW / 2, r.position.y + 12, 12, edge, PX, 1, Color.BLACK, 2)
+	# the box itself
+	var bx = UW / 2
+	var by = r.position.y + 100
+	var open = t > 0.8
+	var jig = 0.0 if open else sin(t * 60) * (t / 0.8) * 3
+	var body = css("#8a1a24") if red else css("#3f7a2c")
+	var shine = css("#b8303c") if red else css("#5fa83e")
+	var band = css("#2a1418") if red else css("#e8b830")
+	if open:
+		uGlow(Rect2(bx - 26, by - 46, 52, 30), Color(edge, 0.5 + 0.3 * sin(realTime * 6)), 10, 12)
+		for i in 6:
+			var a = realTime * 0.8 + i * TAU / 6
+			uci.draw_line(Vector2(bx, by - 30), Vector2(bx + cos(a) * 44, by - 30 + sin(a) * 26), Color(edge, 0.25), 3)
+	uBox(Rect2(bx - 28 + jig, by - 30, 56, 30), body, Color.BLACK, 2, 3)
+	uci.draw_rect(Rect2(bx - 18 + jig, by - 30, 6, 30), band)
+	uci.draw_rect(Rect2(bx + 12 + jig, by - 30, 6, 30), band)
+	var lidY = by - 44 - (minf(1, (t - 0.8) * 6) * 16 if open else 0.0)
+	uBox(Rect2(bx - 30 + jig, lidY, 60, 15), shine, Color.BLACK, 2, 4)
+	uci.draw_rect(Rect2(bx - 18 + jig, lidY + 2, 6, 11), band)
+	uci.draw_rect(Rect2(bx + 12 + jig, lidY + 2, 6, 11), band)
+	if not open:
+		uBox(Rect2(bx - 5 + jig, by - 34, 10, 9), css("#ffd84a"), Color.BLACK, 1, 2)
+	# the prizes
+	var yy = by + 10
+	for i in shown:
+		var row: Dictionary = L.rows[i]
+		var k = clampf((t - 0.9 - i * 0.35) / 0.2, 0, 1)
+		var col = Color.WHITE
+		if row.rare == 1:
+			col = GOLD
+		elif row.rare == 2:
+			col = css("#ff9ef0")
+			uGlow(Rect2(r.position.x + 18, yy - 2, w - 36, 20), Color(col, 0.35 + 0.2 * sin(realTime * 6)), 6, 8)
+		uText(row.icon, r.position.x + 30, yy + 1, 13, Color(1, 1, 1, k))
+		uText(row.text, r.position.x + 52, yy + 3, 10, Color(col, k), UB)
+		yy += 22
+	if shown >= n and t > 1.2 + n * 0.35:
+		uText("Z ▶", r.end.x - 12, r.end.y - 16 + sin(realTime * 6) * 1.5, 8, edge, UB, 2)
 
 
 ## the red flash at the screen edges when you take a big hit

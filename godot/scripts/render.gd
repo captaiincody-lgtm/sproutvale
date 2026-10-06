@@ -181,15 +181,20 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 			if absf(P.x - p.x) < 30 and absf(P.y - p.get("y", M.floorY)) < 20:
 				textOutline(x, "↑ " + p.label, roundf(clampf(X, 70, VW - 70)), roundf(Y - 42), "#ffffff")
 			continue
+		var sealed: bool = p.get("sealed", false)
 		for i in 18:
-			var a = tt * 3 + i / 18.0 * TAU
+			var a = tt * (1.2 if sealed else 3.0) + i / 18.0 * TAU
 			var r = 8 + sin(tt * 4 + i) * 1.5
-			x.fillStyle = "#9fe6ff" if i % 3 else "#ffffff"
+			if sealed:
+				x.fillStyle = "#b88aff" if i % 3 else "#f0e6ff"
+			else:
+				x.fillStyle = "#9fe6ff" if i % 3 else "#ffffff"
 			x.fillRect(roundf(X + cos(a) * r * 0.6), roundf(Y - 16 + sin(a) * r), 2, 2)
-		x.fillStyle = rgba(160, 230, 255, 0.35)
+		x.fillStyle = rgba(184, 138, 255, 0.35) if sealed else rgba(160, 230, 255, 0.35)
 		x.fillRect(X - 4, Y - 26, 8, 20)
 		if absf(P.x - p.x) < 40:
-			textOutline(x, "↑ " + p.label, roundf(X), roundf(Y - 34), "#ffffff")
+			var hw = x.measureText("↑ " + p.label).width / 2 + 4
+			textOutline(x, "↑ " + p.label, roundf(clampf(X, hw, VW - hw)), roundf(Y - 34), "#ffffff")
 	# drops
 	var coin = Assets.tex("items/coin.png")
 	for d in drops:
@@ -206,6 +211,8 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 				x.fillStyle = rgba(255, 220, 80, 0.35 * gl) if d.gold else rgba(160, 230, 255, 0.35 * gl)
 				x.fillRect(X - 8, Y - 20 + bob, 16, 18)
 				cardArt(x, d.type, d.gold, d.shiny, true, X - 6, Y - 18 + bob)
+			"box":
+				drawBossBox(x, d.type, X, Y + (roundf(sin(tt * 3) * 1.5) - 1 if d.vy == 0 else 0.0), tt)
 			"abyss":
 				var gl = 0.5 + 0.5 * sin(tt * 5 + d.x)
 				x.fillStyle = rgba(255, 58, 216, 0.3 * gl)
@@ -256,6 +263,8 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 		drawPedestal(x, sx, sy)
 	if bossVials.size() or puddles.size():
 		drawVials(x, sx, sy)
+	if pVials.size() or pPuddles.size() or PRain.t > 0:
+		drawBossSkills(x, sx, sy)
 	# particles
 	for p in parts:
 		var k: float = 1 - p.t / p.life
@@ -502,7 +511,7 @@ func drawWarlord(x: Ctx, e, X: float, Y: float) -> void:
 	var f = 0
 	var eyeless: bool = e.eyesOut > 0
 	if e.state == "dead":
-		k = "dead"
+		k = ("hurt" if e.t < 0.6 else "slam") if e.dying else "dead"
 	else:
 		match e.act:
 			"swing", "cleave":
@@ -523,8 +532,10 @@ func drawWarlord(x: Ctx, e, X: float, Y: float) -> void:
 		k = "white"; f = 0
 	x.save()
 	x.translate(X, Y)
-	if e.state == "dead":
+	if e.state == "dead" and not e.dying:
 		x.globalAlpha = maxf(0, 1 - e.deadT / 2.4)
+	if e.dying and e.t > 0.6:
+		x.translate(roundf(sin(e.t * 23) * 0.6), 0)   # trembling on one knee
 	if e.act in ["swing", "cleave", "bash", "throw"] and e.t < 0.4 / WSPD:
 		x.translate(roundf(sin(e.t * 50)), 0)
 	if e.face < 0:
@@ -1240,6 +1251,56 @@ func drawVials(x: Ctx, sx: float, sy: float) -> void:
 		x.fillStyle = "#7fe060"; x.fillRect(-2, -1, 4, 6)
 		x.fillStyle = "#9a6a3c"; x.fillRect(-1.5, -8, 3, 2)
 		x.restore()
+
+
+## the hero's own Potion Throw and Crimson Rain
+func drawBossSkills(x: Ctx, sx: float, sy: float) -> void:
+	for p in pPuddles:
+		var a: float = (p.life - p.t) / 0.6 if p.t > p.life - 0.6 else 1.0
+		x.globalAlpha = a
+		x.fillStyle = "#4fb83a"; x.beginPath(); x.ellipse(p.x - sx, p.y - sy, p.w / 2, 3, 0, 0, TAU); x.fill()
+		x.fillStyle = "#9fff7a"; x.beginPath(); x.ellipse(p.x - sx - 4, p.y - sy - 0.5, p.w / 4, 1.2, 0, 0, TAU); x.fill()
+		x.globalAlpha = 1
+	for v in pVials:
+		x.save()
+		x.translate(v.x - sx, v.y - sy)
+		x.rotate(v.spin)
+		x.fillStyle = "#28383f"; x.fillRect(-3, -6, 6, 12)
+		x.fillStyle = "#dff0ff"; x.fillRect(-2, -5, 4, 4)
+		x.fillStyle = "#7fe060"; x.fillRect(-2, -1, 4, 6)
+		x.fillStyle = "#9a6a3c"; x.fillRect(-1.5, -8, 3, 2)
+		x.restore()
+	if PRain.t > 0:
+		var k = minf(1, PRain.t / 0.5)
+		x.fillStyle = rgba(120, 0, 20, 0.16 * k)
+		x.fillRect(0, 0, VW, VH)
+		var t = realTime
+		x.strokeStyle = rgba(200, 20, 40, 0.7 * k)
+		x.lineWidth = 1
+		x.beginPath()
+		for i in 160:
+			var X = fmod(hsh(i * 1.7) * (VW + 40) + t * 30, VW + 40) - 20
+			var Y = fmod(hsh(i * 2.9) * (VH + 60) + t * 520, VH + 60) - 40
+			x.moveTo(X, Y)
+			x.lineTo(X - 1.5, Y + 7)
+		x.stroke()
+
+
+## a boss's loot box: Crocbox (swamp green, gold bands) or Crimsonbox (blood red, black iron)
+func drawBossBox(x: Ctx, kind: String, X: float, Y: float, tt: float) -> void:
+	var red = kind == "warlord"
+	var gl = 0.5 + 0.5 * sin(tt * 4)
+	x.fillStyle = rgba(255, 70, 90, 0.25 * gl) if red else rgba(255, 220, 80, 0.25 * gl)
+	x.fillRect(X - 13, Y - 21, 26, 22)
+	x.fillStyle = "#14080a"; x.fillRect(X - 10, Y - 16, 20, 16)                 # outline
+	x.fillStyle = "#8a1a24" if red else "#3f7a2c"; x.fillRect(X - 9, Y - 15, 18, 14)  # body
+	x.fillStyle = "#b8303c" if red else "#5fa83e"; x.fillRect(X - 9, Y - 15, 18, 3)   # lid shine
+	x.fillStyle = "#14080a"; x.fillRect(X - 9, Y - 10, 18, 1)                   # lid seam
+	x.fillStyle = "#2a1418" if red else "#e8b830"
+	x.fillRect(X - 6, Y - 15, 2, 14); x.fillRect(X + 4, Y - 15, 2, 14)           # bands
+	x.fillStyle = "#ffd84a" if not red else "#ff9aa6"; x.fillRect(X - 2, Y - 11, 4, 4)  # clasp
+	if randf() < 0.15:
+		part(X + cam.x + rand(-10, 10), Y + cam.y - rand(4, 20), 0, -20, 0.6, "#ff5d73" if red else "#ffe14d", 0, 1)
 
 
 func drawRocks(x: Ctx, sx: float, sy: float) -> void:
