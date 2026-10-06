@@ -40,6 +40,15 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 		configureHome(classId)
 	if id == "lair" and save.trophies.get("croc") and not MAPS.lair.portals.any(func(p): return p.to == "crimson1"):
 		MAPS.lair.portals.append({"x": MAPS.lair.w - 40, "to": "crimson1", "tx": 70, "label": "The Crimson Wastes"})
+	if id == "crimson5" and save.trophies.get("warlord"):
+		openDreamGate()
+	# a boss box left lying on the floor isn't lost: it opens as you leave
+	var unopened = []
+	for d in drops:
+		if d.kind == "box":
+			unopened.append(d.type)
+	loot = null
+	pVials.clear(); pPuddles.clear(); PRain.t = 0.0
 	mapId = id
 	M = MAPS[id]
 	save.settings.map = id
@@ -95,10 +104,16 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 			spawnBoss()
 	if inGame and not M.get("boss"):
 		banner(M.name, M.get("sub", "Tougher slimes live here" if M.get("lvBonus") else "Starter area"))
+	for k in unopened:
+		later(0.6, func(): openBox(k))
 
 
 func travel(portal: Dictionary) -> void:
 	if fadeTo != null:
+		return
+	if portal.get("sealed") or not MAPS.has(portal.to):
+		toast("The portal hums, but something on the other side is still asleep. It won't let you through yet.")
+		Sfx.tone(180, 0.3, "sine", 0.08, 120)
 		return
 	fadeTo = {"map": portal.to, "x": portal.tx, "y": portal.get("ty")}
 	Sfx.tone(520, 0.25, "sine", 0.12, 980)

@@ -158,6 +158,7 @@ class Mob:
 	var returning := false
 	var life := 0.0
 	var dropBlock := false
+	var dying := false           # the Warlord on one knee, before he falls
 
 	func clone() -> Mob:
 		var m := Mob.new()

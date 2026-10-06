@@ -34,6 +34,10 @@ func useSkill(id: String) -> bool:
 	var r = skillRank(id)
 	P.en -= s.get("cost", 0)
 	P.lastSkillT = gameTime
+	if s.get("boss"):
+		Cool[id] = float(s.cd)
+		castBossSkill(s)
+		return true
 	if s.type == "buff":
 		Buffs[id] = float(sv(s, "dur", r))
 		Cool[id] = float(s.cd)

@@ -246,17 +246,20 @@ func _process(delta: float) -> void:
 		updatePops(dt)
 		if scene != null:
 			updateScene(dt)
-		if scene == null and not P.frozen:
+		elif loot != null:
+			updateLoot(dt)
+		if scene == null and loot == null and not P.frozen:
 			updatePlayer(dt)
 		else:
 			P.vx = 0
 			if P.state != "dead":
 				P.state = "move" if P.grounded else P.state
-		if scene != null:
+		if scene != null or loot != null:
 			updateFX(dt)
 			updateParts(dt)
 		else:
 			updateCrimsonRain(dt)
+			updateBossSkills(dt)
 			updateWater(dt)
 			updateSlimes(dt)
 			updateFX(dt)

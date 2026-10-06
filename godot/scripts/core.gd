@@ -123,6 +123,38 @@ var Tail := {"pts": [], "seg": 2.9, "n": 8}
 var Warlord := {"rain": 0.0, "rainWarn": 0.0, "introDone": false, "tick": 0.0}
 var Pets := {"list": {}}
 var POPS: Array = []
+var loot = null          # an opened boss box being revealed (the world holds still, like a cutscene)
+var pVials: Array = []   # Potion Throw: the hero's flying vials…
+var pPuddles: Array = [] # …and the toxic puddles they leave
+var PRain := {"t": 0.0, "tick": 0.0}   # the hero's own Crimson Rain
+
+# ---------------------------------------------------------------- boss loot
+## Crocbox / Crimsonbox: one drops every time its boss falls
+const BOXES := {
+	"croc": {"name": "Crocbox", "boss": "Doc Croc", "skill": "potionThrow", "items": ["kombucha", "whetstone", "hide", "eyedrops"]},
+	"warlord": {"name": "Crimsonbox", "boss": "Crimson Warlord", "skill": "crimsonRain", "items": ["kombucha", "draught", "sigil", "rivet", "glassEye"]},
+}
+const BOX_ITEM_RATE := 0.15   # chance a box holds a stat treasure
+const BOX_SKILL_RATE := 0.02  # chance a box holds the boss's skill (until you have it)
+## rare treasures that raise a stat for good (per hero, no limit)
+const BOONS := {
+	"kombucha": {"name": "Rainbow Kombucha", "icon": "🧃", "stat": "hp", "val": 25, "desc": "+25 max HP"},
+	"whetstone": {"name": "Croc-Tooth Whetstone", "icon": "🦷", "stat": "atk", "val": 3, "desc": "+3 attack"},
+	"hide": {"name": "Scaly Hide Patch", "icon": "🐊", "stat": "def", "val": 2, "desc": "+2 defense"},
+	"eyedrops": {"name": "Doc's Eye Drops", "icon": "💧", "stat": "crit", "val": 0.5, "desc": "+0.5% critical rate"},
+	"draught": {"name": "Crimson Draught", "icon": "🍷", "stat": "hp", "val": 60, "desc": "+60 max HP"},
+	"sigil": {"name": "Warlord's Sigil Shard", "icon": "🔻", "stat": "atk", "val": 6, "desc": "+6 attack"},
+	"rivet": {"name": "Bulwark Rivet", "icon": "🔩", "stat": "def", "val": 4, "desc": "+4 defense"},
+	"glassEye": {"name": "Warlord's Glass Eye", "icon": "👁️", "stat": "crit", "val": 1.0, "desc": "+1% critical rate"},
+}
+const BOON_ORDER := ["kombucha", "whetstone", "hide", "eyedrops", "draught", "sigil", "rivet", "glassEye"]
+## skills learned from a boss: any class can use them once one drops
+const BOSS_SKILLS := [
+	{"id": "potionThrow", "boss": "croc", "name": "Potion Throw", "icon": "🧪", "type": "active", "max": 1, "cd": 4, "cost": 22,
+		"desc": ["Lob one of Doc Croc's poison vials: 250% damage in a splash, then a toxic puddle that hurts enemies standing in it (40% every half second for 3s)"]},
+	{"id": "crimsonRain", "boss": "warlord", "name": "Crimson Rain", "icon": "🩸", "type": "active", "max": 1, "cd": 35, "cost": 55,
+		"desc": ["Call down the Warlord's blood rain for 5s: every enemy on screen takes 80% damage every half second"]},
+]
 
 # ---------------------------------------------------------------- player + save
 var P: S.Player = S.Player.new()
@@ -169,6 +201,8 @@ func init_data() -> void:
 	SKILL = {}
 	for s in SKILLS:
 		SKILL[s.id] = s
+	for s in BOSS_SKILLS:
+		SKILL[s.id] = s
 	SLOT_KEYS = D.slotKeys
 	RANKS = D.ranks
 	RANK_MULT = D.rankMult
@@ -203,6 +237,8 @@ func init_data() -> void:
 	W_PARAMS = D.wParams
 	PRIMARY = D.primary
 	ATTRS = D.attrs
+	CUR_TIPS.boss = "Boss Coins: 1–5 in every Crocbox and Crimsonbox. Spend them in the Boss Shop."
+	STAT_TIPS["Boss Coins"] = "Found in the boxes bosses drop (1–5 each). Spend them in the Boss Shop."
 
 
 ## JSON numbers arrive as floats; whole numbers become ints so they index arrays and print cleanly.
@@ -460,6 +496,8 @@ func jobOfClass(cls: String, lv: int) -> Dictionary:
 
 
 func skillUnlocked(s: Dictionary) -> bool:
+	if s.get("boss"):
+		return skillRank(s.id) > 0   # boss skills only come from their box
 	for J in JOBS:
 		if J.id == s.job:
 			return CH().level >= J.lv
@@ -523,10 +561,15 @@ func calcStats() -> Dictionary:
 				for f in it.fx:
 					cur[f] = cur.get(f, 0.0) + it.fx[f]
 	var trophyExp: int = save.get("trophies", {}).size() * 10
-	var hp: float = 90 + c.level * 10 + a.VIT * 14 + ar.hp + ap.call("hp") * 10 + bs.call("tonic") * 40
-	var atk: float = 10 + c.level * 2 + a.STR * 3 + wp.atk + stf.atk + ch.atk + ap.call("atk") * 2
-	var def: float = 2 + c.level * 0.5 + a.VIT * 0.9 + ar.def + wp.def + ap.call("def") * 2
-	var crit: float = 5 + a.DEX * 0.7 + ch.crit + ap.call("crit") * 0.5 + ae.call("crate") * 0.5 + cur.get("crit", 0) + R.call("wisdom") + R.call("tactics") \
+	var boon = {"hp": 0.0, "atk": 0.0, "def": 0.0, "crit": 0.0}   # treasures from boss boxes
+	var owned: Dictionary = c.get("boons", {})
+	for id in owned:
+		if BOONS.has(id):
+			boon[BOONS[id].stat] += BOONS[id].val * owned[id]
+	var hp: float = 90 + c.level * 10 + a.VIT * 14 + ar.hp + ap.call("hp") * 10 + bs.call("tonic") * 40 + boon.hp
+	var atk: float = 10 + c.level * 2 + a.STR * 3 + wp.atk + stf.atk + ch.atk + ap.call("atk") * 2 + boon.atk
+	var def: float = 2 + c.level * 0.5 + a.VIT * 0.9 + ar.def + wp.def + ap.call("def") * 2 + boon.def
+	var crit: float = 5 + a.DEX * 0.7 + ch.crit + ap.call("crit") * 0.5 + boon.crit + ae.call("crate") * 0.5 + cur.get("crit", 0) + R.call("wisdom") + R.call("tactics") \
 		+ ((8 + R.call("radiance")) if buffOn("radiance") else 0) + R.call("tranquilHeart") + R.call("eagleEye") + R.call("serenity") \
 		+ ((8 + R.call("keenEye")) if buffOn("keenEye") else 0) + (12 if buffOn("deadeye") else 0) + ((5 + R.call("rage") * 0.5) if buffOn("rage") else 0) + (10 if buffOn("enrage") else 0)
 	var critDmg: float = 1.5 + a.DEX * 0.012 + R.call("comboMastery") * 0.03 + R.call("eagleEye") * 0.04 + ae.call("cdmg") * 0.01 + bs.call("lens") * 0.04 + R.call("spellMastery") * 0.04
@@ -890,6 +933,8 @@ func updateDrops(dt: float) -> void:
 				save.abyssCoins = save.get("abyssCoins", 0) + d.val
 				Sfx.tone(300, 0.2, "triangle", 0.08, 600)
 				pickupPop("abyss", "Abyssal Coins", d.val, "#ff9ef0")
+			elif d.kind == "box":
+				openBox(d.type)
 			elif d.kind == "card":
 				cardSet(d.type)[d.key] = true
 				saveDirty = true
@@ -907,7 +952,7 @@ func updateDrops(dt: float) -> void:
 				pickupPop("m_" + d.type, matName(d.type), n, "#ffffff")
 			saveDirty = true
 			continue
-		if d.t > 60:
+		if d.t > 60 and d.kind != "box":
 			drops.remove_at(i)
 
 
@@ -1084,3 +1129,6 @@ func toCharSelect() -> void: pass
 func updateTail(_dt: float, _anchor: Vector2) -> void: pass
 func updateRocks(_dt: float) -> void: pass
 func updateVials(_dt: float) -> void: pass
+func openBox(_kind: String) -> void: pass
+func castBossSkill(_s: Dictionary) -> void: pass
+func openDreamGate(_fanfare := false) -> void: pass

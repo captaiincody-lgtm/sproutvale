@@ -343,7 +343,7 @@ func killBoss(e) -> void:
 	var bx = roundi(mobExp(e) * (1 + cardBonus()))
 	gainExp(bx)
 	floatText(e.x, e.y - 130, "+%d EXP" % bx, "exp")
-	save.bossCoins = save.get("bossCoins", 0) + 1
+	dropBox(e, kind)
 	saveDirty = true
 	c.kills += 1
 	recordKill(_as(e, {"type": kind}))
@@ -360,15 +360,211 @@ func killBoss(e) -> void:
 					part(MAPS.lair.w - 40 + rand(-10, 10), M.floorY - rand(0, 50), rand(-60, 60), rand(-90, 10), 0.9, "#ff3a4a" if i % 2 else "#ffd0d6", 0, 2)
 				banner("A portal tears open", "A blood-red light spills from the east side of the lair")
 				Sfx.rankUp(9)))
+	elif kind == "warlord":
+		# the Warlord sinks to one knee; the first time, he has something to say before he falls
+		e.dying = true
+		e.t = 0
+		e.act = ""
+		later(1.6, func():
+			if not slimes.has(e):
+				e.dying = false
+				return
+			if firstKill:
+				startScene([{"who": "Crimson Warlord", "text": "The Dreamer..."}, {"who": "Crimson Warlord", "text": "...Holds the key to destroying the crystal..."}], func():
+					warlordFalls(e)
+					later(1.4, func(): openDreamGate(true)))
+			else:
+				warlordFalls(e)
+				later(0.9, func():
+					banner("THE WARLORD FALLS", "Grab the Crimsonbox · the pedestal can call him back")
+					Sfx.rankUp(9)))
 	else:
 		later(0.9, func():
-			banner("THE WARLORD FALLS" if kind == "warlord" else "DOC CROC DEFEATED", "+1 Boss Coin · the pedestal can call him back")
+			banner("DOC CROC DEFEATED", "Grab the Crocbox · the pedestal can call him back")
 			Sfx.rankUp(9))
 	var arena = M
 	later(2.6, func():
 		if arena.get("boss") and arena.get("pedestal") == null:
 			arena.pedestal = {"x": roundi(arena.w * (0.5 if kind == "warlord" else 0.55)), "kind": kind})
 	styleAdd(120, "boss")
+
+
+## the last breath: he pitches forward and fades like any fallen boss
+func warlordFalls(e) -> void:
+	e.dying = false
+	e.deadT = 0
+	shake = 8
+	Sfx.slam()
+	Sfx.tone(70, 1.6, "sawtooth", 0.12, 35)
+	dust(e.x, M.floorY, 18)
+	for i in 24:
+		part(e.x + rand(-20, 20), e.y - rand(10, 90), rand(-50, 50), rand(-120, -30), rand(0.6, 1.1), "#ff3a4a" if i % 2 else "#2a0a10", 200, 2)
+
+
+## a sealed portal on the east side of the Warlord's Keep: the next area isn't built yet
+func openDreamGate(fanfare := false) -> void:
+	var K: Dictionary = MAPS.crimson5
+	if not K.portals.any(func(p): return p.to == "dreamer"):
+		K.portals.append({"x": K.w - 40, "to": "dreamer", "tx": 70, "label": "The Dreamer's Gate", "sealed": true})
+	if not fanfare or mapId != "crimson5":
+		return
+	shake = 8
+	Sfx.thunder()
+	for i in 40:
+		part(K.w - 40 + rand(-10, 10), M.floorY - rand(0, 50), rand(-60, 60), rand(-90, 10), 0.9, "#b88aff" if i % 2 else "#e8dcff", 0, 2)
+	banner("A portal shimmers open", "Violet light spills from the east side of the keep")
+	Sfx.rankUp(9)
+
+
+# ================================================================ boss loot: Crocbox and Crimsonbox
+
+func dropBox(e, kind: String) -> void:
+	var d = S.Drop.new()
+	d.kind = "box"; d.type = kind
+	d.x = e.x; d.y = e.y - 60; d.vx = -e.face * 60.0; d.vy = -260
+	d.surfY = M.floorY; d.x0 = 40; d.x1 = M.w - 40; d.spin = randf() * 4
+	drops.append(d)
+
+
+## open a box: coins, boss coins, maybe a stat treasure, very rarely the boss's own skill
+func openBox(kind: String) -> void:
+	var B: Dictionary = BOXES.get(kind, BOXES.croc)
+	var c = CH()
+	if not (c.get("boons") is Dictionary):
+		c.boons = {}
+	var coins = rint(500, 2500)
+	var bc = rint(1, 5)
+	save.coins += coins
+	save.bossCoins = save.get("bossCoins", 0) + bc
+	var rows = [{"icon": "🪙", "text": "%s coins" % fmt(coins), "rare": 0}, {"icon": "🏅", "text": "%d Boss Coin%s" % [bc, "" if bc == 1 else "s"], "rare": 0}]
+	if randf() < BOX_ITEM_RATE:
+		var id: String = B.items[rint(0, B.items.size() - 1)]
+		var it: Dictionary = BOONS[id]
+		c.boons[id] = int(c.boons.get(id, 0)) + 1
+		rows.append({"icon": it.icon, "text": "%s · %s, for good" % [it.name, it.desc], "rare": 1})
+	var sk: String = B.skill
+	if skillRank(sk) == 0 and randf() < BOX_SKILL_RATE:
+		c.skills[sk] = 1
+		var key = ""
+		for k in ["a", "s", "d", "f", "q", "w", "e", "r"]:
+			if not c.binds.get(k):
+				key = k
+				break
+		if key != "":
+			c.binds[key] = sk
+		rows.append({"icon": SKILL[sk].icon, "text": "NEW SKILL: %s%s" % [SKILL[sk].name, (" (on " + key.to_upper() + ")") if key != "" else " (bind it in Skills)"], "rare": 2})
+	PS = calcStats()
+	saveDirty = true
+	persist()
+	var best = 0
+	for r in rows:
+		best = maxi(best, r.rare)
+	loot = {"kind": kind, "name": B.name, "rows": rows, "t": 0.0, "best": best}
+	P.vx = 0
+	Sfx.buy()
+	shake = 4
+
+
+func updateLoot(dt: float) -> void:
+	var L: Dictionary = loot
+	L.t += dt
+	var n: int = L.rows.size()
+	# each prize pops out in turn; rare ones get a fanfare
+	var shown = clampi(floori((L.t - 0.9) / 0.35) + 1, 0, n)
+	if shown > L.get("shown", 0):
+		for i in range(L.get("shown", 0), shown):
+			var r: Dictionary = L.rows[i]
+			if r.rare == 2:
+				Sfx.rankUp(9); Sfx.thunder()
+			elif r.rare == 1:
+				Sfx.rankUp(7)
+			else:
+				Sfx.coin()
+		L.shown = shown
+	if L.t > 0.8 and L.t < 0.85:
+		Sfx.slam()
+	var adv: bool = pressed.get("z", false) or pressed.get("x", false) or pressed.get(" ", false) or pressed.get("enter", false)
+	pressed.clear()
+	if adv:
+		if L.t < 0.9 + n * 0.35:
+			L.t = 0.9 + n * 0.35   # skip to everything shown
+		else:
+			loot = null
+
+
+# ================================================================ boss skills (from the boxes)
+
+func castBossSkill(s: Dictionary) -> void:
+	if s.id == "potionThrow":
+		var tg = pickTargets(280, 1)
+		var tx: float = tg[0].x if tg.size() else P.x + P.face * 140
+		var gy: float = tg[0].y if tg.size() else P.y
+		var sx2 = P.x + P.face * 8
+		var sy2 = P.y - 34
+		var tt = 0.55
+		pVials.append({"x": sx2, "y": sy2, "vx": (tx - sx2) / tt, "vy": (gy - 6 - sy2 - 0.5 * 700 * tt * tt) / tt, "spin": 0.0, "gy": gy})
+		Sfx.whoosh(0.9, false)
+		floatText(P.x, P.y - 58, "Mix complete!", "call")
+	elif s.id == "crimsonRain":
+		PRain.t = 5.0
+		PRain.tick = 0.3
+		shake = 6
+		Sfx.thunder()
+		World.flash = maxf(World.flash, 0.3)
+		floatText(P.x, P.y - 58, "Crimson Rain!", "call")
+
+
+func _foes() -> Array:
+	return slimes.filter(func(q): return q.state != "dead" and not q.bossEye)
+
+
+func updateBossSkills(dt: float) -> void:
+	for i in range(pVials.size() - 1, -1, -1):
+		var v: Dictionary = pVials[i]
+		v.vy += 700 * dt
+		v.x += v.vx * dt
+		v.y += v.vy * dt
+		v.spin += dt * 12
+		var hit = null
+		for e in _foes():
+			if absf(v.x - e.x) < e.w / 2 + 6 and v.y > e.y - e.h - 6 and v.y < e.y + 4:
+				hit = e
+				break
+		if hit == null and v.y < v.gy:
+			continue
+		pVials.remove_at(i)
+		var gy: float = v.gy
+		Sfx.burst(0.25, "highpass", 3000, 6000, 0.3)
+		Sfx.tone(600, 0.15, "triangle", 0.06, 200)
+		for k in 18:
+			part(v.x, minf(v.y, gy) - 2, rand(-90, 90), rand(-160, -40), rand(0.4, 0.8), "#8fff6a" if k % 3 else "#d8ffe0", 600, 1 if k % 2 else 2, gy)
+		for e in _foes():
+			if absf(e.x - v.x) < 50 + e.w / 2 and absf(e.y - gy) < 60:
+				damageSlime(e, {"dmg": 2.5, "kb": 60, "up": -120, "style": 12, "anim": "potionThrow", "both": true, "heavy": true})
+		pPuddles.append({"x": v.x, "y": gy, "w": 56.0, "t": 0.0, "life": 3.0, "tick": 0.5})
+	for i in range(pPuddles.size() - 1, -1, -1):
+		var p: Dictionary = pPuddles[i]
+		p.t += dt
+		if p.t > p.life:
+			pPuddles.remove_at(i)
+			continue
+		if randf() < dt * 8:
+			part(p.x + rand(-p.w / 2, p.w / 2), p.y - 1, 0, -rand(10, 25), 0.6, "#a8ff8a", 0, 1)
+		p.tick -= dt
+		if p.tick <= 0:
+			p.tick = 0.5
+			for e in _foes():
+				if absf(e.x - p.x) < p.w / 2 + 4 and absf(e.y - p.y) < 8:
+					damageSlime(e, {"dmg": 0.4, "kb": 0, "up": 0, "style": 2, "anim": "potionThrow", "both": true})
+	if PRain.t > 0:
+		PRain.t -= dt
+		PRain.tick -= dt
+		if PRain.tick <= 0:
+			PRain.tick = 0.5
+			for e in _foes():
+				if e.x > cam.x - 20 and e.x < cam.x + VW + 20 and e.y > cam.y - 20 and e.y < cam.y + VH + 40:
+					damageSlime(e, {"dmg": 0.8, "kb": 0, "up": 0, "style": 3, "anim": "crimsonRain", "both": true})
+					part(e.x, e.y - e.h * 0.6, rand(-30, 30), rand(-60, -20), 0.5, "#ff3a4a", 300, 2)
 
 
 # ================================================================ the Crimson Warlord
@@ -397,6 +593,12 @@ func spawnWarlord() -> void:
 func updateWarlord(e, dt: float) -> void:
 	e.t += dt; e.hurtFlash -= dt; e.cd -= dt / WSPD; e.eyeCd -= dt; e.throwCd -= dt; e.rainCd -= dt
 	if e.state == "dead":
+		if e.dying:
+			e.deadT = 0   # on one knee: he doesn't fade until he falls
+			e.vx = 0
+			if randf() < dt * 6:
+				part(e.x + rand(-12, 12), e.y - rand(20, 80), rand(-10, 10), -rand(10, 30), 0.7, "#ff3a4a", 0, 1)
+			return
 		e.deadT += dt
 		return
 	var dx: float = P.x - e.x

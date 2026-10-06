@@ -400,7 +400,30 @@ func _pChar(x: float, y: float, w: float) -> float:
 			zone(Rect2(X, yy, W - 68, 20), Callable(), attrTip(a))
 			yy += 24
 		return yy - Y
-	return uCards(x, y, w, 2, [card1, card2])
+	var y0 = y
+	y += uCards(x, y, w, 2, [card1, card2])
+	y += 12
+	var owned: Dictionary = c.get("boons", {})
+	y += uCards(x, y, w, 1, [func(X, Y, W):
+		uText("Boss treasures", X, Y, 11, css("#8a5a08"))
+		var yy = Y + 18
+		yy += muted("Rare finds in Crocboxes and Crimsonboxes (about 1 box in 7). Each one raises a stat for %s for good, and they stack." % C.name, X, yy, W) + 4
+		var cw = (W - 10) / 2
+		for i in BOON_ORDER.size():
+			var id: String = BOON_ORDER[i]
+			var it: Dictionary = BOONS[id]
+			var n = int(owned.get(id, 0))
+			var cx = X + (i % 2) * (cw + 10)
+			var cy = yy + floori(i / 2.0) * 22
+			var a = 1.0 if n else 0.45
+			uText(it.icon, cx, cy + 2, 12, Color(1, 1, 1, a))
+			var nw = uText(it.name, cx + 20, cy + 1, 9, Color(INK, a))
+			uText(("  ×%d" % n) if n else "", cx + 20 + nw, cy + 2, 8, css("#2a8a55"), UB)
+			var src = "both boxes" if id == "kombucha" else ("Crocbox" if BOXES.croc.items.has(id) else "Crimsonbox")
+			uText("%s · %s" % [it.desc, src], cx + 20, cy + 12, 7, Color(MUTED, a), UF)
+		yy += ceili(BOON_ORDER.size() / 2.0) * 22
+		return yy - Y], [{"fill": css("#fff6e3"), "border": css("#c89418")}])
+	return y - y0
 
 
 func _addAttr(a: String, n: int) -> void:
@@ -901,6 +924,14 @@ func _pSkills(x: float, y: float, w: float) -> float:
 			return yy - Y)
 		styles.append({"fill": Color.WHITE if not locked else css("#f4f5fa"), "border": INK})
 	y += uCards(x, y, w, 1, cards, styles)
+	y += 12
+	y += uCards(x, y, w, 1, [func(X, Y, W):
+		uText("Boss skills", X, Y, 11, css("#9a1f35"))
+		var yy = Y + 18
+		yy += muted("Very rare finds in boss boxes (about 1 box in 50). Any class can use them once found.", X, yy, W) + 4
+		for s in BOSS_SKILLS:
+			yy += _skillRow(s, X, yy, W, skillRank(s.id) == 0)
+		return yy - Y], [{"fill": css("#fff0ea"), "border": css("#a82a30")}])
 	return y - y0
 
 
@@ -913,6 +944,7 @@ func _skillRow(s: Dictionary, X: float, yy: float, W: float, locked: bool) -> fl
 	var r = skillRank(s.id)
 	var a = 0.55 if locked else 1.0
 	var bindable = (s.type == "active" or s.type == "buff") and not locked
+	var bossSk: bool = s.get("boss", "") != ""
 	dashed(X, X + W, yy, Color(LINE, a))
 	uText(s.icon, X + 4, yy + 8, 16, Color(1, 1, 1, a))
 	var tx = X + 34
@@ -933,6 +965,10 @@ func _skillRow(s: Dictionary, X: float, yy: float, W: float, locked: bool) -> fl
 			uButton(Rect2(kx, yy + h, 18, 14), k.to_upper(), func(): _bind(s.id, k), {"on": on, "disabled": r == 0, "size": 7, "shadow": 1.0, "rad": 4})
 			kx += 21
 		h += 17
+	if bossSk:
+		var src = "Found!" if r else ("In Crocbox" if s.boss == "croc" else "In Crimsonbox")
+		uPill(src, X + W, yy + 4 + (h - 22) / 2 + 3, MINT if r else css("#ffe0e6"), INK if r else css("#9a1f35"), 8, 2)
+		return maxf(h, 34) + 6
 	var can = not locked and c.sp > 0 and r < s.max and skillUnlocked(s)
 	uButton(Rect2(X + W - 48, yy + 4 + (h - 22) / 2, 48, 18), "+1" if r else "Learn", func(): _learn(s.id), {"disabled": not can, "bg": MINT})
 	return maxf(h, 34) + 6
