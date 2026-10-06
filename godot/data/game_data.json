@@ -1,0 +1,2553 @@
+{
+ "maps": {
+  "home": {
+   "name": "Home",
+   "sub": "A quiet field by the Meadow",
+   "theme": "meadow",
+   "w": 1100,
+   "h": 300,
+   "floorY": 260,
+   "target": 0,
+   "safe": true,
+   "plats": [],
+   "ropes": [],
+   "portals": [
+    {
+     "x": 1064,
+     "to": "meadow",
+     "tx": 70,
+     "label": "Sproutvale Meadow"
+    },
+    {
+     "x": 470,
+     "to": "house",
+     "tx": 60,
+     "label": "Enter house",
+     "door": true
+    }
+   ],
+   "spawn": {},
+   "start": 330,
+   "house": 470,
+   "variant": "rock"
+  },
+  "house": {
+   "name": "Your Cottage",
+   "sub": "Home sweet home",
+   "theme": "interior",
+   "w": 384,
+   "h": 300,
+   "floorY": 274,
+   "target": 0,
+   "safe": true,
+   "indoor": true,
+   "plats": [
+    [
+     226,
+     196,
+     140
+    ]
+   ],
+   "ropes": [
+    [
+     234,
+     196,
+     274
+    ]
+   ],
+   "portals": [
+    {
+     "x": 40,
+     "to": "home",
+     "tx": 470,
+     "label": "Go outside",
+     "door": true
+    },
+    {
+     "x": 344,
+     "to": "trophy",
+     "tx": 50,
+     "label": "Trophy Hall",
+     "door": true
+    }
+   ],
+   "spawn": {},
+   "start": 80,
+   "notes": [
+    {
+     "x": 264,
+     "y": 196,
+     "label": "Look at the drawing",
+     "text": "I miss you, kiddo. Hang on a little longer… Dad's coming."
+    }
+   ],
+   "variant": "rock"
+  },
+  "meadow": {
+   "name": "Sproutvale Meadow",
+   "theme": "meadow",
+   "w": 1760,
+   "h": 420,
+   "floorY": 380,
+   "target": 13,
+   "plats": [
+    [
+     150,
+     318,
+     200
+    ],
+    [
+     430,
+     262,
+     170
+    ],
+    [
+     680,
+     316,
+     240
+    ],
+    [
+     980,
+     250,
+     200
+    ],
+    [
+     1250,
+     310,
+     220
+    ],
+    [
+     1500,
+     258,
+     160
+    ],
+    [
+     560,
+     188,
+     200
+    ],
+    [
+     860,
+     168,
+     170
+    ],
+    [
+     1180,
+     176,
+     190
+    ]
+   ],
+   "ropes": [
+    [
+     250,
+     318,
+     380
+    ],
+    [
+     520,
+     262,
+     380
+    ],
+    [
+     640,
+     188,
+     380
+    ],
+    [
+     930,
+     168,
+     380
+    ],
+    [
+     1070,
+     250,
+     380
+    ],
+    [
+     1300,
+     176,
+     310
+    ],
+    [
+     1560,
+     258,
+     380
+    ]
+   ],
+   "portals": [
+    {
+     "x": 1712,
+     "to": "hollow",
+     "tx": 70,
+     "label": "Mossy Hollow"
+    },
+    {
+     "x": 945,
+     "y": 168,
+     "to": "pond",
+     "tx": 1440,
+     "label": "Willow Pond"
+    },
+    {
+     "x": 36,
+     "to": "home",
+     "tx": 1040,
+     "label": "Home"
+    }
+   ],
+   "spawn": {
+    "green": 5,
+    "blue": 3,
+    "red": 1.2,
+    "silver": 0.4,
+    "gold": 0.15
+   },
+   "lvBonus": 0,
+   "start": 90
+  },
+  "pond": {
+   "name": "Willow Pond",
+   "sub": "Rats, ferrets and a pond to swim in",
+   "theme": "meadow",
+   "w": 1500,
+   "h": 480,
+   "floorY": 400,
+   "target": 12,
+   "plats": [
+    [
+     150,
+     330,
+     190
+    ],
+    [
+     420,
+     280,
+     170
+    ],
+    [
+     700,
+     318,
+     150
+    ],
+    [
+     880,
+     250,
+     170
+    ],
+    [
+     1060,
+     326,
+     200
+    ],
+    [
+     1290,
+     270,
+     150
+    ],
+    [
+     560,
+     400,
+     70
+    ]
+   ],
+   "ropes": [
+    [
+     240,
+     330,
+     400
+    ],
+    [
+     500,
+     280,
+     400
+    ],
+    [
+     960,
+     250,
+     318
+    ],
+    [
+     1150,
+     326,
+     400
+    ],
+    [
+     1360,
+     270,
+     400
+    ]
+   ],
+   "portals": [
+    {
+     "x": 1462,
+     "to": "meadow",
+     "tx": 945,
+     "ty": 168,
+     "label": "Sproutvale Meadow"
+    }
+   ],
+   "spawn": {
+    "rat": 4,
+    "ferret": 2.2,
+    "green": 0.8
+   },
+   "lvBonus": 1,
+   "ignoreUnlock": true,
+   "start": 1400,
+   "pond": {
+    "x0": 620,
+    "x1": 990,
+    "surface": 409,
+    "bottom": 466
+   }
+  },
+  "hollow": {
+   "name": "Mossy Hollow",
+   "theme": "hollow",
+   "w": 1400,
+   "h": 460,
+   "floorY": 420,
+   "target": 14,
+   "plats": [
+    [
+     120,
+     350,
+     180
+    ],
+    [
+     380,
+     300,
+     200
+    ],
+    [
+     650,
+     350,
+     220
+    ],
+    [
+     930,
+     290,
+     200
+    ],
+    [
+     1180,
+     340,
+     160
+    ],
+    [
+     250,
+     222,
+     180
+    ],
+    [
+     560,
+     200,
+     170
+    ],
+    [
+     820,
+     190,
+     200
+    ],
+    [
+     1080,
+     212,
+     170
+    ]
+   ],
+   "ropes": [
+    [
+     200,
+     350,
+     420
+    ],
+    [
+     470,
+     300,
+     420
+    ],
+    [
+     330,
+     222,
+     420
+    ],
+    [
+     640,
+     200,
+     420
+    ],
+    [
+     900,
+     190,
+     420
+    ],
+    [
+     1150,
+     212,
+     420
+    ]
+   ],
+   "portals": [
+    {
+     "x": 48,
+     "to": "meadow",
+     "tx": 1690,
+     "label": "Sproutvale Meadow"
+    },
+    {
+     "x": 1356,
+     "to": "ridge",
+     "tx": 70,
+     "label": "Tusk Ridge"
+    }
+   ],
+   "spawn": {
+    "blue": 3,
+    "red": 3,
+    "silver": 1,
+    "gold": 0.35
+   },
+   "lvBonus": 4,
+   "ignoreUnlock": true,
+   "start": 90
+  },
+  "ridge": {
+   "name": "Tusk Ridge",
+   "sub": "Lv 12–16 · a boss lairs to the east",
+   "theme": "ridge",
+   "w": 1900,
+   "h": 480,
+   "floorY": 430,
+   "target": 26,
+   "plats": [
+    [
+     120,
+     360,
+     230
+    ],
+    [
+     420,
+     310,
+     260
+    ],
+    [
+     760,
+     360,
+     240
+    ],
+    [
+     1080,
+     300,
+     280
+    ],
+    [
+     1420,
+     350,
+     240
+    ],
+    [
+     260,
+     240,
+     200
+    ],
+    [
+     620,
+     220,
+     220
+    ],
+    [
+     940,
+     200,
+     200
+    ],
+    [
+     1260,
+     220,
+     220
+    ],
+    [
+     1560,
+     250,
+     180
+    ]
+   ],
+   "ropes": [
+    [
+     230,
+     360,
+     430
+    ],
+    [
+     540,
+     310,
+     430
+    ],
+    [
+     880,
+     360,
+     430
+    ],
+    [
+     1200,
+     300,
+     430
+    ],
+    [
+     1530,
+     350,
+     430
+    ],
+    [
+     350,
+     240,
+     360
+    ],
+    [
+     700,
+     220,
+     310
+    ],
+    [
+     1040,
+     200,
+     300
+    ],
+    [
+     1340,
+     220,
+     300
+    ],
+    [
+     1640,
+     250,
+     350
+    ]
+   ],
+   "portals": [
+    {
+     "x": 44,
+     "to": "hollow",
+     "tx": 1340,
+     "label": "Mossy Hollow"
+    },
+    {
+     "x": 1856,
+     "to": "lair",
+     "tx": 90,
+     "label": "Boss: Crocodile Lair"
+    }
+   ],
+   "spawn": {
+    "boar": 4,
+    "tortoise": 3
+   },
+   "lvBonus": 0,
+   "ignoreUnlock": true,
+   "start": 90
+  }
+ },
+ "mobs": {
+  "green": {
+   "name": "Green Slime",
+   "color": 7331934,
+   "lv": 1,
+   "hp": 38,
+   "atk": 7,
+   "def": 1,
+   "exp": 9,
+   "coins": [
+    3,
+    6
+   ],
+   "speed": 1,
+   "aggro": 8,
+   "size": 0.8,
+   "w": 44,
+   "unlock": 1,
+   "residue": "Green Slime Residue"
+  },
+  "blue": {
+   "name": "Blue Slime",
+   "color": 5222655,
+   "lv": 3,
+   "hp": 70,
+   "atk": 11,
+   "def": 3,
+   "exp": 18,
+   "coins": [
+    6,
+    10
+   ],
+   "speed": 1.1,
+   "aggro": 9,
+   "size": 0.9,
+   "w": 28,
+   "unlock": 1,
+   "residue": "Blue Slime Residue"
+  },
+  "red": {
+   "name": "Red Slime",
+   "color": 16733542,
+   "lv": 6,
+   "hp": 115,
+   "atk": 17,
+   "def": 6,
+   "exp": 34,
+   "coins": [
+    10,
+    16
+   ],
+   "speed": 1.35,
+   "aggro": 11,
+   "size": 0.95,
+   "w": 18,
+   "unlock": 3,
+   "residue": "Red Slime Residue"
+  },
+  "silver": {
+   "name": "Silver Slime",
+   "color": 15134199,
+   "lv": 10,
+   "hp": 230,
+   "atk": 23,
+   "def": 12,
+   "exp": 80,
+   "coins": [
+    25,
+    40
+   ],
+   "speed": 1,
+   "aggro": 9,
+   "size": 1.12,
+   "w": 7,
+   "unlock": 5,
+   "metal": true,
+   "residue": "Silver Slime Residue"
+  },
+  "gold": {
+   "name": "Gold Slime",
+   "color": 16763187,
+   "lv": 14,
+   "hp": 260,
+   "atk": 18,
+   "def": 16,
+   "exp": 170,
+   "coins": [
+    90,
+    140
+   ],
+   "speed": 1.7,
+   "aggro": 10,
+   "size": 1,
+   "w": 3,
+   "unlock": 7,
+   "metal": true,
+   "flees": true,
+   "residue": "Gold Slime Residue"
+  },
+  "rat": {
+   "name": "Meadow Rat",
+   "color": 10128518,
+   "lv": 2,
+   "hp": 32,
+   "atk": 8,
+   "def": 1,
+   "exp": 12,
+   "coins": [
+    3,
+    7
+   ],
+   "speed": 1.5,
+   "aggro": 9,
+   "size": 0.8,
+   "w": 0,
+   "unlock": 1,
+   "critter": true,
+   "matName": "Rat tail",
+   "label": "rats",
+   "residue": "Rat tail"
+  },
+  "boar": {
+   "name": "Tusk Boar",
+   "color": 9067068,
+   "lv": 12,
+   "hp": 260,
+   "atk": 30,
+   "def": 9,
+   "exp": 70,
+   "coins": [
+    14,
+    24
+   ],
+   "speed": 1.3,
+   "aggro": 12,
+   "size": 1,
+   "w": 0,
+   "unlock": 10,
+   "critter": true,
+   "matName": "Boar tusk",
+   "label": "boars",
+   "residue": "Boar tusk"
+  },
+  "tortoise": {
+   "name": "Moss Tortoise",
+   "color": 5933642,
+   "lv": 14,
+   "hp": 380,
+   "atk": 26,
+   "def": 22,
+   "exp": 88,
+   "coins": [
+    18,
+    30
+   ],
+   "speed": 0.6,
+   "aggro": 9,
+   "size": 1,
+   "w": 0,
+   "unlock": 10,
+   "critter": true,
+   "matName": "Tortoise shell",
+   "label": "tortoises",
+   "residue": "Tortoise shell"
+  },
+  "ferret": {
+   "name": "Ferret",
+   "color": 14201466,
+   "lv": 4,
+   "hp": 62,
+   "atk": 12,
+   "def": 2,
+   "exp": 24,
+   "coins": [
+    6,
+    12
+   ],
+   "speed": 1.8,
+   "aggro": 11,
+   "size": 1,
+   "w": 0,
+   "unlock": 1,
+   "critter": true,
+   "matName": "Ferret fur",
+   "label": "ferrets",
+   "residue": "Ferret fur"
+  },
+  "evileye": {
+   "name": "Evil Eye",
+   "color": 12591152,
+   "lv": 28,
+   "hp": 900,
+   "atk": 70,
+   "def": 20,
+   "exp": 260,
+   "coins": [
+    40,
+    70
+   ],
+   "speed": 1,
+   "aggro": 12,
+   "size": 1,
+   "w": 0,
+   "unlock": 28,
+   "critter": true,
+   "ai": "flyer",
+   "fly": true,
+   "bw": 14,
+   "bh": 14,
+   "matName": "Bloodshot Lens",
+   "label": "evil eyes",
+   "residue": "Bloodshot Lens"
+  },
+  "hand": {
+   "name": "Crawling Hand",
+   "color": 14198928,
+   "lv": 30,
+   "hp": 1100,
+   "atk": 78,
+   "def": 24,
+   "exp": 300,
+   "coins": [
+    44,
+    76
+   ],
+   "speed": 1.3,
+   "aggro": 12,
+   "size": 1,
+   "w": 0,
+   "unlock": 30,
+   "critter": true,
+   "ai": "crawler",
+   "bw": 18,
+   "bh": 10,
+   "matName": "Severed Knuckle",
+   "label": "crawling hands",
+   "residue": "Severed Knuckle"
+  },
+  "feet": {
+   "name": "Traveler",
+   "color": 14198928,
+   "lv": 33,
+   "hp": 1250,
+   "atk": 85,
+   "def": 26,
+   "exp": 340,
+   "coins": [
+    48,
+    84
+   ],
+   "speed": 1.1,
+   "aggro": 12,
+   "size": 1,
+   "w": 0,
+   "unlock": 33,
+   "critter": true,
+   "ai": "feet",
+   "bw": 12,
+   "bh": 12,
+   "matName": "Worn Toenail",
+   "label": "travelers",
+   "residue": "Worn Toenail"
+  },
+  "head": {
+   "name": "Floating Head",
+   "color": 13148296,
+   "lv": 35,
+   "hp": 1300,
+   "atk": 92,
+   "def": 28,
+   "exp": 380,
+   "coins": [
+    52,
+    90
+   ],
+   "speed": 1,
+   "aggro": 12,
+   "size": 1,
+   "w": 0,
+   "unlock": 35,
+   "critter": true,
+   "ai": "flyer",
+   "fly": true,
+   "bw": 16,
+   "bh": 16,
+   "matName": "Hollow Tooth",
+   "label": "floating heads",
+   "residue": "Hollow Tooth"
+  },
+  "torso": {
+   "name": "Walking Torso",
+   "color": 12094072,
+   "lv": 38,
+   "hp": 1700,
+   "atk": 100,
+   "def": 34,
+   "exp": 440,
+   "coins": [
+    58,
+    96
+   ],
+   "speed": 0.9,
+   "aggro": 12,
+   "size": 1,
+   "w": 0,
+   "unlock": 38,
+   "critter": true,
+   "ai": "crawler",
+   "bw": 22,
+   "bh": 20,
+   "matName": "Cracked Rib",
+   "label": "walking torsos",
+   "residue": "Cracked Rib"
+  },
+  "hairball": {
+   "name": "Hair Spike",
+   "color": 3809304,
+   "lv": 40,
+   "hp": 1500,
+   "atk": 104,
+   "def": 40,
+   "exp": 470,
+   "coins": [
+    60,
+    100
+   ],
+   "speed": 1,
+   "aggro": 12,
+   "size": 1,
+   "w": 0,
+   "unlock": 40,
+   "critter": true,
+   "ai": "roller",
+   "bw": 16,
+   "bh": 16,
+   "matName": "Tangled Hairball",
+   "label": "hair spikes",
+   "residue": "Tangled Hairball"
+  },
+  "cknight": {
+   "name": "Crimson Knight",
+   "color": 9050660,
+   "lv": 43,
+   "hp": 2300,
+   "atk": 118,
+   "def": 48,
+   "exp": 560,
+   "coins": [
+    70,
+    120
+   ],
+   "speed": 1,
+   "aggro": 12,
+   "size": 1,
+   "w": 0,
+   "unlock": 43,
+   "critter": true,
+   "ai": "knight",
+   "bw": 16,
+   "bh": 40,
+   "matName": "Crimson Plate",
+   "label": "crimson knights",
+   "residue": "Crimson Plate"
+  },
+  "ccrusader": {
+   "name": "Crimson Crusader",
+   "color": 6950936,
+   "lv": 46,
+   "hp": 2800,
+   "atk": 135,
+   "def": 44,
+   "exp": 640,
+   "coins": [
+    78,
+    130
+   ],
+   "speed": 0.85,
+   "aggro": 12,
+   "size": 1,
+   "w": 0,
+   "unlock": 46,
+   "critter": true,
+   "ai": "crusader",
+   "bw": 18,
+   "bh": 42,
+   "matName": "Crimson Edge",
+   "label": "crimson crusaders",
+   "residue": "Crimson Edge"
+  }
+ },
+ "moves": {
+  "slash": {
+   "anim": "slash",
+   "hits": [
+    2
+   ],
+   "box": [
+    4,
+    44,
+    -48,
+    0
+   ],
+   "dmg": 1,
+   "kb": 90,
+   "up": -40,
+   "style": 12,
+   "lunge": 70,
+   "cancel": 3
+  },
+  "rising": {
+   "anim": "rising",
+   "hits": [
+    2,
+    3
+   ],
+   "box": [
+    -2,
+    36,
+    -62,
+    2
+   ],
+   "dmg": 0.75,
+   "kb": 30,
+   "up": -280,
+   "style": 16,
+   "lunge": 30,
+   "cancel": 3
+  },
+  "thrust": {
+   "anim": "thrust",
+   "hits": [
+    2
+   ],
+   "box": [
+    6,
+    54,
+    -36,
+    -12
+   ],
+   "dmg": 1.35,
+   "kb": 190,
+   "up": -60,
+   "style": 18,
+   "lunge": 190,
+   "cancel": 3
+  },
+  "spin": {
+   "anim": "spin",
+   "hits": [
+    1,
+    3
+   ],
+   "box": [
+    -38,
+    40,
+    -46,
+    2
+   ],
+   "dmg": 1.15,
+   "kb": 170,
+   "up": -120,
+   "style": 26,
+   "lunge": 40,
+   "cancel": 6,
+   "both": true,
+   "name": "Crossguard Rush!"
+  },
+  "heavy": {
+   "anim": "heavy",
+   "hits": [
+    3
+   ],
+   "box": [
+    0,
+    50,
+    -56,
+    6
+   ],
+   "dmg": 2.4,
+   "kb": 230,
+   "up": -160,
+   "style": 22,
+   "lunge": 50,
+   "cancel": 7,
+   "heavy": true
+  },
+  "air": {
+   "anim": "air",
+   "hits": [
+    1,
+    2
+   ],
+   "box": [
+    -4,
+    42,
+    -50,
+    8
+   ],
+   "dmg": 0.9,
+   "kb": 40,
+   "up": -170,
+   "style": 14,
+   "lunge": 0,
+   "cancel": 3,
+   "air": true
+  },
+  "aegis": {
+   "anim": "aegis",
+   "hits": [
+    2
+   ],
+   "box": [
+    -2,
+    32,
+    -64,
+    4
+   ],
+   "dmg": 1.15,
+   "kb": 25,
+   "up": -390,
+   "style": 22,
+   "lunge": 40,
+   "cancel": 4,
+   "name": "Rising Aegis!"
+  },
+  "whirl": {
+   "anim": "whirl",
+   "hits": [
+    3,
+    5,
+    7,
+    9
+   ],
+   "box": [
+    -42,
+    44,
+    -48,
+    2
+   ],
+   "dmg": 0.8,
+   "kb": 120,
+   "up": -110,
+   "style": 30,
+   "lunge": 30,
+   "cancel": 12,
+   "both": true,
+   "name": "Pause Breaker!"
+  },
+  "air2": {
+   "anim": "air2",
+   "hits": [
+    1,
+    2
+   ],
+   "box": [
+    -2,
+    40,
+    -64,
+    6
+   ],
+   "dmg": 0.9,
+   "kb": 30,
+   "up": -220,
+   "style": 15,
+   "lunge": 0,
+   "cancel": 3,
+   "air": true
+  },
+  "air3": {
+   "anim": "air3",
+   "hits": [
+    2,
+    3,
+    4
+   ],
+   "box": [
+    -34,
+    40,
+    -52,
+    12
+   ],
+   "dmg": 1.2,
+   "kb": 170,
+   "up": 260,
+   "style": 26,
+   "lunge": 0,
+   "cancel": 6,
+   "air": true,
+   "both": true,
+   "name": "Sky Rend!"
+  },
+  "stab": {
+   "anim": "proneStab",
+   "hits": [
+    1
+   ],
+   "box": [
+    4,
+    56,
+    -14,
+    2
+   ],
+   "dmg": 0.9,
+   "kb": 60,
+   "up": -170,
+   "style": 14,
+   "lunge": 0,
+   "cancel": 2,
+   "prone": true
+  },
+  "a_shoot": {
+   "anim": "a_shoot",
+   "hits": [
+    2
+   ],
+   "dmg": 0.62,
+   "kb": 40,
+   "up": -40,
+   "style": 9,
+   "cancel": 3,
+   "arrow": true,
+   "aim": "fwd"
+  },
+  "a_shootUp": {
+   "anim": "a_shootUp",
+   "hits": [
+    2
+   ],
+   "dmg": 0.62,
+   "kb": 20,
+   "up": -90,
+   "style": 10,
+   "cancel": 3,
+   "arrow": true,
+   "aim": "up"
+  },
+  "a_air": {
+   "anim": "a_air",
+   "hits": [
+    2
+   ],
+   "dmg": 0.6,
+   "kb": 30,
+   "up": -150,
+   "style": 10,
+   "cancel": 3,
+   "arrow": true,
+   "aim": "fwd",
+   "air": true
+  },
+  "a_airUp": {
+   "anim": "a_airUp",
+   "hits": [
+    2
+   ],
+   "dmg": 0.6,
+   "kb": 20,
+   "up": -170,
+   "style": 10,
+   "cancel": 3,
+   "arrow": true,
+   "aim": "up",
+   "air": true
+  },
+  "a_airDown": {
+   "anim": "a_airDown",
+   "hits": [
+    2
+   ],
+   "dmg": 0.62,
+   "kb": 30,
+   "up": 120,
+   "style": 11,
+   "cancel": 3,
+   "arrow": true,
+   "aim": "down",
+   "air": true
+  },
+  "a_spiral": {
+   "anim": "a_spiral",
+   "hits": [
+    2,
+    4
+   ],
+   "dmg": 0.55,
+   "kb": 80,
+   "up": 220,
+   "style": 22,
+   "cancel": 6,
+   "arrow": true,
+   "aim": "down",
+   "air": true,
+   "fan": 3,
+   "name": "Spiral Shot!"
+  },
+  "a_low": {
+   "anim": "a_low",
+   "hits": [
+    2
+   ],
+   "dmg": 0.66,
+   "kb": 70,
+   "up": -170,
+   "style": 12,
+   "cancel": 3,
+   "arrow": true,
+   "aim": "low",
+   "prone": true
+  },
+  "a_charged": {
+   "anim": "a_charged",
+   "hits": [
+    4
+   ],
+   "dmg": 1.9,
+   "kb": 230,
+   "up": -120,
+   "style": 20,
+   "cancel": 5,
+   "arrow": true,
+   "aim": "fwd",
+   "heavy": true,
+   "big": true,
+   "name": "Charged Shot!"
+  },
+  "a_swing": {
+   "anim": "a_swing",
+   "hits": [
+    1,
+    2
+   ],
+   "box": [
+    -2,
+    34,
+    -40,
+    0
+   ],
+   "dmg": 0.7,
+   "kb": 260,
+   "up": -110,
+   "style": 12,
+   "lunge": 20,
+   "cancel": 3
+  },
+  "a_launch": {
+   "anim": "a_launch",
+   "hits": [
+    1,
+    2
+   ],
+   "box": [
+    -2,
+    36,
+    -56,
+    2
+   ],
+   "dmg": 0.7,
+   "kb": 20,
+   "up": -360,
+   "style": 16,
+   "lunge": 20,
+   "cancel": 3,
+   "launcher": true,
+   "name": "Bow Launcher!"
+  },
+  "m_wand": {
+   "anim": "m_wand",
+   "hits": [
+    2
+   ],
+   "dmg": 0.78,
+   "kb": 40,
+   "up": -40,
+   "style": 9,
+   "cancel": 3,
+   "spell": "wand",
+   "aim": "fwd"
+  },
+  "m_wandUp": {
+   "anim": "m_wandUp",
+   "hits": [
+    2
+   ],
+   "dmg": 0.78,
+   "kb": 20,
+   "up": -100,
+   "style": 10,
+   "cancel": 3,
+   "spell": "wand",
+   "aim": "up"
+  },
+  "m_wandDown": {
+   "anim": "m_wandDown",
+   "hits": [
+    2
+   ],
+   "dmg": 0.78,
+   "kb": 30,
+   "up": 80,
+   "style": 10,
+   "cancel": 3,
+   "spell": "wand",
+   "aim": "down"
+  },
+  "m_wandAir": {
+   "anim": "m_wandAir",
+   "hits": [
+    2
+   ],
+   "dmg": 0.74,
+   "kb": 30,
+   "up": -150,
+   "style": 10,
+   "cancel": 3,
+   "spell": "wand",
+   "aim": "fwd",
+   "air": true
+  },
+  "m_wandAirUp": {
+   "anim": "m_wandAirUp",
+   "hits": [
+    2
+   ],
+   "dmg": 0.74,
+   "kb": 20,
+   "up": -170,
+   "style": 10,
+   "cancel": 3,
+   "spell": "wand",
+   "aim": "up",
+   "air": true
+  },
+  "m_wandAirDown": {
+   "anim": "m_wandAirDown",
+   "hits": [
+    2
+   ],
+   "dmg": 0.76,
+   "kb": 30,
+   "up": 120,
+   "style": 11,
+   "cancel": 3,
+   "spell": "wand",
+   "aim": "down",
+   "air": true
+  },
+  "m_staff": {
+   "anim": "m_staff",
+   "hits": [
+    4
+   ],
+   "dmg": 1.75,
+   "kb": 120,
+   "up": -160,
+   "style": 22,
+   "cancel": 5,
+   "spell": "staff",
+   "aim": "fwd",
+   "rooted": true,
+   "staffCast": true,
+   "heavy": true
+  },
+  "m_staffUp": {
+   "anim": "m_staff",
+   "hits": [
+    4
+   ],
+   "dmg": 1.75,
+   "kb": 60,
+   "up": -220,
+   "style": 22,
+   "cancel": 5,
+   "spell": "staff",
+   "aim": "up",
+   "rooted": true,
+   "staffCast": true,
+   "heavy": true
+  },
+  "m_staffDown": {
+   "anim": "m_staff",
+   "hits": [
+    4
+   ],
+   "dmg": 1.75,
+   "kb": 60,
+   "up": 120,
+   "style": 22,
+   "cancel": 5,
+   "spell": "staff",
+   "aim": "down",
+   "rooted": true,
+   "staffCast": true,
+   "heavy": true
+  },
+  "m_prone": {
+   "anim": "m_prone",
+   "hits": [
+    2
+   ],
+   "dmg": 0.55,
+   "kb": 300,
+   "up": -110,
+   "style": 10,
+   "cancel": 3,
+   "spell": "sonic",
+   "prone": true
+  },
+  "m_thwack": {
+   "anim": "m_thwack",
+   "hits": [
+    1,
+    2
+   ],
+   "box": [
+    -2,
+    34,
+    -40,
+    0
+   ],
+   "dmg": 0.7,
+   "kb": 270,
+   "up": -110,
+   "style": 12,
+   "lunge": 20,
+   "cancel": 3
+  },
+  "m_launch": {
+   "anim": "m_launch",
+   "hits": [
+    1,
+    2
+   ],
+   "box": [
+    -2,
+    36,
+    -56,
+    2
+   ],
+   "dmg": 0.7,
+   "kb": 20,
+   "up": -360,
+   "style": 16,
+   "lunge": 20,
+   "cancel": 3,
+   "launcher": true
+  },
+  "j_cmd": {
+   "anim": "j_cmd",
+   "hits": [
+    2
+   ],
+   "dmg": 0.72,
+   "kb": 50,
+   "up": -40,
+   "style": 9,
+   "cancel": 3,
+   "cmd": "bite",
+   "aim": "fwd"
+  },
+  "j_cmdUp": {
+   "anim": "j_cmdUp",
+   "hits": [
+    2
+   ],
+   "dmg": 0.72,
+   "kb": 20,
+   "up": -120,
+   "style": 10,
+   "cancel": 3,
+   "cmd": "bite",
+   "aim": "up"
+  },
+  "j_cmdDown": {
+   "anim": "j_cmdDown",
+   "hits": [
+    2
+   ],
+   "dmg": 0.72,
+   "kb": 30,
+   "up": 80,
+   "style": 10,
+   "cancel": 3,
+   "cmd": "bite",
+   "aim": "down"
+  },
+  "j_cmdAir": {
+   "anim": "j_cmdAir",
+   "hits": [
+    2
+   ],
+   "dmg": 0.7,
+   "kb": 40,
+   "up": -150,
+   "style": 10,
+   "cancel": 3,
+   "cmd": "bite",
+   "aim": "fwd",
+   "air": true
+  },
+  "j_cmdAirUp": {
+   "anim": "j_cmdAirUp",
+   "hits": [
+    2
+   ],
+   "dmg": 0.7,
+   "kb": 20,
+   "up": -170,
+   "style": 10,
+   "cancel": 3,
+   "cmd": "bite",
+   "aim": "up",
+   "air": true
+  },
+  "j_cmdAirDown": {
+   "anim": "j_cmdAirDown",
+   "hits": [
+    2
+   ],
+   "dmg": 0.72,
+   "kb": 30,
+   "up": 120,
+   "style": 11,
+   "cancel": 3,
+   "cmd": "bite",
+   "aim": "down",
+   "air": true
+  },
+  "j_fire": {
+   "anim": "j_fire",
+   "hits": [
+    2
+   ],
+   "dmg": 0.55,
+   "kb": 60,
+   "up": -60,
+   "style": 18,
+   "cancel": 5,
+   "cmd": "breath",
+   "aim": "fwd",
+   "heavy": true
+  },
+  "j_push": {
+   "anim": "j_push",
+   "hits": [
+    1,
+    2
+   ],
+   "box": [
+    -2,
+    30,
+    -42,
+    0
+   ],
+   "dmg": 0.6,
+   "kb": 300,
+   "up": -90,
+   "style": 10,
+   "lunge": 14,
+   "cancel": 3
+  },
+  "j_throw": {
+   "anim": "j_throw",
+   "hits": [
+    2
+   ],
+   "box": [
+    -2,
+    32,
+    -56,
+    2
+   ],
+   "dmg": 0.65,
+   "kb": 10,
+   "up": -380,
+   "style": 16,
+   "lunge": 10,
+   "cancel": 3,
+   "launcher": true
+  }
+ },
+ "anims": {
+  "idle": {
+   "fps": 8,
+   "loop": true,
+   "frames": 16
+  },
+  "rest": {
+   "fps": 7,
+   "loop": true,
+   "frames": 16
+  },
+  "walk": {
+   "fps": 13,
+   "loop": true,
+   "frames": 12
+  },
+  "run": {
+   "fps": 16,
+   "loop": true,
+   "frames": 10
+  },
+  "land": {
+   "fps": 14,
+   "loop": false,
+   "frames": 3
+  },
+  "jump": {
+   "fps": 8,
+   "loop": false,
+   "frames": 4
+  },
+  "flip": {
+   "fps": 16,
+   "loop": false,
+   "frames": 6
+  },
+  "dash": {
+   "fps": 14,
+   "loop": false,
+   "frames": 5
+  },
+  "block": {
+   "fps": 5,
+   "loop": true,
+   "frames": 4
+  },
+  "slash": {
+   "fps": 16,
+   "loop": false,
+   "frames": 7
+  },
+  "rising": {
+   "fps": 16,
+   "loop": false,
+   "frames": 7
+  },
+  "thrust": {
+   "fps": 15,
+   "loop": false,
+   "frames": 7
+  },
+  "spin": {
+   "fps": 18,
+   "loop": false,
+   "frames": 8
+  },
+  "heavy": {
+   "fps": 14,
+   "loop": false,
+   "frames": 10
+  },
+  "air": {
+   "fps": 16,
+   "loop": false,
+   "frames": 6
+  },
+  "climb": {
+   "fps": 9,
+   "loop": true,
+   "frames": 8
+  },
+  "swim": {
+   "fps": 9,
+   "loop": true,
+   "frames": 8
+  },
+  "aegis": {
+   "fps": 16,
+   "loop": false,
+   "frames": 6
+  },
+  "air2": {
+   "fps": 16,
+   "loop": false,
+   "frames": 5
+  },
+  "air3": {
+   "fps": 18,
+   "loop": false,
+   "frames": 7
+  },
+  "plunge": {
+   "fps": 12,
+   "loop": true,
+   "frames": 2
+  },
+  "plungeStart": {
+   "fps": 16,
+   "loop": false,
+   "frames": 2
+  },
+  "plungeLand": {
+   "fps": 14,
+   "loop": false,
+   "frames": 5
+  },
+  "crouch": {
+   "fps": 5,
+   "loop": true,
+   "frames": 6
+  },
+  "slide": {
+   "fps": 14,
+   "loop": false,
+   "frames": 5
+  },
+  "prone": {
+   "fps": 5,
+   "loop": true,
+   "frames": 6
+  },
+  "crawl": {
+   "fps": 9,
+   "loop": true,
+   "frames": 8
+  },
+  "proneStab": {
+   "fps": 16,
+   "loop": false,
+   "frames": 4
+  },
+  "cheer": {
+   "fps": 10,
+   "loop": false,
+   "frames": 8
+  },
+  "hurt": {
+   "fps": 10,
+   "loop": false,
+   "frames": 3
+  },
+  "down": {
+   "fps": 8,
+   "loop": false,
+   "frames": 5
+  },
+  "whirl": {
+   "fps": 20,
+   "loop": false,
+   "frames": 13
+  },
+  "a_shoot": {
+   "fps": 22,
+   "loop": false,
+   "frames": 4
+  },
+  "a_shootUp": {
+   "fps": 22,
+   "loop": false,
+   "frames": 4
+  },
+  "a_shootDown": {
+   "fps": 22,
+   "loop": false,
+   "frames": 4
+  },
+  "a_air": {
+   "fps": 22,
+   "loop": false,
+   "frames": 4
+  },
+  "a_airUp": {
+   "fps": 22,
+   "loop": false,
+   "frames": 4
+  },
+  "a_airDown": {
+   "fps": 22,
+   "loop": false,
+   "frames": 4
+  },
+  "a_low": {
+   "fps": 22,
+   "loop": false,
+   "frames": 4
+  },
+  "a_rapid": {
+   "fps": 24,
+   "loop": false,
+   "frames": 7
+  },
+  "a_charged": {
+   "fps": 14,
+   "loop": false,
+   "frames": 6
+  },
+  "a_swing": {
+   "fps": 20,
+   "loop": false,
+   "frames": 5
+  },
+  "a_launch": {
+   "fps": 20,
+   "loop": false,
+   "frames": 5
+  },
+  "a_spiral": {
+   "fps": 18,
+   "loop": false,
+   "frames": 7
+  },
+  "m_wand": {
+   "fps": 20,
+   "loop": false,
+   "frames": 4
+  },
+  "m_wandUp": {
+   "fps": 20,
+   "loop": false,
+   "frames": 4
+  },
+  "m_wandDown": {
+   "fps": 20,
+   "loop": false,
+   "frames": 4
+  },
+  "m_wandAir": {
+   "fps": 20,
+   "loop": false,
+   "frames": 4
+  },
+  "m_wandAirUp": {
+   "fps": 20,
+   "loop": false,
+   "frames": 4
+  },
+  "m_wandAirDown": {
+   "fps": 20,
+   "loop": false,
+   "frames": 4
+  },
+  "m_staff": {
+   "fps": 6,
+   "loop": false,
+   "frames": 6
+  },
+  "m_prone": {
+   "fps": 16,
+   "loop": false,
+   "frames": 4
+  },
+  "m_thwack": {
+   "fps": 20,
+   "loop": false,
+   "frames": 5
+  },
+  "m_launch": {
+   "fps": 20,
+   "loop": false,
+   "frames": 5
+  },
+  "j_cmd": {
+   "fps": 18,
+   "loop": false,
+   "frames": 5
+  },
+  "j_cmdUp": {
+   "fps": 18,
+   "loop": false,
+   "frames": 5
+  },
+  "j_cmdDown": {
+   "fps": 18,
+   "loop": false,
+   "frames": 5
+  },
+  "j_cmdAir": {
+   "fps": 18,
+   "loop": false,
+   "frames": 5
+  },
+  "j_cmdAirUp": {
+   "fps": 18,
+   "loop": false,
+   "frames": 5
+  },
+  "j_cmdAirDown": {
+   "fps": 18,
+   "loop": false,
+   "frames": 5
+  },
+  "j_fire": {
+   "fps": 12,
+   "loop": false,
+   "frames": 7
+  },
+  "j_push": {
+   "fps": 18,
+   "loop": false,
+   "frames": 5
+  },
+  "j_throw": {
+   "fps": 18,
+   "loop": false,
+   "frames": 5
+  }
+ },
+ "themes": {
+  "meadow": {
+   "grass": [
+    "#3f8f2e",
+    "#5ab43c",
+    "#7fd35a",
+    "#b4ef86"
+   ],
+   "dirt": [
+    "#6b4424",
+    "#8a5a34",
+    "#a8744a",
+    "#c49468"
+   ],
+   "under": "#5a3a1f",
+   "rope": [
+    "#8a5a2c",
+    "#c8955a"
+   ]
+  },
+  "crimson": {
+   "grass": [
+    "#4a0e14",
+    "#6e1820",
+    "#922830",
+    "#c04048"
+   ],
+   "dirt": [
+    "#1e0a0c",
+    "#2e1214",
+    "#421a1e",
+    "#5a2428"
+   ],
+   "under": "#14060a",
+   "rope": [
+    "#4a2a20",
+    "#7a4a38"
+   ]
+  },
+  "interior": {
+   "grass": [
+    "#6e4428",
+    "#8e5c36",
+    "#b07a4a",
+    "#d8a870"
+   ],
+   "dirt": [
+    "#4a2e1a",
+    "#6e4428",
+    "#8e5c36",
+    "#b07a4a"
+   ],
+   "under": "#3a2414",
+   "rope": [
+    "#8a5a2c",
+    "#c8955a"
+   ]
+  },
+  "ridge": {
+   "grass": [
+    "#8a6a24",
+    "#b88a30",
+    "#dab050",
+    "#f2d27a"
+   ],
+   "dirt": [
+    "#5a3a22",
+    "#7a5030",
+    "#9a6a40",
+    "#bc8c5c"
+   ],
+   "under": "#4a2e18",
+   "rope": [
+    "#8a5a2c",
+    "#c8955a"
+   ]
+  },
+  "lair": {
+   "grass": [
+    "#2a3a2a",
+    "#3a4e38",
+    "#546a4a",
+    "#6e8a5e"
+   ],
+   "dirt": [
+    "#2a2420",
+    "#3c332c",
+    "#524638",
+    "#6a5a48"
+   ],
+   "under": "#1e1a16",
+   "rope": [
+    "#6e5a3c",
+    "#a88c5a"
+   ]
+  },
+  "hollow": {
+   "grass": [
+    "#2b5e3a",
+    "#3f7e4c",
+    "#5ea36a",
+    "#8fd08c"
+   ],
+   "dirt": [
+    "#34313a",
+    "#4a4550",
+    "#625c69",
+    "#7d7684"
+   ],
+   "under": "#2a2730",
+   "rope": [
+    "#6e5a3c",
+    "#a88c5a"
+   ]
+  }
+ },
+ "armor": [
+  {
+   "lv": 1,
+   "name": "Training Garb",
+   "desc": "A pinstriped academy tunic, arm warmers and sturdy boots. Every adventurer starts here.",
+   "hp": 0,
+   "def": 0,
+   "coins": 0,
+   "mats": {},
+   "look": {
+    "vest": 15260848,
+    "shirt": 16185074,
+    "pants": 3814964,
+    "boots": 3880242,
+    "bracer": 2959920,
+    "trim": 14276818,
+    "scarf": 1907232,
+    "pauldron": 0,
+    "cape": null,
+    "glow": null,
+    "plate": false,
+    "crown": null
+   }
+  },
+  {
+   "lv": 10,
+   "name": "Iron Vanguard",
+   "desc": "Riveted iron and a blue tabard. Real armor at last.",
+   "hp": 40,
+   "def": 8,
+   "coins": 600,
+   "mats": {
+    "red": 12,
+    "rat": 8
+   },
+   "look": {
+    "vest": 10726843,
+    "shirt": 4157365,
+    "pants": 3885675,
+    "boots": 5922666,
+    "bracer": 10726843,
+    "trim": 14279146,
+    "scarf": 4157365,
+    "pauldron": 1,
+    "cape": null,
+    "glow": null,
+    "plate": true,
+    "crown": null
+   }
+  },
+  {
+   "lv": 20,
+   "name": "Knight's Bulwark",
+   "desc": "Polished silver with gold trim and a proper red cape.",
+   "hp": 100,
+   "def": 18,
+   "coins": 2500,
+   "mats": {
+    "silver": 15,
+    "boar": 10
+   },
+   "look": {
+    "vest": 14936561,
+    "shirt": 2969507,
+    "pants": 2831704,
+    "boots": 8028816,
+    "bracer": 14936561,
+    "trim": 16765786,
+    "scarf": 12597547,
+    "pauldron": 2,
+    "cape": 13120554,
+    "glow": null,
+    "plate": true,
+    "crown": null
+   }
+  },
+  {
+   "lv": 30,
+   "name": "Mountain King",
+   "desc": "Bronze plate shaped like the peaks Rock is named for.",
+   "hp": 180,
+   "def": 30,
+   "coins": 7000,
+   "mats": {
+    "evileye": 19,
+    "hand": 13
+   },
+   "look": {
+    "vest": 11893561,
+    "shirt": 2060124,
+    "pants": 3095347,
+    "boots": 5978908,
+    "bracer": 11893561,
+    "trim": 16765786,
+    "scarf": 2001515,
+    "pauldron": 3,
+    "cape": 2001515,
+    "glow": null,
+    "plate": true,
+    "crown": 16765786
+   }
+  },
+  {
+   "lv": 40,
+   "name": "Titan Aegis",
+   "desc": "Obsidian plates humming with pale blue runes.",
+   "hp": 280,
+   "def": 45,
+   "coins": 16000,
+   "mats": {
+    "torso": 22,
+    "hairball": 15
+   },
+   "look": {
+    "vest": 3027280,
+    "shirt": 1316394,
+    "pants": 1842998,
+    "boots": 3027280,
+    "bracer": 3027280,
+    "trim": 16763196,
+    "scarf": 5974662,
+    "pauldron": 4,
+    "cape": 5974662,
+    "glow": 6219519,
+    "plate": true,
+    "crown": 16763196
+   }
+  },
+  {
+   "lv": 50,
+   "name": "Worldstone Regalia",
+   "desc": "White-gold armor with shards of sky orbiting its bearer.",
+   "hp": 420,
+   "def": 65,
+   "coins": 32000,
+   "mats": {
+    "cknight": 26,
+    "ccrusader": 18
+   },
+   "look": {
+    "vest": 16119807,
+    "shirt": 7321599,
+    "pants": 14542335,
+    "boots": 16119807,
+    "bracer": 16119807,
+    "trim": 16766814,
+    "scarf": 16748496,
+    "pauldron": 4,
+    "cape": 16777215,
+    "glow": 16752624,
+    "plate": true,
+    "crown": 16766814,
+    "shards": true
+   }
+  }
+ ],
+ "weapon": [
+  {
+   "name": "Training Sword & Buckler",
+   "lv": 1,
+   "atk": 0,
+   "def": 0,
+   "coins": 0,
+   "mats": {},
+   "look": {
+    "blade": 13225686,
+    "len": 0.62,
+    "guard": 8015658,
+    "shape": "round",
+    "shield": 11038783,
+    "rim": 7029800,
+    "glow": null
+   }
+  },
+  {
+   "name": "Bronze Edge & Round",
+   "lv": 5,
+   "atk": 6,
+   "def": 2,
+   "coins": 150,
+   "mats": {
+    "green": 10,
+    "blue": 6
+   },
+   "look": {
+    "blade": 14260821,
+    "len": 0.68,
+    "guard": 9067050,
+    "shape": "round",
+    "shield": 13208138,
+    "rim": 9067050,
+    "glow": null
+   }
+  },
+  {
+   "name": "Iron Blade & Heater",
+   "lv": 10,
+   "atk": 14,
+   "def": 4,
+   "coins": 400,
+   "mats": {
+    "red": 12,
+    "rat": 8
+   },
+   "look": {
+    "blade": 14212838,
+    "len": 0.74,
+    "guard": 5922666,
+    "shape": "heater",
+    "shield": 7240591,
+    "rim": 14212838,
+    "glow": null
+   }
+  },
+  {
+   "name": "Steel Longsword & Kite",
+   "lv": 15,
+   "atk": 24,
+   "def": 7,
+   "coins": 900,
+   "mats": {
+    "ferret": 13,
+    "red": 9
+   },
+   "look": {
+    "blade": 15660026,
+    "len": 0.8,
+    "guard": 4157365,
+    "shape": "kite",
+    "shield": 4157365,
+    "rim": 15660026,
+    "glow": null
+   }
+  },
+  {
+   "name": "Knight's Oath",
+   "lv": 20,
+   "atk": 36,
+   "def": 10,
+   "coins": 1700,
+   "mats": {
+    "silver": 15,
+    "boar": 10
+   },
+   "look": {
+    "blade": 16120063,
+    "len": 0.86,
+    "guard": 16765786,
+    "shape": "kite",
+    "shield": 14936561,
+    "rim": 16765786,
+    "glow": null
+   }
+  },
+  {
+   "name": "Silverleaf",
+   "lv": 25,
+   "atk": 50,
+   "def": 14,
+   "coins": 2900,
+   "mats": {
+    "tortoise": 17,
+    "gold": 11
+   },
+   "look": {
+    "blade": 15269874,
+    "len": 0.9,
+    "guard": 9429936,
+    "shape": "kite",
+    "shield": 15269874,
+    "rim": 6280090,
+    "glow": 10485712
+   }
+  },
+  {
+   "name": "Stormcaller",
+   "lv": 30,
+   "atk": 66,
+   "def": 18,
+   "coins": 4500,
+   "mats": {
+    "evileye": 19,
+    "hand": 13
+   },
+   "look": {
+    "blade": 12576511,
+    "len": 0.95,
+    "guard": 2969507,
+    "shape": "kite",
+    "shield": 2969507,
+    "rim": 12576511,
+    "glow": 7329023
+   }
+  },
+  {
+   "name": "Emberheart",
+   "lv": 35,
+   "atk": 84,
+   "def": 23,
+   "coins": 6800,
+   "mats": {
+    "feet": 20,
+    "head": 14
+   },
+   "look": {
+    "blade": 16760970,
+    "len": 1,
+    "guard": 9054746,
+    "shape": "tower",
+    "shield": 9054746,
+    "rim": 16763196,
+    "glow": 16747069
+   }
+  },
+  {
+   "name": "Verdant Crown",
+   "lv": 40,
+   "atk": 104,
+   "def": 28,
+   "coins": 9800,
+   "mats": {
+    "torso": 22,
+    "hairball": 15
+   },
+   "look": {
+    "blade": 13172656,
+    "len": 1.05,
+    "guard": 3111482,
+    "shape": "tower",
+    "shield": 3111482,
+    "rim": 16765786,
+    "glow": 9109354
+   }
+  },
+  {
+   "name": "Starforged",
+   "lv": 45,
+   "atk": 126,
+   "def": 34,
+   "coins": 13500,
+   "mats": {
+    "cknight": 24,
+    "ccrusader": 16
+   },
+   "look": {
+    "blade": 15062271,
+    "len": 1.1,
+    "guard": 3811947,
+    "shape": "tower",
+    "shield": 3811947,
+    "rim": 15062271,
+    "glow": 12749567
+   }
+  },
+  {
+   "name": "Worldsplitter",
+   "lv": 50,
+   "atk": 150,
+   "def": 40,
+   "coins": 18000,
+   "mats": {
+    "cknight": 26,
+    "ccrusader": 18
+   },
+   "look": {
+    "blade": 16777215,
+    "len": 1.16,
+    "guard": 16766814,
+    "shape": "tower",
+    "shield": 16119807,
+    "rim": 16766814,
+    "glow": 16773544
+   }
+  }
+ ],
+ "ranks": [
+  {
+   "r": "F",
+   "min": 0,
+   "t": "Flailing"
+  },
+  {
+   "r": "E",
+   "min": 40,
+   "t": "Eager"
+  },
+  {
+   "r": "D",
+   "min": 100,
+   "t": "Decent"
+  },
+  {
+   "r": "C",
+   "min": 180,
+   "t": "Cool"
+  },
+  {
+   "r": "B",
+   "min": 290,
+   "t": "Bold"
+  },
+  {
+   "r": "A",
+   "min": 430,
+   "t": "Awesome"
+  },
+  {
+   "r": "S",
+   "min": 610,
+   "t": "Stylish!"
+  },
+  {
+   "r": "SS",
+   "min": 840,
+   "t": "Spectacular!!"
+  },
+  {
+   "r": "SSS",
+   "min": 1120,
+   "t": "Slime Slayer!!!"
+  },
+  {
+   "r": "SSS+",
+   "min": 1460,
+   "t": "Super Sword Saint"
+  }
+ ],
+ "rankMult": [
+  0.2,
+  0.35,
+  0.5,
+  0.7,
+  1,
+  1.4,
+  2,
+  2.8,
+  3.8,
+  5.5
+ ],
+ "rankCap": 1800,
+ "jobs": [
+  {
+   "id": "trainee",
+   "name": "Sword Trainee",
+   "lv": 1,
+   "targets": 1,
+   "color": "#c9d3e6"
+  },
+  {
+   "id": "swordsman",
+   "name": "Swordsman",
+   "lv": 10,
+   "targets": 3,
+   "color": "#7fd35a"
+  },
+  {
+   "id": "knight",
+   "name": "Knight",
+   "lv": 30,
+   "targets": 6,
+   "color": "#6fb5ff"
+  },
+  {
+   "id": "hero",
+   "name": "Hero",
+   "lv": 75,
+   "targets": 9,
+   "color": "#ffc83d"
+  },
+  {
+   "id": "master",
+   "name": "Sword Master",
+   "lv": 100,
+   "targets": 12,
+   "color": "#ff7eb6"
+  },
+  {
+   "id": "saint",
+   "name": "Sword Saint",
+   "lv": 150,
+   "targets": 15,
+   "color": "#fff3b0"
+  },
+  {
+   "id": "avatar",
+   "name": "Sword Avatar",
+   "lv": 200,
+   "targets": 18,
+   "color": "#b388ff"
+  }
+ ]
+}
