@@ -1,0 +1,6 @@
+# Godot's local cache and exported builds
+godot/.godot/
+godot/export/
+*.exe
+*.pck
+node_modules/
