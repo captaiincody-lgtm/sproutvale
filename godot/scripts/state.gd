@@ -80,6 +80,18 @@ class Player:
 	var kdT := 0.0
 	var kdPhase := ""
 	var kdBack := false
+	# the Abyss (Godot-only areas beyond the Warlord's Keep)
+	var abyssB := 0.0            # Abyss buildup 0–100; full = the Abyss debuff
+	var abyssT := 0.0            # seconds of the Abyss debuff left
+	var abyssDrain := 0.0        # share of max HP the Abyss has eaten (up to 0.5)
+	var lastBuild := -9.0
+	var blindT := 0.0            # Inked: attacks miss more often
+	var confuseT := 0.0          # Confused: left and right are swapped
+	var tumbleT := 0.0           # knocked off balance: spinning, then floating down
+	var tumbleDur := 0.0
+	var spin := 0.0
+	var held = null              # {e, phase, t…} while a tentacle holds you, or the Dreamer chews on you
+	var hurtN := 0               # counts hits that really landed (not dodged, blocked or in god mode)
 
 
 class Mob:
@@ -159,6 +171,10 @@ class Mob:
 	var life := 0.0
 	var dropBlock := false
 	var dying := false           # the Warlord on one knee, before he falls
+	# the Dreamer's eyes, mouth and tentacles: hits on them hurt the Dreamer
+	var bossPart := false
+	var partMul := 1.0
+	var data := {}               # per-monster AI scratch space for the Abyss monsters
 
 	func clone() -> Mob:
 		var m := Mob.new()

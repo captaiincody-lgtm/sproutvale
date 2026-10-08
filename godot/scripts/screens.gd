@@ -292,7 +292,7 @@ func _settingsBody(x: float, y: float, w: float) -> void:
 	if S.get("god"):
 		if inGame:
 			var bx = x
-			for b in [["Go to Doc Croc", "lair"], ["Go to the Warlord", "crimson5"], ["+10 levels", "lv"]]:
+			for b in [["Go to Doc Croc", "lair"], ["Go to the Warlord", "crimson5"], ["Go to The Dreamer", "abyss5"], ["+10 levels", "lv"]]:
 				var bw = uW(b[0], 9) + 18
 				uButton(Rect2(bx, y + 4, bw, 20), b[0], func(): _godGo(b[1]), {"bg": css("#ffe8a8")})
 				bx += bw + 6

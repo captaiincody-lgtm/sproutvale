@@ -19,6 +19,9 @@ func _ready() -> void:
 	data = _json("res://data/game_data.json")
 	hero = _json(ART + "hero/hero.json")
 	mobs = _json(ART + "mobs/mobs.json")
+	# the areas beyond the Warlord's Keep keep their art in art/abyss (same layout as art/)
+	if FileAccess.file_exists(ART + "abyss/mobs/mobs.json"):
+		mobs.sets.merge(_json(ART + "abyss/mobs/mobs.json").sets)
 	font = _font("res://fonts/PressStart2P-Regular.ttf")
 	emoji = load("res://fonts/NotoColorEmoji.ttf")
 	ui_font = load("res://fonts/Fredoka-700.ttf")
@@ -30,6 +33,8 @@ func _ready() -> void:
 func tex(path: String) -> Texture2D:
 	if not _tex.has(path):
 		_tex[path] = load(ART + path) if ResourceLoader.exists(ART + path) else null
+		if _tex[path] == null and ResourceLoader.exists(ART + "abyss/" + path):
+			_tex[path] = load(ART + "abyss/" + path)
 		if _tex[path] == null:
 			push_warning("missing art: " + path)
 	return _tex[path]

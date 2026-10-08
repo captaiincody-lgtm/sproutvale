@@ -16,7 +16,13 @@ func configureHome(cls: String) -> void:
 ## surfaces slimes (and drops) can stand on: the floor plus every platform
 func surfacesOf(m: Dictionary) -> Array:
 	var s = []
-	if m.get("pond"):
+	if m.get("floor"):
+		# the Abyss: the ground comes in pieces, stepping down into the deep
+		var sea = m.get("sea")
+		for f in m.floor:
+			var wet: bool = sea != null and f[0] >= sea.x0 - 1 and (sea.surface == null or f[2] > sea.surface)
+			s.append({"x0": float(f[0]), "x1": float(f[1]), "y": float(f[2]), "floor": true, "water": false, "sea": wet})
+	elif m.get("pond"):
 		var p: Dictionary = m.pond
 		s.append({"x0": 20.0, "x1": float(p.x0), "y": float(m.floorY), "floor": true, "water": false})
 		s.append({"x0": float(p.x1), "x1": m.w - 20.0, "y": float(m.floorY), "floor": true, "water": false})
@@ -56,7 +62,7 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 	surfaces = surfacesOf(M)
 	tufts.clear()
 	for s in surfaces:
-		if s.water or M.get("indoor") or (M.get("tree") and not s.floor):
+		if s.water or M.get("indoor") or M.get("floor") or M.get("theme") == "bubble" or (M.get("tree") and not s.floor):
 			continue
 		var x: float = s.x0 + 3
 		while x < s.x1 - 3:
@@ -95,11 +101,14 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 	scene = null
 	if M.get("boss"):
 		P.face = 1   # arenas: you always walk in facing the boss
-	var bk = "warlord" if M.get("boss") == "warlord" else "croc"
-	M.pedestal = {"x": roundi(M.w * (0.5 if bk == "warlord" else 0.55)), "kind": bk} if M.get("boss") and save.trophies.get(bk) else null
+	var bk = M.boss if M.get("boss") in ["warlord", "dreamer"] else "croc"
+	M.pedestal = {"x": roundi(M.w * (0.55 if bk == "croc" else 0.5)), "kind": bk} if M.get("boss") and save.trophies.get(bk) else null
+	abyssOnLoad()
 	if M.get("boss") and not M.pedestal:
 		if M.boss == "warlord":
 			spawnWarlord()
+		elif M.boss == "dreamer":
+			spawnDreamer()
 		else:
 			spawnBoss()
 	if inGame and not M.get("boss"):
@@ -168,38 +177,69 @@ func obeliskAt():
 
 # ================================================================ the pond
 
+## the water on this map: the pond, or the Abyss's sea ({x0, x1, surface}; surface -1e9 when the whole map is underwater)
+func waterBox():
+	if M.is_empty():
+		return null
+	if M.get("pond") != null:
+		return M.pond
+	var sea = M.get("sea")
+	if sea == null:
+		return null
+	return {"x0": sea.x0, "x1": sea.x1, "surface": sea.surface if sea.surface != null else -1e9, "sea": true}
+
+
+## the height of the ground at x (the Abyss maps step down; everywhere else it's the floor)
+func groundAt(x: float) -> float:
+	var fl = M.get("floor")
+	if not fl:
+		return float(M.floorY)
+	var g = INF
+	for f in fl:
+		if x >= f[0] - 0.5 and x <= f[1] + 0.5:
+			g = minf(g, f[2])
+	if g == INF:
+		return float(fl[0][2]) if x < fl[0][0] else float(fl[-1][2])
+	return g
+
+
 func inWater() -> bool:
-	return not M.is_empty() and M.get("pond") != null and P.x > M.pond.x0 and P.x < M.pond.x1 and P.y - 4 > M.pond.surface
+	var W = waterBox()
+	return W != null and P.x > W.x0 and P.x < W.x1 and P.y - 4 > W.surface
 
 
 func initWater() -> void:
 	Water.cols = []
 	Water.vel = []
-	if not M.get("pond"):
+	var W = waterBox()
+	if W == null or W.surface < -1e8:
 		return
-	Water.x0 = float(M.pond.x0)
-	var n = ceili((M.pond.x1 - M.pond.x0) / Water.step) + 1
+	Water.x0 = float(W.x0)
+	var n = ceili((W.x1 - W.x0) / Water.step) + 1
 	for i in n:
 		Water.cols.append(0.0)
 		Water.vel.append(0.0)
 
 
 func splash(x: float, k: float) -> void:
-	if not M.get("pond"):
+	var W = waterBox()
+	if W == null or W.surface < -1e8:
 		return
 	var i = roundi((x - Water.x0) / Water.step)
 	for d in range(-3, 4):
 		var j = i + d
 		if j >= 0 and j < Water.vel.size():
 			Water.vel[j] += (1.0 if d == 0 else 0.5) * k * 90
-	var y: float = M.pond.surface
+	var y: float = W.surface
+	var dark: bool = W.get("sea", false)
 	for n in int(10 + k * 10):
-		part(x + rand(-6, 6), y - 1, rand(-70, 70) * (0.5 + k * 0.5), rand(-200, -60) * (0.6 + k * 0.4), rand(0.35, 0.7), "#cfeaff" if n % 3 else "#ffffff", 700, 1 if n % 4 else 2, y)
+		part(x + rand(-6, 6), y - 1, rand(-70, 70) * (0.5 + k * 0.5), rand(-200, -60) * (0.6 + k * 0.4), rand(0.35, 0.7), ("#8a5aa8" if n % 3 else "#d8b8f0") if dark else ("#cfeaff" if n % 3 else "#ffffff"), 700, 1 if n % 4 else 2, y)
 	Sfx.play("splash", 0.8 + k * 0.35)
 
 
 func updateWater(dt: float) -> void:
-	if not M.get("pond") or Water.cols.is_empty():
+	var W = waterBox()
+	if W == null or Water.cols.is_empty():
 		return
 	var c: Array = Water.cols
 	var v: Array = Water.vel
@@ -221,7 +261,7 @@ func updateWater(dt: float) -> void:
 			if randf() < 0.5:
 				v[rint(0, n - 1)] += rand(4, 10)
 	# swimmers stir the water
-	if inWater() and absf(P.vx) > 20 and absf(P.y - 30 - M.pond.surface) < 20:
+	if inWater() and absf(P.vx) > 20 and absf(P.y - 30 - W.surface) < 20:
 		var i = roundi((P.x - Water.x0) / Water.step)
 		if i > 0 and i < n:
 			v[i] += P.vx * 0.02
@@ -274,7 +314,7 @@ func updateWorld(dt: float) -> void:
 	World.ambT -= dt
 	if World.ambT <= 0:
 		World.ambT = 0.3
-		var outdoors: bool = inGame and not M.get("indoor") and M.get("theme") != "crimson"
+		var outdoors: bool = inGame and not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble"])
 		Sfx.ambience(minf(1.3, World.rain) if outdoors else 0.0, minf(1.5, World.wind) if outdoors else 0.0)
 
 

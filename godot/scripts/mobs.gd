@@ -36,6 +36,9 @@ func spawnSlime(initial := false) -> void:
 	var x = 0.0
 	var guard = 0
 	var shiny = randf() < 0.03
+	if T.get("habitat"):   # the Abyss's monsters live on land, in the air, in open water or on the sea floor
+		spawnAbyssMob(type, T, initial, shiny)
+		return
 	var dry = surfaces.filter(func(q): return not q.water)
 	while true:
 		var wt = 0.0
@@ -107,6 +110,8 @@ func updateSlimes(dt: float) -> void:
 		if e.boss:
 			if e.bossKind == "warlord":
 				updateWarlord(e, dt)
+			elif e.bossKind == "dreamer":
+				updateDreamer(e, dt)
 			else:
 				updateBoss(e, dt)
 			if e.state == "dead" and e.deadT > 2.4 and scene == null:
@@ -115,6 +120,10 @@ func updateSlimes(dt: float) -> void:
 			continue
 		if e.bossEye:
 			updateBossEye(e, dt)
+			i -= 1
+			continue
+		if e.bossPart:
+			updatePart(e, dt)
 			i -= 1
 			continue
 		if e.state == "dead":
@@ -310,6 +319,14 @@ func damageSlime(e, mv: Dictionary, _from = null) -> void:
 			Sfx.tone(1200, 0.1, "square", 0.06, 600)
 			floatText(e.x, e.y - 14, "Bounced!", "call")
 		return
+	if e.bossPart:   # the Dreamer's eyes, mouth and tentacles pass the hit on to the Dreamer
+		damagePart(e, mv)
+		return
+	if e.state != "dead" and P.blindT > 0 and randf() < 0.4:   # Inked: a blind swing
+		floatText(e.x, e.y - e.h - 6, "Miss", "call")
+		return
+	if e.bossKind == "dreamer" and not dreamerHitOk(e, mv):
+		return
 	if mv.get("launcher"):
 		P.juggle = e
 		P.juggleT = gameTime
@@ -337,7 +354,7 @@ func damageSlime(e, mv: Dictionary, _from = null) -> void:
 	e.flash = 0.1; e.showBar = 3; e.aggro = true
 	floatText(e.x, e.y - e.h - 6, str(int(dmg)), "crit" if crit else "dmg")
 	var dir: int = (int(sgn(e.x - P.x)) if e.x != P.x else P.face) if mv.get("both") else P.face
-	var heavy = 0.6 if e.T.get("metal") else 1.0
+	var heavy: float = e.T.get("kb", 0.6 if e.T.get("metal") else 1.0)
 	sparks(e.x - dir * 4, e.y - e.h * 0.6, "#ffe14d" if crit else "#ffffff", 10 if crit else 6)
 	goo(e.x, e.y - e.h * 0.5, e.T.color, 3)
 	hitstop = maxf(hitstop, 0.09 if mv.get("heavy") else 0.045)
@@ -384,7 +401,10 @@ func killSlime(e) -> void:
 		killBoss(e)
 		return
 	e.state = "dead"; e.deadT = 0; e.hp = 0
-	if e.T.get("critter"):
+	if e.T.get("habitat"):   # Abyss monsters: a deep, wet thud
+		Sfx.squish()
+		Sfx.tone(110, 0.35, "sine", 0.1, 45)
+	elif e.T.get("critter"):
 		Sfx.tone(1700, 0.1, "square", 0.07, 900)
 		Sfx.tone(1200, 0.15, "square", 0.05, 600, 0.08)
 	else:
@@ -441,6 +461,8 @@ func killSlime(e) -> void:
 
 func crimsonAI(e, T: Dictionary, dt: float, dx: float, dy: float, pb: Dictionary, grounded: bool) -> bool:
 	var ai: String = T.ai
+	if ai == "abyss":
+		return abyssAI(e, T, dt, dx, dy, pb)
 	var near = absf(dx) < 150 and absf(dy) < 90 and P.state != "dead"
 	var sp: float = T.speed
 	var hit = func(mul: float, knock := false):

@@ -46,6 +46,8 @@ func spawnBoss() -> void:
 
 
 func bossBox(e) -> Dictionary:
+	if e.bossKind == "dreamer":   # the brow between its eyes (the eyes, mouth and tentacles are separate parts)
+		return hbox(e.x - 36, e.x + 36, e.y - 30 + e.data.get("sink", 0.0), e.y - 2 + e.data.get("sink", 0.0))
 	if e.bossKind == "warlord":
 		return hbox(e.x - 22, e.x + 22, e.y - 118, e.y)
 	if e.mode == "stand" or e.act in ["rise", "swipe", "stomp", "drop"]:
@@ -333,16 +335,16 @@ func killBoss(e) -> void:
 	Sfx.tone(80, 1.4, "sawtooth", 0.14, 40)
 	shake = 10
 	slowmo = 1.2
-	var coinN = 50 if kind == "warlord" else 26
+	var coinN = {"warlord": 50, "dreamer": 60}.get(kind, 26)
 	for i in coinN:
 		var d = S.Drop.new()
 		d.kind = "coin"; d.x = e.x; d.y = e.y - 30; d.vx = rand(-160, 160); d.vy = rand(-340, -180)
-		d.val = rint(14, 24) * (3 if kind == "warlord" else 1)
+		d.val = rint(14, 24) * {"warlord": 3, "dreamer": 5}.get(kind, 1)
 		d.surfY = M.floorY; d.x0 = 20; d.x1 = M.w - 20; d.spin = randf() * 4
 		drops.append(d)
 	var bx = roundi(mobExp(e) * (1 + cardBonus()))
 	gainExp(bx)
-	floatText(e.x, e.y - 130, "+%d EXP" % bx, "exp")
+	floatText(e.x, e.y - (40 if kind == "dreamer" else 130), "+%d EXP" % bx, "exp")
 	dropBox(e, kind)
 	saveDirty = true
 	c.kills += 1
@@ -360,6 +362,8 @@ func killBoss(e) -> void:
 					part(MAPS.lair.w - 40 + rand(-10, 10), M.floorY - rand(0, 50), rand(-60, 60), rand(-90, 10), 0.9, "#ff3a4a" if i % 2 else "#ffd0d6", 0, 2)
 				banner("A portal tears open", "A blood-red light spills from the east side of the lair")
 				Sfx.rankUp(9)))
+	elif kind == "dreamer":
+		dreamerFalls(e, firstKill)
 	elif kind == "warlord":
 		# the Warlord sinks to one knee; the first time, he has something to say before he falls
 		e.dying = true
@@ -385,7 +389,7 @@ func killBoss(e) -> void:
 	var arena = M
 	later(2.6, func():
 		if arena.get("boss") and arena.get("pedestal") == null:
-			arena.pedestal = {"x": roundi(arena.w * (0.5 if kind == "warlord" else 0.55)), "kind": kind})
+			arena.pedestal = {"x": roundi(arena.w * (0.55 if kind == "croc" else 0.5)), "kind": kind})
 	styleAdd(120, "boss")
 
 
@@ -401,11 +405,11 @@ func warlordFalls(e) -> void:
 		part(e.x + rand(-20, 20), e.y - rand(10, 90), rand(-50, 50), rand(-120, -30), rand(0.6, 1.1), "#ff3a4a" if i % 2 else "#2a0a10", 200, 2)
 
 
-## a sealed portal on the east side of the Warlord's Keep: the next area isn't built yet
+## the Dreamer's Gate on the east side of the Warlord's Keep: down into the Abyss
 func openDreamGate(fanfare := false) -> void:
 	var K: Dictionary = MAPS.crimson5
-	if not K.portals.any(func(p): return p.to == "dreamer"):
-		K.portals.append({"x": K.w - 40, "to": "dreamer", "tx": 70, "label": "The Dreamer's Gate", "sealed": true})
+	if not K.portals.any(func(p): return p.to == "abyss1"):
+		K.portals.append({"x": K.w - 40, "to": "abyss1", "tx": 70, "label": "The Dreamer's Gate"})
 	if not fanfare or mapId != "crimson5":
 		return
 	shake = 8
@@ -505,6 +509,8 @@ func castBossSkill(s: Dictionary) -> void:
 		pVials.append({"x": sx2, "y": sy2, "vx": (tx - sx2) / tt, "vy": (gy - 6 - sy2 - 0.5 * 700 * tt * tt) / tt, "spin": 0.0, "gy": gy})
 		Sfx.whoosh(0.9, false)
 		floatText(P.x, P.y - 58, "Mix complete!", "call")
+	elif s.id == "devour":
+		castDevour()
 	elif s.id == "crimsonRain":
 		PRain.t = 5.0
 		PRain.tick = 0.3
@@ -971,6 +977,8 @@ func obeliskElite(o: Dictionary) -> void:
 	var critter: bool = T.get("critter", false)
 	e.w = ((16.0 if type == "rat" else 22.0) if critter else 18.0 * T.size) * 3
 	e.h = (10.0 if critter else 16.0 * T.size) * 3
+	if T.get("habitat"):
+		abyssElite(e)
 	slimes.append(e)
 	banner("ELITE %s" % T.name.to_upper(), "10× health, 3× damage, and big rewards")
 	Sfx.tone(60, 1.4, "sawtooth", 0.12, 40)
@@ -1030,19 +1038,21 @@ func summonFromPedestal() -> void:
 	shake = 8
 	Sfx.thunder()
 	for i in 30:
-		part(pd.x + rand(-12, 12), M.floorY - rand(0, 40), rand(-60, 60), rand(-140, -40), 0.8, "#ff3a4a" if pd.kind == "warlord" else "#8fff6a", 0, 2)
+		part(pd.x + rand(-12, 12), M.floorY - rand(0, 40), rand(-60, 60), rand(-140, -40), 0.8, {"warlord": "#ff3a4a", "dreamer": "#c25cff"}.get(pd.kind, "#8fff6a"), 0, 2)
 	if pd.kind == "warlord":
 		Warlord.introDone = true
 		spawnWarlord()
 		var w = slimes[-1]
 		w.x = minf(M.w - 80, P.x + 220)
+	elif pd.kind == "dreamer":
+		spawnDreamer()
 	else:
 		spawnBoss()
 		var b = _boss()
 		if b != null:
 			b.x = minf(M.w - 60, P.x + 200)
 	P.face = 1
-	Sfx.music(M.get("music", "warlord" if pd.kind == "warlord" else "lair"))
+	Sfx.music(M.get("music", {"warlord": "warlord", "dreamer": "dreamer"}.get(pd.kind, "lair")))
 
 
 # ================================================================ cutscenes

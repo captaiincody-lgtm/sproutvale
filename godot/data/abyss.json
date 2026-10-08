@@ -1,0 +1,91 @@
+{
+ "_about": "The areas beyond the Warlord's Keep (Godot only, not in the HTML prototype). Maps use the same fields as game_data.json, plus: floor = [x0, x1, y] ground pieces (the sea floor steps down in these), sea = the water (surface null means the whole map is underwater), depth = 0 near the surface to 1 in the black deep, dark = only runes and seaweed give light. Monsters: habitat is where they live (shore = land, platforms and sea floor; air = flies above the water; swim = anywhere in the water; seabed = walks the sea floor).",
+ "maps": {
+  "abyss1": {
+   "name": "Drowned Shore", "sub": "Lv 52–55 · the water is black and very still", "theme": "abyss", "depth": 0.0,
+   "w": 1800, "h": 640, "floorY": 380, "target": 16, "start": 90, "music": "abyss", "ignoreUnlock": true,
+   "floor": [[20, 300, 380], [300, 700, 572], [700, 1060, 590], [1060, 1420, 584], [1420, 1780, 600]],
+   "sea": {"x0": 300, "x1": 1780, "surface": 400},
+   "plats": [[430, 372, 96], [640, 350, 110], [880, 368, 96], [1110, 344, 120], [1370, 362, 104], [1580, 342, 96]],
+   "ropes": [],
+   "portals": [
+    {"x": 44, "to": "crimson5", "tx": 820, "label": "The Warlord's Keep"},
+    {"x": 1740, "y": 600, "to": "abyss2", "tx": 70, "label": "The Sunken Slope"}],
+   "spawn": {"toad": 3, "seagull": 3}
+  },
+  "abyss2": {
+   "name": "The Sunken Slope", "sub": "Lv 57–60 · breathe easy, the bubble holds", "theme": "abyss", "depth": 0.35,
+   "w": 1800, "h": 720, "floorY": 330, "target": 18, "start": 90, "music": "abyss", "ignoreUnlock": true,
+   "floor": [[20, 240, 330], [240, 400, 350], [400, 560, 368], [560, 700, 392], [700, 860, 410], [860, 1000, 436], [1000, 1140, 458],
+    [1140, 1280, 486], [1280, 1400, 512], [1400, 1520, 540], [1520, 1640, 574], [1640, 1780, 610]],
+   "sea": {"x0": 0, "x1": 1800, "surface": null},
+   "plats": [[170, 252, 110], [470, 282, 120], [760, 322, 110], [1050, 372, 120], [1330, 420, 110], [1560, 476, 110]],
+   "ropes": [],
+   "portals": [
+    {"x": 44, "to": "abyss1", "tx": 1700, "ty": 600, "label": "Drowned Shore"},
+    {"x": 1740, "y": 610, "to": "abyss3", "tx": 70, "label": "Rune Trench"}],
+   "spawn": {"bass": 3.5, "crab": 2.5}
+  },
+  "abyss3": {
+   "name": "Rune Trench", "sub": "Lv 62–65 · the old stones are still awake", "theme": "abyss", "depth": 0.7,
+   "w": 1800, "h": 860, "floorY": 380, "target": 16, "start": 90, "music": "abyss", "ignoreUnlock": true,
+   "floor": [[20, 220, 380], [220, 420, 404], [420, 600, 440], [600, 760, 470], [760, 900, 520], [900, 1080, 556], [1080, 1240, 600],
+    [1240, 1400, 640], [1400, 1560, 690], [1560, 1780, 760]],
+   "sea": {"x0": 0, "x1": 1800, "surface": null},
+   "plats": [[150, 302, 120], [420, 352, 100], [700, 392, 120], [980, 452, 110], [1240, 522, 120], [1480, 592, 110]],
+   "ropes": [],
+   "portals": [
+    {"x": 44, "to": "abyss2", "tx": 1700, "ty": 610, "label": "The Sunken Slope"},
+    {"x": 1740, "y": 760, "to": "abyss4", "tx": 70, "label": "The Black Plateau"}],
+   "spawn": {"shark": 3, "squid": 2.5}
+  },
+  "abyss4": {
+   "name": "The Black Plateau", "sub": "Lv 67–70 · only the runes give light", "theme": "abyss", "depth": 1.0, "dark": true,
+   "w": 1900, "h": 600, "floorY": 520, "target": 14, "start": 90, "music": "abyss", "ignoreUnlock": true,
+   "floor": [[20, 1880, 520]],
+   "sea": {"x0": 0, "x1": 1900, "surface": null},
+   "plats": [[160, 440, 120], [420, 400, 110], [700, 440, 140], [980, 392, 120], [1260, 432, 130], [1540, 402, 120]],
+   "ropes": [],
+   "portals": [
+    {"x": 44, "to": "abyss3", "tx": 1700, "ty": 760, "label": "Rune Trench"},
+    {"x": 1856, "to": "abyss5", "tx": 70, "label": "Boss: The Dreamer's Hollow"}],
+   "spawn": {"orca": 2, "octopus": 4},
+   "bossSign": 1760
+  },
+  "abyss5": {
+   "name": "The Dreamer's Hollow", "theme": "abyss", "depth": 1.0,
+   "w": 640, "h": 300, "floorY": 270, "target": 0, "start": 70, "music": "dreamer", "boss": "dreamer",
+   "floor": [[20, 620, 270]],
+   "sea": {"x0": 0, "x1": 640, "surface": null},
+   "plats": [[184, 206, 80], [376, 206, 80]],
+   "ropes": [],
+   "portals": [{"x": 40, "to": "abyss4", "tx": 1810, "label": "The Black Plateau"}],
+   "spawn": {}
+  },
+  "bubble": {
+   "name": "Inside the Bubble", "sub": "Quiet. Even your footsteps sound far away.", "theme": "bubble", "safe": true, "echo": true,
+   "w": 1700, "h": 300, "floorY": 240, "target": 0, "start": 80, "music": "bubble",
+   "plats": [], "ropes": [],
+   "portals": [{"x": 40, "to": "abyss5", "tx": 560, "label": "The Dreamer's Hollow"}],
+   "spawn": {}
+  }
+ },
+ "mobs": {
+  "toad": {"name": "Abyssal Toad", "label": "abyssal toads", "color": 4069992, "lv": 52, "hp": 2900, "atk": 132, "def": 52, "exp": 700, "coins": [80, 135],
+   "speed": 1, "habitat": "shore", "bw": 24, "bh": 18, "matName": "Toad Warts"},
+  "seagull": {"name": "Abyssal Seagull", "label": "abyssal seagulls", "color": 7104660, "lv": 55, "hp": 2600, "atk": 140, "def": 46, "exp": 760, "coins": [85, 140],
+   "speed": 1.2, "habitat": "air", "fly": true, "bw": 26, "bh": 14, "matName": "Tar-Black Feather"},
+  "bass": {"name": "Abyssal Bass", "label": "abyssal bass", "color": 4864592, "lv": 57, "hp": 3400, "atk": 150, "def": 58, "exp": 860, "coins": [90, 150],
+   "speed": 1.2, "habitat": "swim", "swim": true, "bw": 26, "bh": 14, "matName": "Corrupted Scale"},
+  "crab": {"name": "Abyssal Crab", "label": "abyssal crabs", "color": 6950442, "lv": 60, "hp": 4200, "atk": 158, "def": 74, "exp": 960, "coins": [95, 160],
+   "speed": 0.9, "habitat": "seabed", "bw": 30, "bh": 18, "matName": "Cracked Carapace"},
+  "shark": {"name": "Abyssal Shark", "label": "abyssal sharks", "color": 3815512, "lv": 62, "hp": 5200, "atk": 182, "def": 66, "exp": 1100, "coins": [105, 175],
+   "speed": 1.1, "habitat": "swim", "swim": true, "bw": 70, "bh": 22, "eliteScale": 1.6, "matName": "Shark Tooth"},
+  "squid": {"name": "Abyssal Squid", "label": "abyssal squid", "color": 7807372, "lv": 65, "hp": 4800, "atk": 170, "def": 62, "exp": 1180, "coins": [110, 180],
+   "speed": 0.9, "habitat": "swim", "swim": true, "bw": 28, "bh": 52, "eliteScale": 1.6, "matName": "Abyssal Ink Sac"},
+  "orca": {"name": "Abyssal Orca", "label": "abyssal orcas", "color": 1971752, "lv": 67, "hp": 9000, "atk": 230, "def": 80, "exp": 1500, "coins": [130, 220],
+   "speed": 0.6, "habitat": "swim", "swim": true, "bw": 110, "bh": 36, "eliteScale": 1.4, "matName": "Orca Blubber"},
+  "octopus": {"name": "Abyssal Octopus", "label": "abyssal octopi", "color": 6952552, "lv": 70, "hp": 4600, "atk": 175, "def": 70, "exp": 1300, "coins": [120, 200],
+   "speed": 1.7, "habitat": "seabed", "bw": 20, "bh": 16, "matName": "Writhing Sucker"}
+ }
+}

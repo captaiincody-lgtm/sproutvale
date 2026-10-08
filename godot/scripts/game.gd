@@ -260,6 +260,7 @@ func _process(delta: float) -> void:
 		else:
 			updateCrimsonRain(dt)
 			updateBossSkills(dt)
+			updateAbyss(dt)
 			updateWater(dt)
 			updateSlimes(dt)
 			updateFX(dt)

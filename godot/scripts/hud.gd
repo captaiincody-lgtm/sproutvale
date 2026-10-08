@@ -27,6 +27,10 @@ const BOSS_INFO := {
 		"paras": ["**Attacks:** sword-and-shield cuts and a shield charge that knocks you flat · greatsword cleaves and leaping slams · throws his greatsword and walks over to fetch it · sends his own eyes after you (hit them and they fly home) · **Crimson Rain:** blood falls everywhere except beneath the two ledges, and it makes you bleed.",
 			"**Reward:** 30,000 EXP · a hoard of coins · a trophy · a **Crimsonbox** (500–2,500 coins, 1–5 Boss Coins, maybe a rare treasure, and very rarely his Crimson Rain skill)"],
 		"rec": "Recommended: Lv 45+. Walk right into the portal to enter."},
+	"dreamer": {"title": "⚠ Boss: The Dreamer", "stats": [["Level", "75"], ["HP", "120,000"], ["Attack", "210"], ["Defense", "60"]],
+		"paras": ["**Attacks:** too big to fit: hit its eyes, its brow and the tentacles that rise from the sea floor · **Gaze:** its eyes glow, then flash; dodge (C) in that moment or you're Confused · tentacle whips where you stand, one after another, feeding the Abyss · grabs and slams you like an octopus · **Devour:** drags you into its mouth and chews before spitting you out (hit its open mouth for big damage).",
+			"**Reward:** 80,000 EXP · a hoard of coins · a trophy · the key to Glamrax's crystal · a **Dreambox** (500–2,500 coins, 1–5 Boss Coins, maybe a rare treasure, and very rarely its Abyssal Devour skill)"],
+		"rec": "Recommended: Lv 70+. Walk right into the portal to enter."},
 }
 
 var UF: Font        # Fredoka medium: body text
@@ -294,7 +298,16 @@ func _bottomBar() -> void:
 	var menuW = 82.0
 	var avail = UW - x - coinsW - menuW - 26
 	var unit = avail / 2.7
-	_meter(Rect2(x, UH - 23, unit, 16), P.hp / PS.hp, ["#ff8a9a", "#ff5d73", "#d23a55"], "HP", "%d / %d" % [ceili(P.hp), PS.hp])
+	var hpFull = float(PS.get("hpFull", PS.hp))
+	_meter(Rect2(x, UH - 23, unit, 16), P.hp / hpFull, ["#ff8a9a", "#ff5d73", "#d23a55"], "HP", "%d / %d" % [ceili(P.hp), PS.hp])
+	if hpFull > PS.hp:
+		# the Abyss eats the top of your health bar: shown as a dark purple block that pulses
+		var inner = Rect2(x, UH - 23, unit, 16).grow(-2)
+		var cut = inner.size.x * (1 - PS.hp / hpFull)
+		uci.draw_rect(Rect2(inner.end.x - cut, inner.position.y, cut, inner.size.y), Color(css("#3a0a4a"), 0.85 + 0.15 * sin(realTime * 4)))
+		uci.draw_rect(Rect2(inner.end.x - cut, inner.position.y, 1, inner.size.y), css("#c25cff"))
+		var mr = Rect2(x, UH - 23, unit, 16)
+		uText("%d / %d" % [ceili(P.hp), PS.hp], mr.get_center().x, mr.get_center().y - 6, 9, Color.WHITE, UB, 1, EDGE)
 	x += unit + 6
 	var sx = sin(enShake * 40) * 3 if enShake > 0.1 else 0.0
 	_meter(Rect2(x + sx, UH - 23, unit * 0.7, 16), P.en / PS.enMax, ["#fff0a8", "#ffc83d", "#d88a10"], CLASSES[classId].res, "%d / %d" % [floori(P.en), PS.enMax])
@@ -398,6 +411,16 @@ func _statusChips(indoor: bool) -> void:
 		chips.append("☠ Poisoned %ds" % ceili(P.poison.t))
 	if P.bleed != null and P.bleed.t > 0:
 		chips.append("🩸 Bleeding %ds" % ceili(P.bleed.t))
+	if P.abyssT > 0:
+		chips.append("🌑 Abyss −%d%% max HP %ds" % [roundi(P.abyssDrain * 100), ceili(P.abyssT)])
+	elif P.abyssDrain > 0.005:
+		chips.append("🌑 Recovering −%d%% max HP" % roundi(P.abyssDrain * 100))
+	if P.abyssB > 0.5 and P.abyssT <= 0:
+		chips.append("🌑 Abyss buildup %d%%" % roundi(P.abyssB))
+	if P.blindT > 0:
+		chips.append("🦑 Inked %ds" % ceili(P.blindT))
+	if P.confuseT > 0:
+		chips.append("💫 Confused %ds" % ceili(P.confuseT))
 	var x = 8.0
 	var y = UH - 36 - 17 - (0 if indoor or (classId != "mage" and classId != "summoner") else 21)
 	for s in chips:
@@ -428,8 +451,8 @@ func _bossUI() -> void:
 			uGrad(Rect2(bb.position, Vector2(fw, bb.size.y)), css("#ff8a9a"), css("#e02a4a"), css("#9a1030"), 0.6)
 		uText("%s / %s" % [fmt(b.hp), fmt(b.maxHp)], bb.get_center().x, bb.position.y + 1, 7, Color.WHITE, UB, 1, Color.BLACK)
 	var sign = M.get("bossSign")
-	if sign != null and absf(P.x - sign) < 70 and absf(P.y - M.floorY) < 4:
-		var I: Dictionary = BOSS_INFO.warlord if M.get("theme") == "crimson" else BOSS_INFO.croc
+	if sign != null and absf(P.x - sign) < 70 and absf(P.y - groundAt(P.x)) < (60.0 if M.get("sea") != null else 4.0):
+		var I: Dictionary = BOSS_INFO.warlord if M.get("theme") == "crimson" else (BOSS_INFO.dreamer if M.get("theme") == "abyss" else BOSS_INFO.croc)
 		var w = minf(UW * 0.7, 336.0)
 		var x = UW / 2 - w / 2
 		var tw = w - 22
@@ -503,6 +526,10 @@ func _minimap(r: Rect2) -> float:
 	uci.draw_rect(Rect2(o, Vector2(r.size.x, h)), Color(18 / 255.0, 26 / 255.0, 60 / 255.0, 0.85))
 	var view = Rect2(o + cam * s, Vector2(VW, VH) * s).intersection(Rect2(o, Vector2(r.size.x, h)))
 	uci.draw_rect(view, Color(111 / 255.0, 224 / 255.0, 1, 0.12))
+	if M.get("sea") != null:
+		var sea = M.sea
+		var st = maxf(0.0, seaTop())
+		uci.draw_rect(Rect2(o + Vector2(sea.x0, st) * s, Vector2((sea.x1 - sea.x0) * s, maxf(u, (M.h - st) * s))), Color(css("#3a2a7a"), 0.7))
 	if M.get("pond"):
 		var pd = M.pond
 		uci.draw_rect(Rect2(o + Vector2(pd.x0, pd.surface) * s, Vector2((pd.x1 - pd.x0) * s, maxf(u, (pd.bottom - pd.surface) * s))), css("#3f86d8"))
@@ -560,6 +587,8 @@ func _styleRank() -> void:
 
 
 func hintText() -> String:
+	if M.get("sea") != null and underSea(P.x, P.y - 10):
+		return "Space or ↑ to swim up · you sink slowly in the deep" if M.sea.surface == null else "Space or ↑ to swim up · jump at the surface to leap out"
 	if inWater():
 		return "Space or ↑ to swim up · jump near the bank to climb out"
 	if P.state == "climb":
@@ -632,6 +661,7 @@ func _dialog() -> void:
 func _lootPanel() -> void:
 	var L: Dictionary = loot
 	var red: bool = L.kind == "warlord"
+	var dream: bool = L.kind == "dreamer"
 	var t: float = L.t
 	var n: int = L.rows.size()
 	var shown: int = L.get("shown", 0)
@@ -639,18 +669,18 @@ func _lootPanel() -> void:
 	var w = 340.0
 	var h = 140.0 + n * 22
 	var r = Rect2(UW / 2 - w / 2, UH / 2 - h / 2, w, h)
-	var edge = css("#ff5d73") if red else css("#e8b830")
+	var edge = css("#ff5d73") if red else (css("#c25cff") if dream else css("#e8b830"))
 	uGlow(r, Color(edge, 0.45), 14, 12)
-	uBox(r, css("#1c0a10") if red else css("#10200e"), edge, 3, 12)
+	uBox(r, css("#1c0a10") if red else (css("#120820") if dream else css("#10200e")), edge, 3, 12)
 	uText(String(L.name).to_upper(), UW / 2, r.position.y + 12, 12, edge, PX, 1, Color.BLACK, 2)
 	# the box itself
 	var bx = UW / 2
 	var by = r.position.y + 100
 	var open = t > 0.8
 	var jig = 0.0 if open else sin(t * 60) * (t / 0.8) * 3
-	var body = css("#8a1a24") if red else css("#3f7a2c")
-	var shine = css("#b8303c") if red else css("#5fa83e")
-	var band = css("#2a1418") if red else css("#e8b830")
+	var body = css("#8a1a24") if red else (css("#2a1040") if dream else css("#3f7a2c"))
+	var shine = css("#b8303c") if red else (css("#4a2068") if dream else css("#5fa83e"))
+	var band = css("#2a1418") if red else (css("#120618") if dream else css("#e8b830"))
 	if open:
 		uGlow(Rect2(bx - 26, by - 46, 52, 30), Color(edge, 0.5 + 0.3 * sin(realTime * 6)), 10, 12)
 		for i in 6:

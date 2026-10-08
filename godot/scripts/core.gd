@@ -133,6 +133,7 @@ var PRain := {"t": 0.0, "tick": 0.0}   # the hero's own Crimson Rain
 const BOXES := {
 	"croc": {"name": "Crocbox", "boss": "Doc Croc", "skill": "potionThrow", "items": ["kombucha", "whetstone", "hide", "eyedrops"]},
 	"warlord": {"name": "Crimsonbox", "boss": "Crimson Warlord", "skill": "crimsonRain", "items": ["kombucha", "draught", "sigil", "rivet", "glassEye"]},
+	"dreamer": {"name": "Dreambox", "boss": "The Dreamer", "skill": "devour", "items": ["draught", "inkDraught", "dreamFang", "barnacle", "pearl"]},
 }
 const BOX_ITEM_RATE := 0.15   # chance a box holds a stat treasure
 const BOX_SKILL_RATE := 0.02  # chance a box holds the boss's skill (until you have it)
@@ -146,14 +147,20 @@ const BOONS := {
 	"sigil": {"name": "Warlord's Sigil Shard", "icon": "🔻", "stat": "atk", "val": 6, "desc": "+6 attack"},
 	"rivet": {"name": "Bulwark Rivet", "icon": "🔩", "stat": "def", "val": 4, "desc": "+4 defense"},
 	"glassEye": {"name": "Warlord's Glass Eye", "icon": "👁️", "stat": "crit", "val": 1.0, "desc": "+1% critical rate"},
+	"inkDraught": {"name": "Abyssal Ink Draught", "icon": "🫙", "stat": "hp", "val": 100, "desc": "+100 max HP"},
+	"dreamFang": {"name": "Dreamer's Fang", "icon": "🦷", "stat": "atk", "val": 9, "desc": "+9 attack"},
+	"barnacle": {"name": "Abyssal Barnacle", "icon": "🐚", "stat": "def", "val": 6, "desc": "+6 defense"},
+	"pearl": {"name": "Black Pearl", "icon": "🔮", "stat": "crit", "val": 1.5, "desc": "+1.5% critical rate"},
 }
-const BOON_ORDER := ["kombucha", "whetstone", "hide", "eyedrops", "draught", "sigil", "rivet", "glassEye"]
+const BOON_ORDER := ["kombucha", "whetstone", "hide", "eyedrops", "draught", "sigil", "rivet", "glassEye", "inkDraught", "dreamFang", "barnacle", "pearl"]
 ## skills learned from a boss: any class can use them once one drops
 const BOSS_SKILLS := [
 	{"id": "potionThrow", "boss": "croc", "name": "Potion Throw", "icon": "🧪", "type": "active", "max": 1, "cd": 4, "cost": 22,
 		"desc": ["Lob one of Doc Croc's poison vials: 250% damage in a splash, then a toxic puddle that hurts enemies standing in it (40% every half second for 3s)"]},
 	{"id": "crimsonRain", "boss": "warlord", "name": "Crimson Rain", "icon": "🩸", "type": "active", "max": 1, "cd": 35, "cost": 55,
 		"desc": ["Call down the Warlord's blood rain for 5s: every enemy on screen takes 80% damage every half second"]},
+	{"id": "devour", "boss": "dreamer", "name": "Abyssal Devour", "icon": "🐙", "type": "active", "max": 1, "cd": 25, "cost": 50,
+		"desc": ["Open the Dreamer's maw: suck in the nearest monster, chew it three times for 400% damage each, then spit it out"]},
 ]
 
 # ---------------------------------------------------------------- player + save
@@ -237,7 +244,8 @@ func init_data() -> void:
 	W_PARAMS = D.wParams
 	PRIMARY = D.primary
 	ATTRS = D.attrs
-	CUR_TIPS.boss = "Boss Coins: 1–5 in every Crocbox and Crimsonbox. Spend them in the Boss Shop."
+	CUR_TIPS.boss = "Boss Coins: 1–5 in every Crocbox, Crimsonbox and Dreambox. Spend them in the Boss Shop."
+	initAbyssData()
 	STAT_TIPS["Boss Coins"] = "Found in the boxes bosses drop (1–5 each). Spend them in the Boss Shop."
 
 
@@ -610,7 +618,7 @@ func calcStats() -> Dictionary:
 	if classId == "summoner":
 		atk *= 0.95; hp *= 1.05; def *= 1 + ((0.2 + R.call("sanctuary") * 0.02) if buffOn("sanctuary") else 0.0)
 	var arrowMul: float = (1 + ARROW_TIERS[c.get("arrows", 0)].dmg) if arch else 1.0
-	return {"hp": roundi(hp), "atk": roundi(atk), "def": roundi(def), "crit": minf(80, crit), "critDmg": critDmg, "spd": spd, "aspd": aspd,
+	return {"hp": roundi(hp * (1 - P.abyssDrain)), "hpFull": roundi(hp), "atk": roundi(atk), "def": roundi(def), "crit": minf(80, crit), "critDmg": critDmg, "spd": spd, "aspd": aspd,
 		"exp": ch.exp + cur.get("exp", 0) + trophyExp + bs.call("notes") * 5, "coin": ch.coin + cur.get("coin", 0), "hpRegen": furn.call("chair"),
 		"enMax": enMax, "enRegen": enRegen * enRegenF * (1 + furn.call("bed")), "enHit": enHit, "arrowMul": arrowMul,
 		"hunt": ae.call("hunt") * 0.02 + bs.call("bane") * 0.05, "leech": ae.call("leech") * 0.003}
@@ -773,7 +781,7 @@ func mobExp(e) -> int:
 func unlockedSlimes() -> Array:
 	# quests nudge you onward: monsters from a little below to a little above your level
 	var lv: int = CH().level
-	var ok = func(k): return (SLIME_TYPES[k].w > 0 or SLIME_TYPES[k].get("critter", false)) and (not SLIME_TYPES[k].get("ai") or save.trophies.get("croc"))
+	var ok = func(k): return (SLIME_TYPES[k].w > 0 or SLIME_TYPES[k].get("critter", false)) and (not SLIME_TYPES[k].get("ai") or save.trophies.get("croc")) and (not SLIME_TYPES[k].get("habitat") or save.trophies.get("warlord"))
 	var near = SLIME_KEYS.filter(func(k): return ok.call(k) and SLIME_TYPES[k].lv >= lv - 6 and SLIME_TYPES[k].lv <= lv + 5)
 	if near.size() >= 2:
 		return near
@@ -836,6 +844,8 @@ func monsterName(type: String) -> String:
 		return BOSS_T.name
 	if type == "warlord":
 		return WARLORD_T.name
+	if type == "dreamer":
+		return "The Dreamer"
 	return SLIME_TYPES[type].name if SLIME_TYPES.has(type) else type
 
 
@@ -909,10 +919,16 @@ func recordKill(e) -> void:
 
 func updateDrops(dt: float) -> void:
 	var pb = pBox()
+	var sea = M.get("sea")
+	var seaTop: float = (sea.surface if sea.surface != null else -1e9) if sea != null else 1e9
 	for i in range(drops.size() - 1, -1, -1):
 		var d: S.Drop = drops[i]
 		d.t += dt
-		d.vy = minf(MAXFALL, d.vy + GRAV * dt)
+		if d.y > seaTop:   # things sink slowly through the water
+			d.vy = minf(70, d.vy + GRAV * 0.3 * dt)
+			d.vx *= exp(-dt * 2)
+		else:
+			d.vy = minf(MAXFALL, d.vy + GRAV * dt)
 		d.x += d.vx * dt
 		d.y += d.vy * dt
 		d.x = clampf(d.x, d.x0, d.x1)
@@ -935,6 +951,8 @@ func updateDrops(dt: float) -> void:
 				pickupPop("abyss", "Abyssal Coins", d.val, "#ff9ef0")
 			elif d.kind == "box":
 				openBox(d.type)
+			elif d.kind == "key":
+				pickupKey()
 			elif d.kind == "card":
 				cardSet(d.type)[d.key] = true
 				saveDirty = true
@@ -952,7 +970,7 @@ func updateDrops(dt: float) -> void:
 				pickupPop("m_" + d.type, matName(d.type), n, "#ffffff")
 			saveDirty = true
 			continue
-		if d.t > 60 and d.kind != "box":
+		if d.t > 60 and d.kind != "box" and d.kind != "key":
 			drops.remove_at(i)
 
 
@@ -1132,3 +1150,21 @@ func updateVials(_dt: float) -> void: pass
 func openBox(_kind: String) -> void: pass
 func castBossSkill(_s: Dictionary) -> void: pass
 func openDreamGate(_fanfare := false) -> void: pass
+func initAbyssData() -> void: pass
+func abyssAI(_e, _T: Dictionary, _dt: float, _dx: float, _dy: float, _pb: Dictionary) -> bool: return false
+func spawnAbyssMob(_type: String, _T: Dictionary, _initial: bool, _shiny: bool) -> void: pass
+func abyssElite(_e) -> void: pass
+func seaCollide(_prevX: float, _prevY: float) -> void: pass
+func abyssHold(_dt: float) -> bool: return false
+func updateDreamer(_e, _dt: float) -> void: pass
+func updatePart(_e, _dt: float) -> void: pass
+func damagePart(_e, _mv: Dictionary) -> void: pass
+func dreamerFalls(_e, _firstKill: bool) -> void: pass
+func spawnDreamer() -> void: pass
+func abyssOnLoad() -> void: pass
+func abyssStep(_heavy: bool) -> void: pass
+func waterBox(): return null
+func groundAt(_x: float) -> float: return 0.0
+func pickupKey() -> void: pass
+func castDevour() -> void: pass
+func dreamerHitOk(_e, _mv: Dictionary) -> bool: return true

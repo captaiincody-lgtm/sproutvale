@@ -1,4 +1,4 @@
-extends "res://scripts/bosses.gd"
+extends "res://scripts/abyss.gd"
 ## Sproutvale, part 7: drawing the world, in the same order as the prototype's render().
 ## Everything is in world units on a 384×216 view; the layers it draws into are scaled 2×.
 ## `x` is a Canvas2D stand-in (ctx.gd), so the drawing code reads like the original.
@@ -89,39 +89,43 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 	var sy = roundf(cam.y + (rand(-shake, shake) if shake > 0.2 else 0.0))
 	var theme: String = M.get("theme", "meadow")
 	var crimson = theme == "crimson"
-	if crimson:
-		drawCrimsonSky(x)
+	var noSky = crimson or theme == "abyss" or theme == "bubble"
+	if theme == "abyss" or theme == "bubble":
+		drawAbyssBack(x, sx, sy, dt)
 	else:
-		drawSky(x, D)
-		drawClouds(x, D, dt)
-		drawDragon(x, D, dt)
-		drawWeatherClouds(x, D, dt)
-	# parallax
-	var floorScr: float = M.floorY - sy
-	var farY = roundf(floorScr * 0.35 + VH * 0.42 - 120)
-	var midY = roundf(floorScr * 0.6 + VH * 0.4 - 90)
-	var fo = -fmod(roundf(sx * 0.15), VW * 2.0)
-	var mo = -fmod(roundf(sx * 0.4), VW * 2.0)
-	var skyTheme = "hollow" if theme == "lair" else ("meadow" if theme == "interior" else theme)
-	var far = Assets.tex("sky/%s_far.png" % skyTheme)
-	var mid = Assets.tex("sky/%s_mid.png" % skyTheme)
-	if far != null:
-		x.globalAlpha = 0.9
-		x.drawImage(far, fo, farY, far.get_width() / 2.0, far.get_height() / 2.0)
-		x.drawImage(far, fo + VW * 2, farY, far.get_width() / 2.0, far.get_height() / 2.0)
-		x.globalAlpha = 1
-	if mid != null:
-		x.drawImage(mid, mo, midY, mid.get_width() / 2.0, mid.get_height() / 2.0)
-		x.drawImage(mid, mo + VW * 2, midY, mid.get_width() / 2.0, mid.get_height() / 2.0)
-	if midY + 90 < VH:
-		x.fillStyle = "#1e060c" if crimson else ("#2f4a3c" if theme in ["hollow", "lair"] else ("#b89448" if theme == "ridge" else "#6fb86a"))
-		x.fillRect(0, midY + 90, VW, VH)
+		if crimson:
+			drawCrimsonSky(x)
+		else:
+			drawSky(x, D)
+			drawClouds(x, D, dt)
+			drawDragon(x, D, dt)
+			drawWeatherClouds(x, D, dt)
+		# parallax
+		var floorScr: float = M.floorY - sy
+		var farY = roundf(floorScr * 0.35 + VH * 0.42 - 120)
+		var midY = roundf(floorScr * 0.6 + VH * 0.4 - 90)
+		var fo = -fmod(roundf(sx * 0.15), VW * 2.0)
+		var mo = -fmod(roundf(sx * 0.4), VW * 2.0)
+		var skyTheme = "hollow" if theme == "lair" else ("meadow" if theme == "interior" else theme)
+		var far = Assets.tex("sky/%s_far.png" % skyTheme)
+		var mid = Assets.tex("sky/%s_mid.png" % skyTheme)
+		if far != null:
+			x.globalAlpha = 0.9
+			x.drawImage(far, fo, farY, far.get_width() / 2.0, far.get_height() / 2.0)
+			x.drawImage(far, fo + VW * 2, farY, far.get_width() / 2.0, far.get_height() / 2.0)
+			x.globalAlpha = 1
+		if mid != null:
+			x.drawImage(mid, mo, midY, mid.get_width() / 2.0, mid.get_height() / 2.0)
+			x.drawImage(mid, mo + VW * 2, midY, mid.get_width() / 2.0, mid.get_height() / 2.0)
+		if midY + 90 < VH:
+			x.fillStyle = "#1e060c" if crimson else ("#2f4a3c" if theme in ["hollow", "lair"] else ("#b89448" if theme == "ridge" else "#6fb86a"))
+			x.fillRect(0, midY + 90, VW, VH)
 	# terrain
 	var mt = Assets.tex(mapArt())
 	if mt != null:
-		x.drawImageRegion(mt, sx * RES, sy * RES, VW * RES, VH * RES, 0, 0, VW, VH)
+		drawTerrain(x, mt, sx, sy)
 	# snow caps
-	if World.snowCover > 0.05:
+	if World.snowCover > 0.05 and not (theme in ["abyss", "bubble"]):
 		var h = ceilf(World.snowCover * 3)
 		x.fillStyle = "#f4f8ff"
 		for s in surfaces:
@@ -138,7 +142,7 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 		x.fillStyle = rgba(150, 170, 205, 0.7 * (1 - fp.t / 25))
 		x.fillRect(fp.x - sx - 1, fp.y - sy - 1, 3, 1)
 	# raindrops splashing on every surface in view
-	if World.rain > 0.3 and not M.get("indoor"):
+	if World.rain > 0.3 and not M.get("indoor") and not (theme in ["abyss", "bubble"]):
 		x.fillStyle = rgba(200, 225, 255, 0.8)
 		for i in int(World.rain * 4):
 			var s: Dictionary = surfaces[rint(0, surfaces.size() - 1)]
@@ -213,6 +217,8 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 				cardArt(x, d.type, d.gold, d.shiny, true, X - 6, Y - 18 + bob)
 			"box":
 				drawBossBox(x, d.type, X, Y + (roundf(sin(tt * 3) * 1.5) - 1 if d.vy == 0 else 0.0), tt)
+			"key":
+				drawKeyDrop(x, X, Y, tt)
 			"abyss":
 				var gl = 0.5 + 0.5 * sin(tt * 5 + d.x)
 				x.fillStyle = rgba(255, 58, 216, 0.3 * gl)
@@ -230,6 +236,8 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 	# pond water drawn over whatever is submerged
 	if M.get("pond") and Water.cols.size():
 		drawWater(x, M.pond, sx, sy, tt)
+	if theme == "abyss" or theme == "bubble":
+		drawAbyssFront(x, sx, sy, dt)
 	# tall grass in front of everyone, for depth
 	for g in tufts:
 		if not g.fg:
@@ -247,7 +255,7 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 			k += HP
 		x.fillStyle = "#ffffff" if World.snowCover > 0.5 else gr[3]
 		x.fillRect(roundf(X + lean), Y - g.h, 1, 1)
-	if not M.get("indoor") and not crimson:
+	if not M.get("indoor") and not noSky:
 		drawAmbientLife(x, sx, sy, D, dt)
 	if M.get("trophy"):
 		drawTrophies(x, sx, sy)
@@ -290,7 +298,7 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 			textOutline(x, f.text, X, Y, col)
 	x.globalAlpha = 1
 	# weather
-	if not M.get("indoor") and not crimson:
+	if not M.get("indoor") and not noSky:
 		drawWeather(x, dt, sx - lastCamX)
 	lastCamX = sx
 
@@ -299,6 +307,9 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 func renderTint(ci: CanvasItem) -> void:
 	var x = ctx
 	x.begin(ci)
+	if not M.is_empty() and M.get("theme") in ["abyss", "bubble"]:
+		abyssTint(x)
+		return
 	if M.is_empty() or M.get("indoor") or M.get("theme") == "crimson":
 		return
 	var D = dayInfo()
@@ -318,7 +329,7 @@ func renderOverlay(ci: CanvasItem) -> void:
 	if not M.is_empty():
 		var D = dayInfo()
 		var night: float = 1 - D.day
-		var outdoors: bool = not M.get("indoor") and M.get("theme") != "crimson"
+		var outdoors: bool = not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble"])
 		if outdoors and night > 0.3:
 			var lx = roundf(P.x - cam.x)
 			var ly = roundf(P.y - cam.y - 20)
@@ -335,6 +346,7 @@ func renderOverlay(ci: CanvasItem) -> void:
 		if World.flash > 0:
 			x.fillStyle = rgba(255, 255, 255, World.flash * 0.6)
 			x.fillRect(0, 0, VW, VH)
+		abyssOverlay(x)
 	if fade > 0:
 		x.fillStyle = rgba(10, 12, 30, fade)
 		x.fillRect(0, 0, VW, VH)
@@ -353,7 +365,12 @@ func _key(Sset: Dictionary, k: String) -> String:
 
 
 func drawMob(x: Ctx, e, sx: float, sy: float) -> void:
+	if e.bossPart:
+		return   # the Dreamer's eyes, mouth and tentacles are drawn with the Dreamer
 	var T: Dictionary = e.T
+	if T.get("habitat"):
+		drawAbyssMob(x, e, sx, sy)
+		return
 	var X = roundf(e.x - sx)
 	var Y = roundf(e.y - sy) + (10.0 if T.get("fly") else 0.0)   # flyers' sprites centre on their body
 	if X < -30 or X > VW + 30:
@@ -459,6 +476,8 @@ func drawMob(x: Ctx, e, sx: float, sy: float) -> void:
 
 
 func drawBoss(x: Ctx, e, X: float, Y: float) -> void:
+	if e.bossKind == "dreamer":
+		return   # drawn behind the floor (drawDreamerHead) and in front of it (drawDreamerTents)
 	if e.bossKind == "warlord":
 		drawWarlord(x, e, X, Y)
 		return
@@ -578,7 +597,7 @@ func drawPlayer(x: Ctx, sx: float, sy: float, dt: float) -> void:
 	var nf = maxi(1, int(A.frames))
 	var f = clampi(playerFrame(), 0, nf - 1)
 	var tex = Assets.hero_strip(look, anim, vIdx)
-	var blink: bool = P.state != "dash" and P.iframes > 0 and P.iframes < 0.9 and int(gameTime * 18) % 2 == 0
+	var blink: bool = not (P.state in ["dash", "held"]) and P.iframes > 0 and P.iframes < 0.9 and int(gameTime * 18) % 2 == 0
 	x.fillStyle = rgba(20, 30, 10, 0.25)
 	if P.grounded:
 		x.fillRect(X - 8, Y - 1, 16, 2)
@@ -606,9 +625,14 @@ func drawPlayer(x: Ctx, sx: float, sy: float, dt: float) -> void:
 	if tail != null and not backView and not blink:
 		x.save(); x.translate(-sx, -sy); drawTail(x, look); x.restore()
 	drawPets(x, sx, sy, "back")
-	if not blink:
+	var eaten: bool = P.held != null and P.held.kind == "eaten"
+	if not blink and not eaten:
 		x.save()
 		x.translate(X, Y)
+		if P.spin != 0:
+			x.translate(0, -20)
+			x.rotate(P.spin)
+			x.translate(0, 20)
 		if P.face < 0:
 			x.scale(-1, 1)
 		x.drawFrame(tex, nf, f, -RX, -GROUND, SW, SH)
@@ -617,6 +641,8 @@ func drawPlayer(x: Ctx, sx: float, sy: float, dt: float) -> void:
 	if tail != null and backView and not blink:
 		x.save(); x.translate(-sx, -sy); drawTail(x, look); x.restore()
 	# name tag, classic MMO style
+	if eaten:
+		return
 	x.font = FONT
 	x.textAlign = "center"
 	x.fillStyle = rgba(20, 20, 40, 0.7)
@@ -820,6 +846,24 @@ func cardArt(x: Ctx, type: String, gold: bool, shiny: bool, small: bool, X: floa
 		var t = Assets.mob_strip("croc", "quad")
 		if t != null:
 			x.drawImageRegion(t, 0, 60 * RES, 220 * RES, 90 * RES, 1 if small else 2, 4 if small else 12, w - (2 if small else 4), 8 if small else 18)
+	elif type == "dreamer":
+		var t = Assets.tex("boss/dreamer_portrait.png")
+		if t != null:
+			x.drawImageRegion(t, 30, 0, 160, 170, 1 if small else 2, 1 if small else 4, w - (2 if small else 4), h - (3 if small else 16))
+	elif type in ABYSS_MOBS:
+		# the Abyss sets: the whole first frame, fitted into the card keeping its shape
+		var setName = type + "_shiny" if shiny else type
+		var Sset = Assets.mob_set(setName)
+		var keys = Sset.get("keys", {})
+		if not keys.is_empty():
+			var t = Assets.mob_strip(setName, keys.keys()[0])
+			if t != null:
+				var fw = float(Sset.w)
+				var fh = float(Sset.h)
+				var bw = w - (2 if small else 6)
+				var bh = h - (4 if small else 16)
+				var k = minf(bw / fw, bh / fh)
+				x.drawImageRegion(t, 0, 0, fw, fh, (w - fw * k) / 2, (2 if small else 3) + (bh - fh * k) / 2, fw * k, fh * k)
 	else:
 		var setName = "warlord_ss" if type == "warlord" else (type + "_shiny" if shiny and type != "abyss" else type)
 		var Sset = Assets.mob_set(setName)
@@ -1223,14 +1267,14 @@ func drawPedestal(x: Ctx, sx: float, sy: float) -> void:
 	x.fillStyle = "#6a6474"; x.fillRect(X - 11, Y - 21, 22, 21)
 	x.fillStyle = "#8a8494"; x.fillRect(X - 11, Y - 21, 22, 3)
 	x.fillStyle = "#4a4454"; x.fillRect(X - 14, Y - 4, 28, 4)
-	var col = Color8(255, 58, 74) if pd.kind == "warlord" else Color8(143, 255, 106)
+	var col = {"warlord": Color8(255, 58, 74), "dreamer": Color8(194, 92, 255)}.get(pd.kind, Color8(143, 255, 106))
 	if not busy:
 		x.fillStyle = Color(col, 0.5 + 0.3 * sin(t * 3)); x.beginPath(); x.arc(X, Y - 30 + sin(t * 2) * 2, 5, 0, TAU); x.fill()
 		x.fillStyle = Color(col, 0.18); x.beginPath(); x.arc(X, Y - 30, 12, 0, TAU); x.fill()
 	if not busy and absf(P.x - pd.x) < 22:
 		x.font = FONT
 		x.textAlign = "center"
-		textOutline(x, "↑ Summon %s again" % ("the Crimson Warlord" if pd.kind == "warlord" else "Doc Croc"), X, Y - 46, "#ffffff")
+		textOutline(x, "↑ Summon %s again" % {"warlord": "the Crimson Warlord", "dreamer": "The Dreamer"}.get(pd.kind, "Doc Croc"), X, Y - 46, "#ffffff")
 
 
 func drawVials(x: Ctx, sx: float, sy: float) -> void:
@@ -1286,8 +1330,21 @@ func drawBossSkills(x: Ctx, sx: float, sy: float) -> void:
 		x.stroke()
 
 
-## a boss's loot box: Crocbox (swamp green, gold bands) or Crimsonbox (blood red, black iron)
+## a boss's loot box: Crocbox (swamp green, gold bands), Crimsonbox (blood red, black iron) or Dreambox (abyss purple, red runes)
 func drawBossBox(x: Ctx, kind: String, X: float, Y: float, tt: float) -> void:
+	if kind == "dreamer":
+		var g2 = 0.5 + 0.5 * sin(tt * 3)
+		x.fillStyle = rgba(190, 80, 255, 0.28 * g2); x.fillRect(X - 13, Y - 21, 26, 22)
+		x.fillStyle = "#06020c"; x.fillRect(X - 10, Y - 16, 20, 16)
+		x.fillStyle = "#2a1040"; x.fillRect(X - 9, Y - 15, 18, 14)
+		x.fillStyle = "#4a2068"; x.fillRect(X - 9, Y - 15, 18, 3)
+		x.fillStyle = "#06020c"; x.fillRect(X - 9, Y - 10, 18, 1)
+		x.fillStyle = "#120618"; x.fillRect(X - 6, Y - 15, 2, 14); x.fillRect(X + 4, Y - 15, 2, 14)
+		x.fillStyle = rgba(255, 60, 90, 0.6 + 0.4 * g2); x.fillRect(X - 1, Y - 8, 2, 5); x.fillRect(X - 3, Y - 6, 6, 1)   # a red rune
+		x.fillStyle = "#d89aff"; x.fillRect(X - 2, Y - 12, 4, 3)
+		if randf() < 0.15:
+			part(X + cam.x + rand(-10, 10), Y + cam.y - rand(4, 20), 0, -20, 0.6, "#c25cff" if randf() < 0.6 else "#ff3a5a", 0, 1)
+		return
 	var red = kind == "warlord"
 	var gl = 0.5 + 0.5 * sin(tt * 4)
 	x.fillStyle = rgba(255, 70, 90, 0.25 * gl) if red else rgba(255, 220, 80, 0.25 * gl)
@@ -1544,7 +1601,14 @@ func drawTrophyStand(x: Ctx, sx: float, sy: float) -> void:
 		x.fillStyle = "#241410"; x.fillRect(X - 8, Y - 22, 16, 16)
 		x.fillStyle = "#e8dcc0"; x.fillRect(X - 7, Y - 21, 14, 14)
 		x.fillStyle = "#c8b898"; x.fillRect(X - 7, Y - 21, 14, 2)
-		if got and tr.id == "warlord":
+		if got and tr.id == "dreamer":
+			# a golden octopus head with ruby eyes
+			x.fillStyle = "#ffd35a"; x.fillRect(X - 5, Y - 34, 10, 8); x.fillRect(X - 6, Y - 31, 12, 4)
+			x.fillStyle = "#c89418"
+			for j in 5:
+				x.fillRect(X - 5 + j * 2.4, Y - 27, 1.2, 4 + (j % 2) * 2)
+			x.fillStyle = "#ff2a4a"; x.fillRect(X - 3, Y - 31, 2, 1.5); x.fillRect(X + 1, Y - 31, 2, 1.5)
+		elif got and tr.id == "warlord":
 			# a golden crested helm
 			x.fillStyle = "#ffd35a"; x.fillRect(X - 5, Y - 33, 10, 11)
 			x.fillStyle = "#c89418"; x.fillRect(X - 5, Y - 24, 10, 2)
@@ -1582,6 +1646,8 @@ func drawTrophies(x: Ctx, sx: float, sy: float) -> void:
 			nm = "Croc"
 		elif k == "warlord":
 			nm = "Warlord"
+		elif k == "dreamer":
+			nm = "Dreamer"
 		else:
 			var parts_: PackedStringArray = SLIME_TYPES[k].name.split(" ")
 			nm = parts_[-1]
@@ -1589,7 +1655,7 @@ func drawTrophies(x: Ctx, sx: float, sy: float) -> void:
 				nm = parts_[0]
 		x.font = F5
 		textOutline(x, nm, X0 + 10, 30 - sy, "#ffe08a")
-		var use: Array = slots.slice(0, 2) if k == "croc" or k == "warlord" else slots
+		var use: Array = slots.slice(0, 2) if k in ["croc", "warlord", "dreamer"] else slots
 		totalSlots += use.size()
 		for row in use.size():
 			var key: String = use[row][0]

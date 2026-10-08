@@ -1,5 +1,5 @@
 extends Node
-## Scripted check of the boss loot update: the Warlord's dying cutscene, the sealed Dreamer's Gate,
+## Scripted check of the boss loot update: the Warlord's dying cutscene, the Dreamer's Gate,
 ## Crocbox / Crimsonbox, the boss treasures and the two boss skills. Saves screenshots.
 ## Run:  godot --path godot res://tests/bossloot.tscn -- <output dir>
 ## (needs a display or a virtual one such as xvfb-run)
@@ -54,8 +54,6 @@ func _ready() -> void:
 	add.call(0.3, "tap", KEY_Z)
 	add.call(0.2, "togate")
 	add.call(0.5, "shot", "gate")
-	add.call(0.1, "tap", KEY_UP)
-	add.call(0.4, "shot", "gate_sealed")
 	add.call(0.1, "farm")
 	add.call(2.6, "shot", "box_skill")
 	add.call(0.1, "tap", KEY_Z)
@@ -142,9 +140,9 @@ func _process(delta: float) -> void:
 			"togate":
 				var g = null
 				for p in game.M.portals:
-					if p.get("sealed"):
+					if p.to == "abyss1":
 						g = p
-				print("sealed gate: ", g != null)
+				print("Dreamer's Gate: ", g != null)
 				if g != null:
 					game.P.x = g.x
 			"farm":
