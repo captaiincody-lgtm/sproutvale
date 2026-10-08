@@ -1,0 +1,442 @@
+{
+ "sets": {
+  "toad": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 33,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "idle": 2,
+    "hop": 1,
+    "slam": 1,
+    "tongue": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "toad_shiny": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 33,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "idle": 2,
+    "hop": 1,
+    "slam": 1,
+    "tongue": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "toad_elite": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 33,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "idle": 2,
+    "hop": 1,
+    "slam": 1,
+    "tongue": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "seagull": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 23,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "fly": 4,
+    "dive": 1,
+    "drop": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "seagull_shiny": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 23,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "fly": 4,
+    "dive": 1,
+    "drop": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "seagull_elite": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 23,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "fly": 4,
+    "dive": 1,
+    "drop": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "bass": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 24,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "swim": 4,
+    "bite": 2,
+    "charge": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "bass_shiny": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 24,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "swim": 4,
+    "bite": 2,
+    "charge": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "bass_elite": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 24,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "swim": 4,
+    "bite": 2,
+    "charge": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "crab": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 33,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "walk": 4,
+    "idle": 2,
+    "pinch": 2,
+    "beam": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "crab_shiny": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 33,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "walk": 4,
+    "idle": 2,
+    "pinch": 2,
+    "beam": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "crab_elite": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 33,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "walk": 4,
+    "idle": 2,
+    "pinch": 2,
+    "beam": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "shark": {
+   "w": 180,
+   "h": 80,
+   "dim": {
+    "ax": 45,
+    "ay": 31,
+    "w": 90,
+    "h": 40
+   },
+   "keys": {
+    "swim": 4,
+    "bite": 2,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "shark_shiny": {
+   "w": 180,
+   "h": 80,
+   "dim": {
+    "ax": 45,
+    "ay": 31,
+    "w": 90,
+    "h": 40
+   },
+   "keys": {
+    "swim": 4,
+    "bite": 2,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "shark_elite": {
+   "w": 180,
+   "h": 80,
+   "dim": {
+    "ax": 45,
+    "ay": 31,
+    "w": 90,
+    "h": 40
+   },
+   "keys": {
+    "swim": 4,
+    "bite": 2,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "squid": {
+   "w": 100,
+   "h": 140,
+   "dim": {
+    "ax": 25,
+    "ay": 68,
+    "w": 50,
+    "h": 70
+   },
+   "keys": {
+    "swim": 4,
+    "ink": 1,
+    "gaze": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "squid_shiny": {
+   "w": 100,
+   "h": 140,
+   "dim": {
+    "ax": 25,
+    "ay": 68,
+    "w": 50,
+    "h": 70
+   },
+   "keys": {
+    "swim": 4,
+    "ink": 1,
+    "gaze": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "squid_elite": {
+   "w": 100,
+   "h": 140,
+   "dim": {
+    "ax": 25,
+    "ay": 68,
+    "w": 50,
+    "h": 70
+   },
+   "keys": {
+    "swim": 4,
+    "ink": 1,
+    "gaze": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "orca": {
+   "w": 260,
+   "h": 130,
+   "dim": {
+    "ax": 65,
+    "ay": 56,
+    "w": 130,
+    "h": 65
+   },
+   "keys": {
+    "swim": 4,
+    "chomp": 2,
+    "tail": 2,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "orca_shiny": {
+   "w": 260,
+   "h": 130,
+   "dim": {
+    "ax": 65,
+    "ay": 56,
+    "w": 130,
+    "h": 65
+   },
+   "keys": {
+    "swim": 4,
+    "chomp": 2,
+    "tail": 2,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "orca_elite": {
+   "w": 260,
+   "h": 130,
+   "dim": {
+    "ax": 65,
+    "ay": 56,
+    "w": 130,
+    "h": 65
+   },
+   "keys": {
+    "swim": 4,
+    "chomp": 2,
+    "tail": 2,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "octopus": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 33,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "scurry": 4,
+    "idle": 2,
+    "flurry": 2,
+    "grab": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "octopus_shiny": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 33,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "scurry": 4,
+    "idle": 2,
+    "flurry": 2,
+    "grab": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "octopus_elite": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 33,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "scurry": 4,
+    "idle": 2,
+    "flurry": 2,
+    "grab": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  }
+ }
+}

@@ -42,6 +42,34 @@ frame size**, then reopen Godot. Nothing in the code needs to change.
 
 Sounds and music work the same way: replace any `.ogg` in `../audio/`.
 
+## The Abyss (`abyss/`)
+
+The areas past the Warlord's Keep (the five Abyss maps, their monsters, The
+Dreamer and the bubble) were made for the Godot version only, so their art
+lives in its own folder with the same layout. The game looks in `abyss/` for
+any file it can't find in the main folders.
+
+| File | What | Size |
+|---|---|---|
+| `abyss/mobs/<monster>/<pose>.png` | Toad, seagull, bass, crab, shark, squid, orca, octopus | Strips of frames; frame size and counts per monster are in `abyss/mobs/mobs.json` (`w`, `h`, `keys`). Sprites face right. `_shiny` and `_elite` folders are the recolours |
+| `abyss/boss/dreamer_head.png` | The Dreamer's head, rising behind the floor | 560 × 340 |
+| `abyss/boss/dreamer_eye.png` | One eye (used for both) | 4 frames of 64 × 44: open, glowing, shut, hurt |
+| `abyss/boss/dreamer_mouth.png` | The mouth | 2 frames of 120 × 96: closed, open |
+| `abyss/boss/dreamer_portrait.png` | Bestiary picture and monster card | 2 frames of 220 × 170: calm, glaring |
+| `abyss/maps/<map>.png` | Each level, painted at 2× | `<map>.json` lists the spots that glow (runes, seaweed) as `[x, y, radius, colour]` in world pixels |
+| `abyss/sky/abyss_*`, `abyssdeep_*`, `abyssruin_*` | Background layers: the surface, the deep and the ruins | `_far` 1536 × 240, `_mid` 1536 × 180 |
+| `abyss/sky/bubble_0..2.png` | The colours racing round inside the bubble | 768 × 432 |
+| `abyss/items/residue_<monster>.png`, `dream_key.png` | Materials and the Dream Key | 9 × 9 and 32 × 32 |
+
+The tentacles are drawn by the game (a chain of circles), not from a PNG.
+To re-bake the Abyss art and music from their generators (this overwrites
+any PNGs you replaced in `abyss/`):
+
+```
+node tools/bake/abyss.mjs godot
+python3 tools/bake/abyss_music.py godot
+```
+
 ## Re-baking from the HTML prototype
 
 If you change the prototype and want fresh copies, run this from the repo root

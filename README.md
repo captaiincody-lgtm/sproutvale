@@ -4,7 +4,7 @@ A side-scrolling platformer RPG.
 
 - `Sproutvale 2D — prototype.html`: the original browser prototype.
 - `godot/`: the standalone Godot 4 version (work in progress).
-- `tools/bake/`: copies the prototype's generated art, sounds and music into `godot/`.
+- `tools/bake/`: copies the prototype's generated art, sounds and music into `godot/` (`abyss*` files generate the Abyss areas' art and music, which exist only in the Godot version).
 
 ## Play the Godot version
 

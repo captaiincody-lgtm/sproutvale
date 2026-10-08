@@ -29,7 +29,7 @@ func useSkill(id: String) -> bool:
 		Sfx.tone(160, 0.12, "square", 0.05, 120)
 		flashEnergy()
 		return false
-	if P.state in ["dead", "climb", "hurt"] or inWater():
+	if P.state in ["dead", "climb", "hurt", "tumble", "held"] or (inWater() and M.get("sea") == null):
 		return false
 	var r = skillRank(id)
 	P.en -= s.get("cost", 0)
@@ -740,11 +740,11 @@ func blink(dirIn: int, up: bool, down: bool) -> void:
 	if up and not dirIn:
 		ny = P.y - dist
 	elif down and not dirIn:
-		ny = minf(P.y + dist, M.floorY)
+		ny = minf(P.y + dist, groundAt(P.x))
 	else:
 		nx = P.x + (dirIn if dirIn else P.face) * dist
 	nx = clampf(nx, 24, M.w - 24)
-	ny = clampf(ny, 30, M.floorY)
+	ny = clampf(ny, 30, groundAt(nx))
 	if M.get("pond") and ny > M.floorY + 1 and nx > M.pond.x0 - 8 and nx < M.pond.x1 + 8:
 		nx = clampf(nx, M.pond.x0 + 7, M.pond.x1 - 7)
 	P.en -= cost
@@ -1078,7 +1078,7 @@ func updatePets(dt: float) -> void:
 	if summonOn("slime"):
 		Sl.t += dt
 		Sl.cd -= dt
-		var g0: float = P.y if P.grounded else float(M.floorY)
+		var g0: float = P.y if P.grounded else groundAt(P.x)
 		if Sl.state == "follow":
 			var tx = P.x - P.face * 26
 			Sl.x = damp(Sl.x, tx, 4, dt)
@@ -1103,7 +1103,7 @@ func updatePets(dt: float) -> void:
 	if summonOn("croc"):
 		C.t += dt
 		C.cd -= dt
-		var g0: float = P.y if P.grounded else float(M.floorY)
+		var g0: float = P.y if P.grounded else groundAt(P.x)
 		if C.state == "follow":
 			var tx = P.x + P.face * 22
 			C.vx = (tx - C.x) * 3

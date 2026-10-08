@@ -1,4 +1,4 @@
-extends "res://scripts/render.gd"
+extends "res://scripts/abyss_draw.gd"
 ## Sproutvale, part 8: the story intro played when a hero starts a new adventure.
 ## Each scene is painted on a 384×216 canvas (through `ctx`, scaled 2× to the screen) and
 ## a text box with Skip / Next buttons sits along the bottom, as in the prototype.
