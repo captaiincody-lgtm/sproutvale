@@ -25,6 +25,9 @@ func _ready() -> void:
 	# the areas beyond the Warlord's Keep keep their art in art/abyss (same layout as art/)
 	if FileAccess.file_exists(ART + "abyss/mobs/mobs.json"):
 		mobs.sets.merge(_json(ART + "abyss/mobs/mobs.json").sets)
+	# …and the climb to the volcano keeps its art in art/climb
+	if FileAccess.file_exists(ART + "climb/mobs/mobs.json"):
+		mobs.sets.merge(_json(ART + "climb/mobs/mobs.json").sets)
 	font = _font("res://fonts/PressStart2P-Regular.ttf")
 	emoji = load("res://fonts/NotoColorEmoji.ttf")
 	ui_font = load("res://fonts/Fredoka-700.ttf")
@@ -38,6 +41,8 @@ func tex(path: String) -> Texture2D:
 		_tex[path] = load(ART + path) if ResourceLoader.exists(ART + path) else null
 		if _tex[path] == null and ResourceLoader.exists(ART + "abyss/" + path):
 			_tex[path] = load(ART + "abyss/" + path)
+		if _tex[path] == null and ResourceLoader.exists(ART + "climb/" + path):
+			_tex[path] = load(ART + "climb/" + path)
 		if _tex[path] == null:
 			push_warning("missing art: " + path)
 	return _tex[path]

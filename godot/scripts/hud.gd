@@ -1,4 +1,4 @@
-extends "res://scripts/tank_draw.gd"
+extends "res://scripts/climb_draw.gd"
 ## Sproutvale, part 9: the HUD, and the small immediate-mode toolkit it and the menus draw with.
 ## The prototype built these out of HTML and CSS. Here every box, label and button is drawn each
 ## frame in screen pixels (768×432), and anything clickable registers a "zone" for the mouse.
@@ -31,6 +31,10 @@ const BOSS_INFO := {
 		"paras": ["**Attacks:** too big to fit: hit its eyes, its brow and the tentacles that rise from the sea floor · **Gaze:** its eyes glow, then flash; dodge (C) in that moment or you're Confused · tentacle whips where you stand, one after another, feeding the Abyss · grabs and slams you like an octopus · **Laser vision:** its eyes burn white, then a beam sweeps the sea floor and boils the water off it — get off the floor or dodge through it · **Devour:** drags you into its mouth and chews before spitting you out (hit its open mouth for big damage).",
 			"**Reward:** 80,000 EXP · a hoard of coins · a trophy · the key to Glamrax's crystal · a **Dreambox** (500–2,500 coins, 1–5 Boss Coins, maybe a rare treasure, and very rarely its Abyssal Devour skill)"],
 		"rec": "Recommended: Lv 70+. Walk right into the portal to enter."},
+	"kingYeti": {"title": "⚠ Boss: King Yeti", "stats": [["Level", "95"], ["HP", "200,000"], ["Attack", "300"], ["Defense", "85"]],
+		"paras": ["**Attacks:** fast punches and huge sword swings · **Sword throw:** the blade flies at lightning speed; if it hits it impales you, and he blinks over to rip it out (dodge with C!) · grabs you, slams you three times and throws you into the stalactites on the roof · **Below 30% HP:** he lets go of the sword, which fights on its own, gets even faster with his fists, and hurls boulders one after another.",
+			"**Reward:** 140,000 EXP · a hoard of coins · a trophy · his glowing pendant · a **Yetibox** (500–2,500 coins, 1–5 Boss Coins, maybe a rare treasure, and very rarely his Impaling Blade skill)"],
+		"rec": "Recommended: Lv 90+. Walk right into the cave's end to enter."},
 }
 
 var UF: Font        # Fredoka medium: body text
@@ -524,7 +528,8 @@ func _bossUI() -> void:
 		uText("%s / %s" % [fmt(b.hp), fmt(b.maxHp)], bb.get_center().x, bb.position.y + 1, 7, Color.WHITE, UB, 1, Color.BLACK)
 	var sign = M.get("bossSign")
 	if sign != null and absf(P.x - sign) < 70 and absf(P.y - groundAt(P.x)) < (60.0 if M.get("sea") != null else 4.0):
-		var I: Dictionary = BOSS_INFO.warlord if M.get("theme") == "crimson" else (BOSS_INFO.dreamer if M.get("theme") == "abyss" else BOSS_INFO.croc)
+		var th = M.get("theme")
+		var I: Dictionary = BOSS_INFO.warlord if th == "crimson" else (BOSS_INFO.dreamer if th == "abyss" else (BOSS_INFO.kingYeti if th == "cave" else BOSS_INFO.croc))
 		var w = minf(UW * 0.7, 336.0)
 		var x = UW / 2 - w / 2
 		var tw = w - 22
@@ -716,7 +721,7 @@ func _keyGet() -> void:
 		var p1 = Vector2(cx, cy) + Vector2(cos(ang), sin(ang)) * len
 		uci.draw_line(p0, p1, Color(css("#ff6af0"), 0.16 * a), 5.0)
 	var sz = 64.0 * pop
-	var tex = Assets.tex("items/dream_key.png")
+	var tex = Assets.tex("items/yeti_pendant.png" if keyGet.item == "yetiPendant" else "items/dream_key.png")
 	var bob = sin(realTime * 2.4) * 3
 	uGlow(Rect2(cx - sz / 2, cy - sz / 2 + bob, sz, sz), Color(css("#ff6af0"), 0.7 * a), 16, 12)
 	if tex != null:
@@ -762,6 +767,7 @@ func _lootPanel() -> void:
 	var L: Dictionary = loot
 	var red: bool = L.kind == "warlord"
 	var dream: bool = L.kind == "dreamer"
+	var icy: bool = L.kind == "kingYeti"
 	var t: float = L.t
 	var n: int = L.rows.size()
 	var shown: int = L.get("shown", 0)
@@ -769,18 +775,18 @@ func _lootPanel() -> void:
 	var w = 340.0
 	var h = 140.0 + n * 22
 	var r = Rect2(UW / 2 - w / 2, UH / 2 - h / 2, w, h)
-	var edge = css("#ff5d73") if red else (css("#c25cff") if dream else css("#e8b830"))
+	var edge = css("#ff5d73") if red else (css("#c25cff") if dream else (css("#7af0ff") if icy else css("#e8b830")))
 	uGlow(r, Color(edge, 0.45), 14, 12)
-	uBox(r, css("#1c0a10") if red else (css("#120820") if dream else css("#10200e")), edge, 3, 12)
+	uBox(r, css("#1c0a10") if red else (css("#120820") if dream else (css("#08182a") if icy else css("#10200e"))), edge, 3, 12)
 	uText(String(L.name).to_upper(), UW / 2, r.position.y + 12, 12, edge, PX, 1, Color.BLACK, 2)
 	# the box itself
 	var bx = UW / 2
 	var by = r.position.y + 100
 	var open = t > 0.8
 	var jig = 0.0 if open else sin(t * 60) * (t / 0.8) * 3
-	var body = css("#8a1a24") if red else (css("#2a1040") if dream else css("#3f7a2c"))
-	var shine = css("#b8303c") if red else (css("#4a2068") if dream else css("#5fa83e"))
-	var band = css("#2a1418") if red else (css("#120618") if dream else css("#e8b830"))
+	var body = css("#8a1a24") if red else (css("#2a1040") if dream else (css("#3a6a8a") if icy else css("#3f7a2c")))
+	var shine = css("#b8303c") if red else (css("#4a2068") if dream else (css("#9ad8f0") if icy else css("#5fa83e")))
+	var band = css("#2a1418") if red else (css("#120618") if dream else (css("#e8f6ff") if icy else css("#e8b830")))
 	if open:
 		uGlow(Rect2(bx - 26, by - 46, 52, 30), Color(edge, 0.5 + 0.3 * sin(realTime * 6)), 10, 12)
 		for i in 6:
