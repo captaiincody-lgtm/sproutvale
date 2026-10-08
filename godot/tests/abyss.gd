@@ -77,6 +77,22 @@ func _ready() -> void:
 	add.call(0.4, "shot", "inked_confused")
 	add.call(0.1, "go", 1000)
 	add.call(0.6, "shot", "abyss3_mid")
+	add.call(0.1, "under")
+	add.call(0.4, "shot", "under_idle")
+	add.call(0.1, "down", true)
+	add.call(0.5, "shot", "under_prone")
+	add.call(0.1, "right", true)
+	add.call(0.6, "shot", "under_crawl")
+	add.call(0.1, "down", false)
+	add.call(0.5, "shot", "under_run")
+	add.call(0.1, "right", false)
+	add.call(0.1, "float")
+	add.call(0.1, "tap", KEY_X)
+	add.call(0.4, "shot", "under_plunge")
+	add.call(0.6, "under")
+	add.call(0.1, "float")
+	add.call(0.1, "tap", KEY_Z)
+	add.call(0.3, "shot", "under_air_attack")
 	# Map 4: the black plateau
 	add.call(0.1, "warp", "abyss4")
 	add.call(2.0, "shot", "abyss4")
@@ -109,6 +125,11 @@ func _ready() -> void:
 	add.call(1.6, "act", "gaze")
 	add.call(0.7, "shot", "gaze_glow")
 	add.call(0.5, "shot", "gaze_flash")
+	add.call(1.0, "calm")
+	add.call(0.1, "act", "laser")
+	add.call(0.6, "shot", "laser_charge")
+	add.call(0.6, "shot", "laser_sweep")
+	add.call(0.5, "shot", "laser_steam")
 	add.call(1.0, "calm")
 	add.call(0.1, "act", "grab")
 	add.call(0.8, "shot", "tent_grab")
@@ -284,6 +305,25 @@ func _process(delta: float) -> void:
 				game.P.x = s[2]
 				game.P.y = game.groundAt(s[2]) - (40 if game.underSea(s[2], game.groundAt(s[2]) - 40) else 0)
 				game.P.vy = 0
+			"under":
+				# stand on the sea floor, well under the surface
+				game.P.x = 1000
+				game.P.y = game.groundAt(1000)
+				game.P.vx = 0; game.P.vy = 0; game.P.state = "move"; game.P.grounded = true
+				game.P.hp = game.PS.hp
+				print("under: inWater=%s underSea=%s state=%s" % [game.inWater(), game.underSea(game.P.x, game.P.y - 24), game.P.state])
+			"down":
+				key(KEY_DOWN, s[2])
+				if not s[2]:
+					print("after prone underwater: state=%s anim=%s" % [game.P.state, game.P.anim])
+			"right":
+				key(KEY_RIGHT, s[2])
+			"float":
+				# off the sea floor, so the air moves can fire
+				game.P.grounded = false
+				game.P.surf = null
+				game.P.y -= 54
+				game.P.vy = 0
 			"build":
 				game.abyssBuild(s[2])
 				print("buildup %.0f, drain %.2f, hp %d / %d" % [game.P.abyssB, game.P.abyssDrain, game.PS.hp, game.PS.hpFull])
@@ -367,7 +407,8 @@ func _process(delta: float) -> void:
 				var n = 0
 				while game.skillRank("devour") == 0 and n < 3000:
 					n += 1
-					game.openBox("dreamer")
+					game.collectBox("dreamer")
+					game.openBoxes("dreamer", 1)
 				print("boxes until Abyssal Devour: %d, boons: %s, binds: %s" % [n, game.CH().get("boons"), game.CH().binds])
 				game.loot.t = 0.0
 				game.loot.shown = 0

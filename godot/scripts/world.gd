@@ -48,7 +48,7 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 		MAPS.lair.portals.append({"x": MAPS.lair.w - 40, "to": "crimson1", "tx": 70, "label": "The Crimson Wastes"})
 	if id == "crimson5" and save.trophies.get("warlord"):
 		openDreamGate()
-	# a boss box left lying on the floor isn't lost: it opens as you leave
+	# a boss box left lying on the floor isn't lost: it goes in your bag as you leave
 	var unopened = []
 	for d in drops:
 		if d.kind == "box":
@@ -62,7 +62,7 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 	surfaces = surfacesOf(M)
 	tufts.clear()
 	for s in surfaces:
-		if s.water or M.get("indoor") or M.get("floor") or M.get("theme") == "bubble" or (M.get("tree") and not s.floor):
+		if s.water or M.get("indoor") or M.get("floor") or M.get("theme") in ["bubble", "cave", "peak"] or (M.get("tree") and not s.floor):
 			continue
 		var x: float = s.x0 + 3
 		while x < s.x1 - 3:
@@ -101,7 +101,7 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 	scene = null
 	if M.get("boss"):
 		P.face = 1   # arenas: you always walk in facing the boss
-	var bk = M.boss if M.get("boss") in ["warlord", "dreamer"] else "croc"
+	var bk = M.boss if M.get("boss") in ["warlord", "dreamer", "kingYeti"] else "croc"
 	M.pedestal = {"x": roundi(M.w * (0.55 if bk == "croc" else 0.5)), "kind": bk} if M.get("boss") and save.trophies.get(bk) else null
 	abyssOnLoad()
 	if M.get("boss") and not M.pedestal:
@@ -109,12 +109,14 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 			spawnWarlord()
 		elif M.boss == "dreamer":
 			spawnDreamer()
+		elif M.boss == "kingYeti":
+			spawnYeti()
 		else:
 			spawnBoss()
 	if inGame and not M.get("boss"):
 		banner(M.name, M.get("sub", "Tougher slimes live here" if M.get("lvBonus") else "Starter area"))
 	for k in unopened:
-		later(0.6, func(): openBox(k))
+		collectBox(k)
 
 
 func travel(portal: Dictionary) -> void:
@@ -314,8 +316,12 @@ func updateWorld(dt: float) -> void:
 	World.ambT -= dt
 	if World.ambT <= 0:
 		World.ambT = 0.3
-		var outdoors: bool = inGame and not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble"])
-		Sfx.ambience(minf(1.3, World.rain) if outdoors else 0.0, minf(1.5, World.wind) if outdoors else 0.0)
+		var outdoors: bool = inGame and not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble", "climb", "snow", "cave", "peak"])
+		var cw = climbWind() if inGame else -1.0
+		if cw >= 0:
+			Sfx.ambience(0.0, cw)
+		else:
+			Sfx.ambience(minf(1.3, World.rain) if outdoors else 0.0, minf(1.5, World.wind) if outdoors else 0.0)
 
 
 func dayInfo() -> Dictionary:

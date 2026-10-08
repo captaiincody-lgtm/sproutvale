@@ -105,7 +105,7 @@ func usePotion(k: String) -> void:
 # ---------------- storms: a rare lightning strike leaves you Shocked (faster everything for a minute)
 
 func updateLightning(dt: float) -> void:
-	if M.get("indoor") or M.get("theme") in ["crimson", "abyss", "bubble"] or World.storm < 0.5 or P.state == "dead" or not P.grounded:
+	if M.get("indoor") or M.get("theme") in ["crimson", "abyss", "bubble", "climb", "snow", "cave", "peak"] or World.storm < 0.5 or P.state == "dead" or not P.grounded:
 		return
 	P.boltCd -= dt
 	if P.boltCd > 0:
@@ -467,7 +467,10 @@ func updatePlayer(dt: float) -> void:
 		if dirIn:
 			P.runT = 1.0
 		dblTap = ""
-	var wet = inWater()
+	# the shallow pond takes moves away (you wade and splash); the deep sea of the Abyss keeps the
+	# whole kit — prone, slides, air chains, the plunge — so the player never loses control down there
+	var swimming = inWater()
+	var wet = swimming and M.get("sea") == null
 	var rNear = ropeAt()
 	var atRopeTop: bool = rNear != null and P.grounded and absf(P.y - rNear.y0) < 2
 	var climbable: bool = rNear != null and not atRopeTop
@@ -511,7 +514,7 @@ func updatePlayer(dt: float) -> void:
 		startClimb(rNear, true)
 	# jumping / swimming
 	if has.call("jump", 0.14) and canCancel:
-		if wet and P.state != "climb":
+		if swimming and P.state != "climb":
 			use.call("jump")
 			var Wp: Dictionary = waterBox()
 			var headOut: bool = P.y - 36 < Wp.surface + 2
@@ -535,7 +538,7 @@ func updatePlayer(dt: float) -> void:
 		elif P.grounded or (now - P.coyote < 0.1 and P.jumps == 0 and P.vy >= 0):
 			use.call("jump")
 			var fromSlide = P.state == "slide"
-			P.vy = -335; P.lastJumpT = now; P.grounded = false; P.surf = null; P.jumps = 1; P.state = "move"
+			P.vy = -335 * tankJumpMul(); P.lastJumpT = now; P.grounded = false; P.surf = null; P.jumps = 1; P.state = "move"
 			if fromSlide:
 				P.vx *= 1.15
 			Sfx.jump()
@@ -575,6 +578,9 @@ func updatePlayer(dt: float) -> void:
 	if classId == "mage" and has.call("dash", 0.12) and canCancel and P.state != "climb":
 		use.call("dash")
 		blink(dirIn, up, down)
+	elif classId == "tank" and has.call("dash", 0.12) and canCancel and P.state != "climb" and P.state != "plunge":
+		use.call("dash")
+		tankDodge(dirIn)
 	elif has.call("dash", 0.12) and canCancel and P.state != "climb" and P.state != "plunge" and (P.grounded or P.airDash == 0):
 		use.call("dash")
 		if not P.grounded:
@@ -591,6 +597,8 @@ func updatePlayer(dt: float) -> void:
 		summonerInput(has, use, dirIn, up, down, wet, canAct, risingIntent)
 	elif classId == "mage":
 		mageInput(has, use, dirIn, up, down, wet, canAct, risingIntent)
+	elif classId == "tank":
+		tankInput(has, use, dirIn, up, down, wet, canAct, risingIntent)
 	elif classId == "archer":
 		archerInput(has, use, dirIn, up, down, wet, canAct, risingIntent)
 	else:
@@ -667,7 +675,7 @@ func updatePlayer(dt: float) -> void:
 	var run = P.runT > 0.28
 	match P.state:
 		"move":
-			if inWater():
+			if inWater() and not (P.grounded and M.get("sea") != null):
 				P.vx = damp(P.vx, dirIn * 115 * PS.spd, 7, dt)
 				if dirIn:
 					P.face = dirIn
@@ -744,7 +752,8 @@ func updatePlayer(dt: float) -> void:
 					Sfx.land()
 			else:
 				P.vx = damp(P.vx, 0, 10, dt)
-				if P.kdT > 0.3:   # 0.3s on the ground, then back up
+				if P.kdT > 0.3 + P.kdLong:   # 0.3s on the ground (longer after a bad fall), then back up
+					P.kdLong = 0.0
 					P.state = "move"
 					setAnim("land")
 					P.landT = 0.18
@@ -802,6 +811,7 @@ func updatePlayer(dt: float) -> void:
 		"attack":
 			_updateAttack(dt, aspd, dirIn, down)
 
+	tankMove(dt, dirIn, up, down)
 	# --- physics ---
 	if P.state != "climb":
 		var wetNow = inWater()
@@ -943,7 +953,7 @@ func updatePlayer(dt: float) -> void:
 		speedLines.append({"x": P.x - P.face * rand(10, 22), "y": P.y - rand(6, 44), "len": rand(10, 26), "vx": -P.face * rand(40, 90), "t": 0.0, "life": rand(0.18, 0.32)})
 	P.windV = damp(P.windV, windTarget, 4, dt)
 	# breath clouds in the cold
-	if (World.snow > 0.3 or World.snowCover > 0.5) and P.state != "dead" and not (M.get("theme") in ["abyss", "bubble"]):
+	if (World.snow > 0.3 or World.snowCover > 0.5 or M.get("cold", 0.0) > 0.3) and P.state != "dead" and not (M.get("theme") in ["abyss", "bubble"]):
 		P.breathT -= dt
 		if P.breathT <= 0:
 			P.breathT = rand(2.2, 3.4)
@@ -966,7 +976,7 @@ func updatePlayer(dt: float) -> void:
 		if P.bleed != null:
 			P.bleed.t = 0
 	# wetness: rises in rain (unless swimming/indoors), drains slowly once it stops
-	var raining: bool = World.rain > 0.3 and not M.get("boss") and not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble"])
+	var raining: bool = World.rain > 0.3 and not M.get("boss") and not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble", "climb", "snow", "cave", "peak"])
 	P.wet = clampf(P.wet + (1.0 if inWater() else (dt * 0.5 if raining else -dt / 25)), 0, 1)
 	if P.wet > 0.15 and randf() < dt * 14 * P.wet and not (M.get("sea") != null and inWater()):
 		var noTip = P.state == "climb" or P.anim == "swim"
@@ -1111,7 +1121,12 @@ func plungeImpact() -> void:
 
 ## landing: snow puffs in snow, a puddle splash in the rain
 func landFx(k: float) -> void:
-	if M.get("theme") in ["abyss", "bubble"]:
+	if M.get("theme") in ["abyss", "bubble", "climb", "cave", "peak"]:
+		return
+	if M.get("theme") == "snow":
+		for i in int(10 + k * 10):
+			var s = 1 if i % 2 else -1
+			part(P.x + s * rand(2, 8), P.y - 1, s * rand(30, 90) * k, -rand(40, 120) * k, rand(0.4, 0.8), "#f4f8ff" if i % 3 else "#dde8f8", 260, 1 if i % 4 else 2)
 		return
 	if World.snowCover > 0.3 and not M.get("indoor"):
 		for i in int(10 + k * 10):
@@ -1129,6 +1144,9 @@ func landFx(k: float) -> void:
 func step(heavy: bool) -> void:
 	if M.get("theme") in ["abyss", "bubble"]:
 		abyssStep(heavy)
+		return
+	if climbMap():
+		climbStep(heavy)
 		return
 	var x = P.x - P.face * 3
 	var y = P.y

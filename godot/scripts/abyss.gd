@@ -232,6 +232,9 @@ func updateAbyss(dt: float) -> void:
 	gazeFlash = maxf(0, gazeFlash - dt * 1.5)
 	if P.state == "dead":
 		P.abyssT = 0.0; P.abyssB = 0.0; P.blindT = 0.0; P.confuseT = 0.0; P.held = null
+	# the dark water itself works on you: a slow, steady buildup while you're under it
+	if P.state != "dead" and P.abyssT <= 0 and M.get("sea") != null and underSea(P.x, P.y - 24):
+		abyssBuild(dt * 2.0)
 	if gameTime - P.lastBuild > 4 and P.abyssB > 0:
 		P.abyssB = maxf(0, P.abyssB - 10 * dt)   # buildup fades if you stop getting hit
 	var drain0 = P.abyssDrain
@@ -1139,7 +1142,8 @@ func spawnDreamer() -> void:
 	for i in DR_TENTS.size():
 		tents.append({"bx": DR_TENTS[i], "state": "peek", "t": rand(0, 6), "h": rand(26, 60), "tx": 0.0, "ty": 0.0, "part": null, "side": -1 if DR_TENTS[i] < M.w / 2.0 else 1})
 	e.data = {"rise": 0.0, "sink": 170.0, "act": "", "cd": 2.5, "tents": tents, "gaze": 0.0, "mouth": 0.0, "chew": 0.0, "queue": [],
-		"lastGaze": -99.0, "lastSuck": -99.0, "lastGrab": -99.0, "eyeHurt": [0.0, 0.0], "blink": 3.0, "parts": []}
+		"lastGaze": -99.0, "lastSuck": -99.0, "lastGrab": -99.0, "eyeHurt": [0.0, 0.0], "blink": 3.0, "parts": [],
+		"lastLaser": -99.0, "laser": 0.0, "laserX": 0.0, "laserDir": 1, "laserHit": false}
 	slimes.append(e)
 	# the parts you can hit: two eyes, the mouth (only while it gapes), and the tentacles
 	var eyes = []
@@ -1323,6 +1327,8 @@ func updateDreamer(e, dt: float) -> void:
 				opts.append("suck")
 			if gameTime - D.lastGrab > 6:
 				opts.append("grab")
+			if gameTime - D.lastLaser > 15:
+				opts.append("laser")
 			if D.get("prev", "") in opts and opts.size() > 2:
 				opts.erase(D.prev)
 			_startAct(e, opts[rint(0, opts.size() - 1)])
@@ -1340,6 +1346,49 @@ func updateDreamer(e, dt: float) -> void:
 			if D.queue.is_empty() and D.tents.all(func(T): return T.state in ["peek", "sink"]):
 				D.act = ""
 				D.cd = 1.4
+		"laser":
+			# laser vision: the eyes burn white, then a beam sweeps the floor and boils the sea off it
+			var chg: float = 0.7 if e.enraged else 0.85
+			var swp: float = 0.85 if e.enraged else 1.1
+			D.t += dt
+			if D.t < chg:
+				D.gaze = clampf(D.t / chg, 0, 1)
+				D.laser = 0.0
+				if randf() < dt * 30:
+					var s2 = -1 if randf() < 0.5 else 1
+					part(e.x + s2 * DR_EYE_DX + rand(-6, 6), M.floorY - DR_EYE_Y - 11, rand(-20, 20), rand(-30, 10), 0.4, "#ffffff", 0, 1)
+			elif D.t < chg + swp:
+				D.gaze = 0.7
+				D.laser = 1.0
+				var u = (D.t - chg) / swp
+				var x0: float = 30.0 if D.laserDir > 0 else M.w - 30.0
+				var x1: float = M.w - 30.0 if D.laserDir > 0 else 30.0
+				var prevX: float = D.laserX
+				D.laserX = lerpf(x0, x1, u)
+				var fy: float = groundAt(D.laserX)
+				# the water boils off wherever the beam lands: steam climbing in fat bubbles
+				for i in 7:
+					var bx = lerpf(prevX, D.laserX, randf())
+					part(bx + rand(-7, 7), fy - rand(0, 10), rand(-18, 18), -rand(70, 190), rand(1.2, 2.2), "rgba(255,255,255,0.9)" if i % 2 else "rgba(236,222,255,0.8)", -40, 3 if randf() < 0.4 else 2)
+				if randf() < dt * 40:
+					part(D.laserX + rand(-10, 10), fy - rand(10, 60), rand(-20, 20), -rand(20, 60), rand(0.5, 1.0), "#ffd0f4", -20, 1)
+				if int(D.t * 30) % 3 == 0:
+					Sfx.tone(rand(1400, 1900), 0.12, "sawtooth", 0.03, 700)
+				if not save.settings.god and P.state != "dead" and absf(P.x - D.laserX) < 15 and P.y > fy - 44 and P.y <= fy + 30:
+					if P.state == "dash":
+						if not D.laserHit:
+							D.laserHit = true
+							floatText(P.x, P.y - 62, "Slipped the beam!", "call")
+							perfectDodge()
+					elif mobHit(e, 1.0, 20.0):
+						D.laserHit = true
+						shake = maxf(shake, 5)
+						Sfx.burst(0.3, "highpass", 900, 2600, 0.3)
+			else:
+				D.laser = 0.0
+				D.gaze = 0.0
+				D.act = ""
+				D.cd = 1.6
 		"gaze":
 			D.t += dt
 			D.gaze = clampf(D.t / 1.1, 0, 1)
@@ -1432,6 +1481,15 @@ func _startAct(e, a: String) -> void:
 			for i in mini(n, free.size()):
 				D.queue.append(free[i])
 			D.at = 0.2
+		"laser":
+			D.lastLaser = gameTime
+			D.laserHit = false
+			D.laserDir = 1 if P.x > e.x else -1   # starts on the far side and sweeps towards you
+			D.laserX = 30.0 if D.laserDir > 0 else M.w - 30.0
+			D.laser = 0.0
+			floatText(e.x, M.floorY - DR_EYE_Y - 30, "Its eyes burn white...", "call")
+			Sfx.tone(300, 0.9, "sawtooth", 0.05, 2200)
+			Sfx.burst(1.0, "highpass", 600, 2000, 0.18)
 		"gaze":
 			D.lastGaze = gameTime
 			floatText(e.x, M.floorY - DR_EYE_Y - 30, "The Dreamer stares...", "call")
@@ -1558,7 +1616,8 @@ func pickupKey() -> void:
 	saveDirty = true
 	persist()
 	cheer()
-	banner("THE DREAM KEY", "It hums with the crystal's light. It can break the crystal Glamrax keeps people in.")
+	keyItemGet("dreamKey", "Dream Key", "It hums with the crystal's light. It can break the crystal Glamrax keeps people in.")
+	toast("🔑 You got the Dream Key! It's in your inventory, under Key items.")
 	Sfx.rankUp(9)
 	Sfx.buy()
 	for k in 40:

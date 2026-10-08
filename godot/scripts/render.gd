@@ -1,4 +1,4 @@
-extends "res://scripts/abyss.gd"
+extends "res://scripts/climb.gd"
 ## Sproutvale, part 7: drawing the world, in the same order as the prototype's render().
 ## Everything is in world units on a 384×216 view; the layers it draws into are scaled 2×.
 ## `x` is a Canvas2D stand-in (ctx.gd), so the drawing code reads like the original.
@@ -15,6 +15,7 @@ const BOX := 84.0
 const BOY := 144.0
 const HP := 0.5        # one screen pixel, in world units
 const WIND_V := [-1.2, 0.0, 1.2, 2.4, 3.6]
+var heroHead := Vector2.ZERO   # the middle of the hero's head in the world, updated each time the hero is drawn
 const FONT := '8px "Press Start 2P", monospace'
 const F6 := '6px "Press Start 2P", monospace'
 const F5 := '5px "Press Start 2P", monospace'
@@ -69,9 +70,7 @@ func textOutline(x: Ctx, s: String, X: float, Y: float, fill, out = "#1a1030") -
 
 
 func heroLook() -> String:
-	var c: Dictionary = save.chars.get(classId, {})
-	var g: String = c.get("look", {}).get("gender", "m")
-	return "%s_%s" % [classId, g]
+	return lookOf(classId)
 
 
 func tailOn() -> bool:
@@ -89,9 +88,12 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 	var sy = roundf(cam.y + (rand(-shake, shake) if shake > 0.2 else 0.0))
 	var theme: String = M.get("theme", "meadow")
 	var crimson = theme == "crimson"
-	var noSky = crimson or theme == "abyss" or theme == "bubble"
+	var climb = theme in ["climb", "snow", "cave", "peak"]
+	var noSky = crimson or theme == "abyss" or theme == "bubble" or climb
 	if theme == "abyss" or theme == "bubble":
 		drawAbyssBack(x, sx, sy, dt)
+	elif climb:
+		drawClimbBack(x, sx, sy, dt, D)
 	else:
 		if crimson:
 			drawCrimsonSky(x)
@@ -124,8 +126,10 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 	var mt = Assets.tex(mapArt())
 	if mt != null:
 		drawTerrain(x, mt, sx, sy)
+	if climb:
+		drawClimbMid(x, sx, sy)
 	# snow caps
-	if World.snowCover > 0.05 and not (theme in ["abyss", "bubble"]):
+	if World.snowCover > 0.05 and not (theme in ["abyss", "bubble"]) and not climb:
 		var h = ceilf(World.snowCover * 3)
 		x.fillStyle = "#f4f8ff"
 		for s in surfaces:
@@ -142,7 +146,7 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 		x.fillStyle = rgba(150, 170, 205, 0.7 * (1 - fp.t / 25))
 		x.fillRect(fp.x - sx - 1, fp.y - sy - 1, 3, 1)
 	# raindrops splashing on every surface in view
-	if World.rain > 0.3 and not M.get("indoor") and not (theme in ["abyss", "bubble"]):
+	if World.rain > 0.3 and not M.get("indoor") and not (theme in ["abyss", "bubble"]) and not climb:
 		x.fillStyle = rgba(200, 225, 255, 0.8)
 		for i in int(World.rain * 4):
 			var s: Dictionary = surfaces[rint(0, surfaces.size() - 1)]
@@ -168,6 +172,7 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 		if g.h > 2:
 			x.fillRect(X + lean, Y - g.h, 1, 1)
 	drawObelisk(x, sx, sy)
+	drawTankBack(x, sx, sy)
 	if M.get("slots"):
 		drawHouse(x, sx, sy)
 	if M.get("notes") or thought != null:
@@ -219,6 +224,10 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 				drawBossBox(x, d.type, X, Y + (roundf(sin(tt * 3) * 1.5) - 1 if d.vy == 0 else 0.0), tt)
 			"key":
 				drawKeyDrop(x, X, Y, tt)
+			"pendant":
+				drawPendantDrop(x, X, Y, tt)
+			"part":
+				drawPartDrop(x, d, X, Y, tt)
 			"abyss":
 				var gl = 0.5 + 0.5 * sin(tt * 5 + d.x)
 				x.fillStyle = rgba(255, 58, 216, 0.3 * gl)
@@ -238,6 +247,8 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 		drawWater(x, M.pond, sx, sy, tt)
 	if theme == "abyss" or theme == "bubble":
 		drawAbyssFront(x, sx, sy, dt)
+	if climb or not YS.is_empty() or not pBlade.is_empty() or climbShots.size() or stalFalls.size():
+		drawClimbFront(x, sx, sy, dt)
 	# tall grass in front of everyone, for depth
 	for g in tufts:
 		if not g.fg:
@@ -261,6 +272,7 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 		drawTrophies(x, sx, sy)
 	drawFX(x, sx, sy)
 	drawArrows(x, sx, sy)
+	drawTankFront(x, sx, sy)
 	drawSpirit(x, sx, sy)
 	drawElemSpirit(x, sx, sy)
 	if bossRocks.size():
@@ -310,6 +322,9 @@ func renderTint(ci: CanvasItem) -> void:
 	if not M.is_empty() and M.get("theme") in ["abyss", "bubble"]:
 		abyssTint(x)
 		return
+	if climbMap():
+		climbTint(x, dayInfo())
+		return
 	if M.is_empty() or M.get("indoor") or M.get("theme") == "crimson":
 		return
 	var D = dayInfo()
@@ -329,7 +344,7 @@ func renderOverlay(ci: CanvasItem) -> void:
 	if not M.is_empty():
 		var D = dayInfo()
 		var night: float = 1 - D.day
-		var outdoors: bool = not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble"])
+		var outdoors: bool = not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble", "cave", "peak"])
 		if outdoors and night > 0.3:
 			var lx = roundf(P.x - cam.x)
 			var ly = roundf(P.y - cam.y - 20)
@@ -347,6 +362,7 @@ func renderOverlay(ci: CanvasItem) -> void:
 			x.fillStyle = rgba(255, 255, 255, World.flash * 0.6)
 			x.fillRect(0, 0, VW, VH)
 		abyssOverlay(x)
+		climbOverlay(x)
 	if fade > 0:
 		x.fillStyle = rgba(10, 12, 30, fade)
 		x.fillRect(0, 0, VW, VH)
@@ -481,6 +497,9 @@ func drawBoss(x: Ctx, e, X: float, Y: float) -> void:
 	if e.bossKind == "warlord":
 		drawWarlord(x, e, X, Y)
 		return
+	if e.bossKind == "kingYeti":
+		drawYeti(x, e, X, Y)
+		return
 	var k = "quad"
 	var f = 0
 	var sp = 1.35 if e.enraged else 1.0
@@ -597,6 +616,12 @@ func drawPlayer(x: Ctx, sx: float, sy: float, dt: float) -> void:
 	var nf = maxi(1, int(A.frames))
 	var f = clampi(playerFrame(), 0, nf - 1)
 	var tex = Assets.hero_strip(look, anim, vIdx)
+	# where the head is this frame (the air bubble underwater sits on it), with the same flip and spin as the sprite
+	var hd = Assets.hero_head(look, anim, f)
+	if hd == null:
+		hd = Vector2(RX - 6, GROUND - 39)
+	var q = Vector2(P.face * (hd.x - RX), hd.y - GROUND + 20).rotated(P.spin) - Vector2(0, 20)
+	heroHead = Vector2(P.x, P.y) + q
 	var blink: bool = not (P.state in ["dash", "held"]) and P.iframes > 0 and P.iframes < 0.9 and int(gameTime * 18) % 2 == 0
 	x.fillStyle = rgba(20, 30, 10, 0.25)
 	if P.grounded:
@@ -850,7 +875,11 @@ func cardArt(x: Ctx, type: String, gold: bool, shiny: bool, small: bool, X: floa
 		var t = Assets.tex("boss/dreamer_portrait.png")
 		if t != null:
 			x.drawImageRegion(t, 30, 0, 160, 170, 1 if small else 2, 1 if small else 4, w - (2 if small else 4), h - (3 if small else 16))
-	elif type in ABYSS_MOBS:
+	elif type == "kingYeti":
+		var t = Assets.tex("boss/yeti_portrait.png")
+		if t != null:
+			x.drawImageRegion(t, 30, 0, 160, 170, 1 if small else 2, 1 if small else 4, w - (2 if small else 4), h - (3 if small else 16))
+	elif type in ABYSS_MOBS or type in CLIMB_MOBS:
 		# the Abyss sets: the whole first frame, fitted into the card keeping its shape
 		var setName = type + "_shiny" if shiny else type
 		var Sset = Assets.mob_set(setName)
@@ -1267,14 +1296,14 @@ func drawPedestal(x: Ctx, sx: float, sy: float) -> void:
 	x.fillStyle = "#6a6474"; x.fillRect(X - 11, Y - 21, 22, 21)
 	x.fillStyle = "#8a8494"; x.fillRect(X - 11, Y - 21, 22, 3)
 	x.fillStyle = "#4a4454"; x.fillRect(X - 14, Y - 4, 28, 4)
-	var col = {"warlord": Color8(255, 58, 74), "dreamer": Color8(194, 92, 255)}.get(pd.kind, Color8(143, 255, 106))
+	var col = {"warlord": Color8(255, 58, 74), "dreamer": Color8(194, 92, 255), "kingYeti": Color8(122, 240, 255)}.get(pd.kind, Color8(143, 255, 106))
 	if not busy:
 		x.fillStyle = Color(col, 0.5 + 0.3 * sin(t * 3)); x.beginPath(); x.arc(X, Y - 30 + sin(t * 2) * 2, 5, 0, TAU); x.fill()
 		x.fillStyle = Color(col, 0.18); x.beginPath(); x.arc(X, Y - 30, 12, 0, TAU); x.fill()
 	if not busy and absf(P.x - pd.x) < 22:
 		x.font = FONT
 		x.textAlign = "center"
-		textOutline(x, "↑ Summon %s again" % {"warlord": "the Crimson Warlord", "dreamer": "The Dreamer"}.get(pd.kind, "Doc Croc"), X, Y - 46, "#ffffff")
+		textOutline(x, "↑ Summon %s again" % {"warlord": "the Crimson Warlord", "dreamer": "The Dreamer", "kingYeti": "King Yeti"}.get(pd.kind, "Doc Croc"), X, Y - 46, "#ffffff")
 
 
 func drawVials(x: Ctx, sx: float, sy: float) -> void:
@@ -1332,6 +1361,9 @@ func drawBossSkills(x: Ctx, sx: float, sy: float) -> void:
 
 ## a boss's loot box: Crocbox (swamp green, gold bands), Crimsonbox (blood red, black iron) or Dreambox (abyss purple, red runes)
 func drawBossBox(x: Ctx, kind: String, X: float, Y: float, tt: float) -> void:
+	if kind == "kingYeti":
+		drawYetibox(x, X, Y, tt)
+		return
 	if kind == "dreamer":
 		var g2 = 0.5 + 0.5 * sin(tt * 3)
 		x.fillStyle = rgba(190, 80, 255, 0.28 * g2); x.fillRect(X - 13, Y - 21, 26, 22)
@@ -1601,7 +1633,14 @@ func drawTrophyStand(x: Ctx, sx: float, sy: float) -> void:
 		x.fillStyle = "#241410"; x.fillRect(X - 8, Y - 22, 16, 16)
 		x.fillStyle = "#e8dcc0"; x.fillRect(X - 7, Y - 21, 14, 14)
 		x.fillStyle = "#c8b898"; x.fillRect(X - 7, Y - 21, 14, 2)
-		if got and tr.id == "dreamer":
+		if got and tr.id == "kingYeti":
+			# a golden yeti head wearing an icy pendant
+			x.fillStyle = "#ffd35a"; x.fillRect(X - 6, Y - 34, 12, 11); x.fillRect(X - 7, Y - 31, 14, 6)
+			x.fillStyle = "#c89418"; x.fillRect(X - 4, Y - 29, 8, 3)
+			x.fillStyle = "#fff6c0"; x.fillRect(X - 4, Y - 26, 1, 2); x.fillRect(X + 3, Y - 26, 1, 2)
+			x.fillStyle = "#3a2a10"; x.fillRect(X - 3, Y - 31, 2, 1); x.fillRect(X + 1, Y - 31, 2, 1)
+			x.fillStyle = "#7af0ff"; x.fillRect(X - 1, Y - 23, 2, 2)
+		elif got and tr.id == "dreamer":
 			# a golden octopus head with ruby eyes
 			x.fillStyle = "#ffd35a"; x.fillRect(X - 5, Y - 34, 10, 8); x.fillRect(X - 6, Y - 31, 12, 4)
 			x.fillStyle = "#c89418"
@@ -1648,6 +1687,8 @@ func drawTrophies(x: Ctx, sx: float, sy: float) -> void:
 			nm = "Warlord"
 		elif k == "dreamer":
 			nm = "Dreamer"
+		elif k == "kingYeti":
+			nm = "King"
 		else:
 			var parts_: PackedStringArray = SLIME_TYPES[k].name.split(" ")
 			nm = parts_[-1]
@@ -1655,7 +1696,7 @@ func drawTrophies(x: Ctx, sx: float, sy: float) -> void:
 				nm = parts_[0]
 		x.font = F5
 		textOutline(x, nm, X0 + 10, 30 - sy, "#ffe08a")
-		var use: Array = slots.slice(0, 2) if k in ["croc", "warlord", "dreamer"] else slots
+		var use: Array = slots.slice(0, 2) if k in ["croc", "warlord", "dreamer", "kingYeti"] else slots
 		totalSlots += use.size()
 		for row in use.size():
 			var key: String = use[row][0]

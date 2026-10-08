@@ -112,6 +112,8 @@ func updateSlimes(dt: float) -> void:
 				updateWarlord(e, dt)
 			elif e.bossKind == "dreamer":
 				updateDreamer(e, dt)
+			elif e.bossKind == "kingYeti":
+				updateYeti(e, dt)
 			else:
 				updateBoss(e, dt)
 			if e.state == "dead" and e.deadT > 2.4 and scene == null:
@@ -338,6 +340,9 @@ func damageSlime(e, mv: Dictionary, _from = null) -> void:
 	var dmg: float = PS.atk * mv.get("dmg", 1.0) * rand(0.9, 1.1) * 100 / (100 + e.def * 4)
 	if crit:
 		dmg *= PS.critDmg
+	if classId == "tank" and tankWeakHit(e):   # the Diagnostic Helmet: a weak point is a super crit, twice a crit
+		dmg *= (1.0 if crit else PS.critDmg) * 2.0
+		crit = true
 	if save.settings.get("god"):
 		dmg *= 40
 	if e.state == "shell" or (e.state == "spin" and e.type == "tortoise"):
@@ -401,7 +406,10 @@ func killSlime(e) -> void:
 		killBoss(e)
 		return
 	e.state = "dead"; e.deadT = 0; e.hp = 0
-	if e.T.get("habitat"):   # Abyss monsters: a deep, wet thud
+	if e.T.get("ai") == "climb":   # the mountain's monsters: a heavy crunch
+		Sfx.slam()
+		Sfx.tone(140, 0.3, "triangle", 0.08, 60)
+	elif e.T.get("habitat"):   # Abyss monsters: a deep, wet thud
 		Sfx.squish()
 		Sfx.tone(110, 0.35, "sine", 0.1, 45)
 	elif e.T.get("critter"):
@@ -463,6 +471,8 @@ func crimsonAI(e, T: Dictionary, dt: float, dx: float, dy: float, pb: Dictionary
 	var ai: String = T.ai
 	if ai == "abyss":
 		return abyssAI(e, T, dt, dx, dy, pb)
+	if ai == "climb":
+		return climbAI(e, T, dt, dx, dy, pb)
 	var near = absf(dx) < 150 and absf(dy) < 90 and P.state != "dead"
 	var sp: float = T.speed
 	var hit = func(mul: float, knock := false):

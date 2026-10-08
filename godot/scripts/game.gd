@@ -3,7 +3,8 @@ extends "res://scripts/screens.gd"
 ## and mouse clicks into the prototype's input, and runs the frame loop (the prototype's frame()).
 ##
 ## The game is one node whose script is split across files that extend each other:
-##   core → world → player → mobs → skills → bosses → render → intro → hud → ui → screens → game
+##   core → world → player → mobs → skills → bosses → abyss → tank → climb → render → abyss_draw → intro
+##   → tank_draw → climb_draw → hud → ui → tank_ui → screens → game
 ## Units: the world is measured in "world pixels" exactly like the HTML prototype (a 384×216 view),
 ## painted at 2× into a 768×432 pixel-art buffer. The HUD and menus are drawn on top at the
 ## window's own resolution so their text stays sharp.
@@ -188,8 +189,8 @@ func _onKey(e: InputEventKey) -> void:
 					toggleMenu(true)
 		return
 	if k == "escape":
-		if menuOpen:
-			toggleMenu(false)
+		if not e.echo and inGame:
+			toggleMenu(not menuOpen)   # Esc pauses: the menu (with Teleport Home right at the top) opens and closes
 		return
 	if not inGame:
 		if not e.echo:
@@ -261,10 +262,12 @@ func _process(delta: float) -> void:
 			updateCrimsonRain(dt)
 			updateBossSkills(dt)
 			updateAbyss(dt)
+			updateClimb(dt)
 			updateWater(dt)
 			updateSlimes(dt)
 			updateFX(dt)
 			updateArrows(dt)
+			updateTank(dt)
 			updateSpirit(dt)
 			updateElemSpirit(dt)
 			updatePets(dt)

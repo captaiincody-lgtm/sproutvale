@@ -1,0 +1,172 @@
+{
+ "box": {
+  "frames": 1,
+  "w": 36,
+  "h": 28
+ },
+ "box_wreck": {
+  "frames": 1,
+  "w": 90,
+  "h": 30
+ },
+ "meteor": {
+  "frames": 4,
+  "w": 28,
+  "h": 28
+ },
+ "house": {
+  "frames": 1,
+  "w": 160,
+  "h": 120
+ },
+ "drone_0": {
+  "frames": 4,
+  "w": 22,
+  "h": 16
+ },
+ "drone_1": {
+  "frames": 4,
+  "w": 22,
+  "h": 16
+ },
+ "drone_2": {
+  "frames": 4,
+  "w": 22,
+  "h": 16
+ },
+ "drone_3": {
+  "frames": 4,
+  "w": 22,
+  "h": 16
+ },
+ "bot_0_idle": {
+  "frames": 4,
+  "w": 36,
+  "h": 38
+ },
+ "bot_0_walk": {
+  "frames": 6,
+  "w": 36,
+  "h": 38
+ },
+ "bot_0_attack": {
+  "frames": 4,
+  "w": 36,
+  "h": 38
+ },
+ "bot_1_idle": {
+  "frames": 4,
+  "w": 36,
+  "h": 38
+ },
+ "bot_1_walk": {
+  "frames": 6,
+  "w": 36,
+  "h": 38
+ },
+ "bot_1_attack": {
+  "frames": 4,
+  "w": 36,
+  "h": 38
+ },
+ "bot_2_idle": {
+  "frames": 4,
+  "w": 36,
+  "h": 38
+ },
+ "bot_2_walk": {
+  "frames": 6,
+  "w": 36,
+  "h": 38
+ },
+ "bot_2_attack": {
+  "frames": 4,
+  "w": 36,
+  "h": 38
+ },
+ "nade_frag": {
+  "frames": 1,
+  "w": 10,
+  "h": 10
+ },
+ "nade_shrapnel": {
+  "frames": 1,
+  "w": 10,
+  "h": 10
+ },
+ "nade_energy": {
+  "frames": 1,
+  "w": 10,
+  "h": 10
+ },
+ "nade_napalm": {
+  "frames": 1,
+  "w": 10,
+  "h": 10
+ },
+ "nade_cryo": {
+  "frames": 1,
+  "w": 10,
+  "h": 10
+ },
+ "nade_emp": {
+  "frames": 1,
+  "w": 10,
+  "h": 10
+ },
+ "nade_cluster": {
+  "frames": 1,
+  "w": 10,
+  "h": 10
+ },
+ "missile": {
+  "frames": 1,
+  "w": 14,
+  "h": 6
+ },
+ "part_scrap": {
+  "frames": 1,
+  "w": 10,
+  "h": 10
+ },
+ "part_wire": {
+  "frames": 1,
+  "w": 10,
+  "h": 10
+ },
+ "part_circuit": {
+  "frames": 1,
+  "w": 10,
+  "h": 10
+ },
+ "part_core": {
+  "frames": 1,
+  "w": 10,
+  "h": 10
+ },
+ "bullet": {
+  "frames": 1,
+  "w": 4,
+  "h": 2
+ },
+ "energy_bolt": {
+  "frames": 3,
+  "w": 10,
+  "h": 6
+ },
+ "explosion": {
+  "frames": 7,
+  "w": 40,
+  "h": 40
+ },
+ "energy_burst": {
+  "frames": 6,
+  "w": 40,
+  "h": 40
+ },
+ "napalm": {
+  "frames": 4,
+  "w": 24,
+  "h": 12
+ }
+}

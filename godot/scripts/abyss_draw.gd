@@ -210,12 +210,9 @@ func drawAbyssFront(x: Ctx, sx: float, sy: float, _dt: float) -> void:
 		x.drawFrame(mtex, 2, open, mx - 24, my - 19, 48, 38)
 		x.globalAlpha = 1
 	# the air bubble around the hero's head underwater
-	if M.get("theme") == "abyss" and underSea(P.x, P.y - 36) and not (P.held != null and P.held.kind == "eaten") and P.state != "dead":
-		var hx = roundf(P.x - sx) + P.face
-		var hy = roundf(P.y - sy) - 35
-		if P.state == "tumble":
-			hx = roundf(P.x - sx - sin(P.spin) * 15)
-			hy = roundf(P.y - sy - 20 - cos(P.spin) * 15)
+	if M.get("theme") == "abyss" and underSea(heroHead.x, heroHead.y) and not (P.held != null and P.held.kind == "eaten") and P.state != "dead":
+		var hx = roundf(heroHead.x - sx)
+		var hy = roundf(heroHead.y - sy)
 		x.fillStyle = rgba(190, 225, 255, 0.13)
 		x.beginPath(); x.arc(hx, hy, 9.5 + sin(t * 3) * 0.4, 0, TAU); x.fill()
 		x.strokeStyle = rgba(225, 240, 255, 0.6); x.lineWidth = 0.7
@@ -428,6 +425,31 @@ func drawDreamerHead(x: Ctx, sx: float, sy: float) -> void:
 			var a = atan2((P.y - 20 - sy) - ey, (P.x - sx) - ex)
 			x.fillStyle = "#12040a"
 			x.fillRect(roundf(ex + cos(a) * 3) - 1, roundf(ey + sin(a) * 2) - 3, 2, 6)
+	# laser vision: a white-hot beam from each eye down to the floor, boiling the sea where it lands
+	if D.get("laser", 0.0) > 0:
+		var lx: float = D.laserX - sx
+		var ly: float = groundAt(D.laserX) - sy
+		var flick = 0.8 + 0.2 * sin(t * 60)
+		for i in 2:
+			var s2 = -1 if i == 0 else 1
+			var ex = X + s2 * DR_EYE_DX
+			var ey = FY - DR_EYE_Y - 11 + bob
+			var dvec = Vector2(lx - ex, ly - ey)
+			var nrm = Vector2(-dvec.y, dvec.x).normalized()
+			for pass_i in 3:
+				var w = [7.0, 3.5, 1.4][pass_i]
+				var col = [rgba(255, 106, 240, 0.3 * flick), rgba(255, 190, 250, 0.6 * flick), rgba(255, 255, 255, 0.95)][pass_i]
+				x.fillStyle = col
+				x.beginPath()
+				x.moveTo(ex + nrm.x * w * 0.4, ey + nrm.y * w * 0.4)
+				x.lineTo(ex - nrm.x * w * 0.4, ey - nrm.y * w * 0.4)
+				x.lineTo(lx - nrm.x * w, ly - nrm.y * w)
+				x.lineTo(lx + nrm.x * w, ly + nrm.y * w)
+				x.closePath(); x.fill()
+		var hg = x.createRadialGradient(lx, ly, 2, lx, ly, 34 * flick)
+		hg.addColorStop(0, rgba(255, 255, 255, 0.85)); hg.addColorStop(1, rgba(255, 106, 240, 0))
+		x.fillStyle = hg
+		x.beginPath(); x.arc(lx, ly, 34 * flick, 0, TAU); x.fill()
 	# the mouth: closed, gaping while it inhales, chewing
 	var mouth = Assets.tex("boss/dreamer_mouth.png")
 	var mo = 1 if (D.mouth > 0.5 or (D.chew > 0 and fmod(D.chew, 0.12) < 0.06)) else 0
@@ -507,6 +529,34 @@ func drawKeyDrop(x: Ctx, X: float, Y: float, tt: float) -> void:
 
 # ================================================================ light and dark
 
+## specks of sea dust drifting in front of the world: in the black of the plateau they're the only
+## thing that says the water is still moving. Three slabs of depth, the nearest biggest and fastest.
+func seaDust(x: Ctx, sx: float, sy: float, dark: bool) -> void:
+	var top: float = seaTop()
+	var wTop: float = (top - sy) if top > -1e8 else -40.0
+	var t = realTime
+	for band in 3:
+		var par: float = 0.5 + band * 0.35          # how much the camera moves it
+		var n: int = (26 if dark else 14) - band * 4
+		var sz: float = 1.0 + band
+		var a0: float = (0.3 if dark else 0.18) + band * 0.08
+		for i in n:
+			var k: float = i + band * 71.0
+			var px = fmod(hsh(k * 3.7) * (VW + 60) - sx * par + sin(t * 0.25 + k) * 9, VW + 60)
+			if px < 0:
+				px += VW + 60
+			var py = fmod(hsh(k * 6.3) * (VH + 40) + t * (3 + hsh(k * 2.1) * 7) - sy * par, VH + 40)
+			if py < 0:
+				py += VH + 40
+			px -= 30
+			py -= 20
+			if py < wTop:
+				continue
+			var a = a0 * (0.55 + 0.45 * sin(t * (0.8 + hsh(k) * 1.4) + k * 2.0))
+			x.fillStyle = rgba(226, 212, 255, a)
+			x.fillRect(roundf(px), roundf(py), sz, sz)
+
+
 ## multiplied over the world: the water darkens and cools the deeper you go
 func abyssTint(x: Ctx) -> void:
 	if M.get("theme") != "abyss":
@@ -518,7 +568,9 @@ func abyssTint(x: Ctx) -> void:
 	elif M.get("boss"):
 		col = css("#7a6a9a")
 	elif M.get("dark"):
-		col = css("#4a4468")
+		# the Black Plateau is black, not faded: a near-neutral multiply keeps the colours that are
+		# left clear and deep instead of washing the whole map out to grey
+		col = css("#2c2740")
 	else:
 		col = css("#a8a8e0").lerp(css("#6c74b4"), (d - 0.35) / 0.35)
 	x.fillStyle = col
@@ -545,12 +597,17 @@ func abyssOverlay(x: Ctx) -> void:
 			x.fillStyle = gr
 			x.beginPath(); x.arc(X, Y, r, 0, TAU); x.fill()
 		if dark:
+			# the dark closes in at the edges of the screen, and the hero carries a pool of light
+			var vg = x.createRadialGradient(VW * 0.5, VH * 0.52, VH * 0.34, VW * 0.5, VH * 0.52, VH * 0.95)
+			vg.addColorStop(0, rgba(2, 1, 6, 0)); vg.addColorStop(1, rgba(2, 1, 6, 0.58))
+			x.fillStyle = vg
+			x.fillRect(0, 0, VW, VH)
 			var px = P.x - sx
 			var py = P.y - sy - 22
-			var pg = x.createRadialGradient(px, py, 4, px, py, 46)
-			pg.addColorStop(0, rgba(170, 140, 230, 0.13)); pg.addColorStop(1, rgba(170, 140, 230, 0))
+			var pg = x.createRadialGradient(px, py, 6, px, py, 86)
+			pg.addColorStop(0, rgba(198, 176, 250, 0.42)); pg.addColorStop(1, rgba(198, 176, 250, 0))
 			x.fillStyle = pg
-			x.beginPath(); x.arc(px, py, 46, 0, TAU); x.fill()
+			x.beginPath(); x.arc(px, py, 86, 0, TAU); x.fill()
 			# monsters' eyes catch the rune light: a faint red glow so you can see what's coming
 			for e in slimes:
 				if e.state == "dead" or e.bossPart or e.boss:
@@ -564,6 +621,7 @@ func abyssOverlay(x: Ctx) -> void:
 				mg.addColorStop(0, rgba(255, 70, 120, 0.14)); mg.addColorStop(1, rgba(255, 70, 120, 0))
 				x.fillStyle = mg
 				x.beginPath(); x.arc(mx, my, mr, 0, TAU); x.fill()
+		seaDust(x, sx, sy, dark)
 	if gazeFlash > 0:
 		x.fillStyle = rgba(255, 106, 240, gazeFlash * 0.45)
 		x.fillRect(0, 0, VW, VH)

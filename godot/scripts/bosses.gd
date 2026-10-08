@@ -50,6 +50,8 @@ func bossBox(e) -> Dictionary:
 		return hbox(e.x - 36, e.x + 36, e.y - 30 + e.data.get("sink", 0.0), e.y - 2 + e.data.get("sink", 0.0))
 	if e.bossKind == "warlord":
 		return hbox(e.x - 22, e.x + 22, e.y - 118, e.y)
+	if e.bossKind == "kingYeti":
+		return yetiBox(e)
 	if e.mode == "stand" or e.act in ["rise", "swipe", "stomp", "drop"]:
 		return hbox(e.x - 30, e.x + 34, e.y - 118, e.y)
 	return hbox(e.x - 58, e.x + 70, e.y - 50, e.y)   # four legs: long and low (tail excluded)
@@ -335,12 +337,12 @@ func killBoss(e) -> void:
 	Sfx.tone(80, 1.4, "sawtooth", 0.14, 40)
 	shake = 10
 	slowmo = 1.2
-	var coinN = {"warlord": 50, "dreamer": 60}.get(kind, 26)
+	var coinN = {"warlord": 50, "dreamer": 60, "kingYeti": 70}.get(kind, 26)
 	for i in coinN:
 		var d = S.Drop.new()
 		d.kind = "coin"; d.x = e.x; d.y = e.y - 30; d.vx = rand(-160, 160); d.vy = rand(-340, -180)
-		d.val = rint(14, 24) * {"warlord": 3, "dreamer": 5}.get(kind, 1)
-		d.surfY = M.floorY; d.x0 = 20; d.x1 = M.w - 20; d.spin = randf() * 4
+		d.val = rint(14, 24) * {"warlord": 3, "dreamer": 5, "kingYeti": 7}.get(kind, 1)
+		d.surfY = groundAt(e.x); d.x0 = 20; d.x1 = M.w - 20; d.spin = randf() * 4
 		drops.append(d)
 	var bx = roundi(mobExp(e) * (1 + cardBonus()))
 	gainExp(bx)
@@ -364,6 +366,8 @@ func killBoss(e) -> void:
 				Sfx.rankUp(9)))
 	elif kind == "dreamer":
 		dreamerFalls(e, firstKill)
+	elif kind == "kingYeti":
+		yetiFalls(e, firstKill)
 	elif kind == "warlord":
 		# the Warlord sinks to one knee; the first time, he has something to say before he falls
 		e.dying = true
@@ -388,7 +392,7 @@ func killBoss(e) -> void:
 			Sfx.rankUp(9))
 	var arena = M
 	later(2.6, func():
-		if arena.get("boss") and arena.get("pedestal") == null:
+		if arena.get("boss") and arena.get("pedestal") == null and not (kind == "kingYeti" and firstKill):
 			arena.pedestal = {"x": roundi(arena.w * (0.55 if kind == "croc" else 0.5)), "kind": kind})
 	styleAdd(120, "boss")
 
@@ -430,24 +434,37 @@ func dropBox(e, kind: String) -> void:
 	drops.append(d)
 
 
-## open a box: coins, boss coins, maybe a stat treasure, very rarely the boss's own skill
-func openBox(kind: String) -> void:
+## a box goes into your bag; you open it from the inventory when you like
+func collectBox(kind: String, n := 1) -> void:
+	if not (save.get("boxes") is Dictionary):
+		save.boxes = {}
+	save.boxes[kind] = int(save.boxes.get(kind, 0)) + n
+	saveDirty = true
+	persist()
+	var B: Dictionary = BOXES.get(kind, BOXES.croc)
+	Sfx.buy()
+	pickupPop("box_" + kind, B.name, n, {"dreamer": "#ff9ef0", "warlord": "#ff8a9a", "kingYeti": "#9ff0ff"}.get(kind, "#ffe14d"))
+	toast("📦 %s collected — open it from your inventory (Tab → Inventory)." % B.name)
+
+
+func boxCount(kind: String) -> int:
+	return int(save.get("boxes", {}).get(kind, 0))
+
+
+## one box's worth of prizes, folded into `acc`
+func _rollBox(kind: String, acc: Dictionary) -> void:
 	var B: Dictionary = BOXES.get(kind, BOXES.croc)
 	var c = CH()
 	if not (c.get("boons") is Dictionary):
 		c.boons = {}
-	var coins = rint(500, 2500)
-	var bc = rint(1, 5)
-	save.coins += coins
-	save.bossCoins = save.get("bossCoins", 0) + bc
-	var rows = [{"icon": "🪙", "text": "%s coins" % fmt(coins), "rare": 0}, {"icon": "🏅", "text": "%d Boss Coin%s" % [bc, "" if bc == 1 else "s"], "rare": 0}]
+	acc.coins += rint(500, 2500)
+	acc.bc += rint(1, 5)
 	if randf() < BOX_ITEM_RATE:
 		var id: String = B.items[rint(0, B.items.size() - 1)]
-		var it: Dictionary = BOONS[id]
 		c.boons[id] = int(c.boons.get(id, 0)) + 1
-		rows.append({"icon": it.icon, "text": "%s · %s, for good" % [it.name, it.desc], "rare": 1})
+		acc.items[id] = int(acc.items.get(id, 0)) + 1
 	var sk: String = B.skill
-	if skillRank(sk) == 0 and randf() < BOX_SKILL_RATE:
+	if skillRank(sk) == 0 and not acc.skills.has(sk) and randf() < BOX_SKILL_RATE:
 		c.skills[sk] = 1
 		var key = ""
 		for k in ["a", "s", "d", "f", "q", "w", "e", "r"]:
@@ -456,6 +473,31 @@ func openBox(kind: String) -> void:
 				break
 		if key != "":
 			c.binds[key] = sk
+		acc.skills[sk] = key
+
+
+## open boxes you're carrying: coins, boss coins, maybe stat treasures, very rarely the boss's skill
+func openBoxes(kind: String, n := 1) -> void:
+	var have = boxCount(kind)
+	n = mini(n, have)
+	if n <= 0:
+		toast("You have no boxes of that kind.")
+		return
+	var B: Dictionary = BOXES.get(kind, BOXES.croc)
+	var acc = {"coins": 0, "bc": 0, "items": {}, "skills": {}}
+	for i in n:
+		_rollBox(kind, acc)
+	save.boxes[kind] = have - n
+	save.coins += acc.coins
+	save.bossCoins = save.get("bossCoins", 0) + acc.bc
+	var rows = [{"icon": "🪙", "text": "%s coins" % fmt(acc.coins), "rare": 0},
+		{"icon": "🏅", "text": "%d Boss Coin%s" % [acc.bc, "" if acc.bc == 1 else "s"], "rare": 0}]
+	for id in acc.items:
+		var it: Dictionary = BOONS[id]
+		var cnt: int = acc.items[id]
+		rows.append({"icon": it.icon, "text": "%s%s · %s, for good" % [it.name, (" ×%d" % cnt) if cnt > 1 else "", it.desc], "rare": 1})
+	for sk in acc.skills:
+		var key: String = acc.skills[sk]
 		rows.append({"icon": SKILL[sk].icon, "text": "NEW SKILL: %s%s" % [SKILL[sk].name, (" (on " + key.to_upper() + ")") if key != "" else " (bind it in Skills)"], "rare": 2})
 	PS = calcStats()
 	saveDirty = true
@@ -463,10 +505,15 @@ func openBox(kind: String) -> void:
 	var best = 0
 	for r in rows:
 		best = maxi(best, r.rare)
-	loot = {"kind": kind, "name": B.name, "rows": rows, "t": 0.0, "best": best}
+	var title: String = B.name if n == 1 else "%d %ss" % [n, B.name]
+	loot = {"kind": kind, "name": title, "rows": rows, "t": 0.0, "best": best, "n": n}
 	P.vx = 0
 	Sfx.buy()
 	shake = 4
+
+
+func openBox(kind: String) -> void:
+	openBoxes(kind, 1)
 
 
 func updateLoot(dt: float) -> void:
@@ -1038,7 +1085,7 @@ func summonFromPedestal() -> void:
 	shake = 8
 	Sfx.thunder()
 	for i in 30:
-		part(pd.x + rand(-12, 12), M.floorY - rand(0, 40), rand(-60, 60), rand(-140, -40), 0.8, {"warlord": "#ff3a4a", "dreamer": "#c25cff"}.get(pd.kind, "#8fff6a"), 0, 2)
+		part(pd.x + rand(-12, 12), M.floorY - rand(0, 40), rand(-60, 60), rand(-140, -40), 0.8, {"warlord": "#ff3a4a", "dreamer": "#c25cff", "kingYeti": "#7af0ff"}.get(pd.kind, "#8fff6a"), 0, 2)
 	if pd.kind == "warlord":
 		Warlord.introDone = true
 		spawnWarlord()
@@ -1046,13 +1093,15 @@ func summonFromPedestal() -> void:
 		w.x = minf(M.w - 80, P.x + 220)
 	elif pd.kind == "dreamer":
 		spawnDreamer()
+	elif pd.kind == "kingYeti":
+		spawnYeti(true)
 	else:
 		spawnBoss()
 		var b = _boss()
 		if b != null:
 			b.x = minf(M.w - 60, P.x + 200)
 	P.face = 1
-	Sfx.music(M.get("music", {"warlord": "warlord", "dreamer": "dreamer"}.get(pd.kind, "lair")))
+	Sfx.music("yeti" if pd.kind == "kingYeti" else M.get("music", {"warlord": "warlord", "dreamer": "dreamer"}.get(pd.kind, "lair")))
 
 
 # ================================================================ cutscenes

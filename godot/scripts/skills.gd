@@ -51,7 +51,7 @@ func useSkill(id: String) -> bool:
 	Cool[id] = float(s.cd)
 	P.state = "attack"; P.moveId = id; P.moveT = 0; P.lastFrame = -1; P.hitSet.clear(); P.queued = false; P.queuedHeavy = false
 	var sfx: String = s.get("fx", "")
-	P.move = {"anim": s.anim, "hits": s.hitF, "box": [0, 0, 0, 0], "dmg": sv(s, "dmgR", r), "kb": 90, "up": -140, "style": 20, "cancel": 99,
+	P.move = {"anim": s.anim, "hits": s.hitF, "box": [0, 0, 0, 0], "dmg": float(sv(s, "dmgR", r)) * (1.0 + 0.04 * ascBonus(id)), "kb": 90, "up": -140, "style": 20, "cancel": 99,
 		"skill": s, "targets": J.targets, "heavy": true, "both": sfx == "blades" or sfx == "twin"}
 	setAnim(s.anim)
 	Sfx.whoosh(0.8, true)

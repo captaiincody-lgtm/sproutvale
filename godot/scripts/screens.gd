@@ -1,8 +1,8 @@
-extends "res://scripts/ui.gd"
+extends "res://scripts/tank_ui.gd"
 ## Sproutvale, part 11: the screens around the game. Character select (with the gender toggle),
 ## starting a hero (and their story intro the first time), Settings, and the Accomplishments record.
 
-const HERO_ORDER := ["rock", "archer", "mage", "summoner"]
+const HERO_ORDER := ["rock", "archer", "mage", "summoner", "tank"]
 const SHOWN := 4          # hero cards visible at once on the select screen
 
 var selClass := "rock"
@@ -85,7 +85,7 @@ func renderTitle(ci: CanvasItem) -> void:
 	uText("Sproutvale", UW / 2, 22, 24, Color.WHITE, PX, 1)
 	uText("Choose your hero", UW / 2, 55, 10, GOLD, PX, 1, DARK, 2)
 	# the cards: four heroes and the still-hidden fifth, in a sideways slider
-	var cards = HERO_ORDER + ["???"]
+	var cards = HERO_ORDER
 	carousel = clampi(carousel, 0, cards.size() - SHOWN)
 	var cw = 150.0
 	var gap = 10.0
@@ -116,11 +116,13 @@ func renderTitle(ci: CanvasItem) -> void:
 
 func _heroCard(id: String, r: Rect2) -> void:
 	if id == "???" or heroLocked(id):
-		var won = tb(save.get("trophies", {}).get("warlord"))
+		var won = tb(save.get("trophies", {}).get("dreamer"))
 		var lines: Array
 		if id == "???":
-			lines = ["Coming soon" if won else "🔒 Locked", "A new hero is on the way…" if won else "Defeat the Crimson Warlord to unlock",
-				"Something stirs in the Warlord's Keep." if won else "Someone is chained deep inside the Warlord's Keep."]
+			lines = ["Coming soon" if won else "🔒 Locked", "A new hero is on the way…" if won else "Defeat The Dreamer to unlock",
+				"Something woke when the Dreamer fell." if won else "Something dreams at the bottom of the Abyss."]
+		elif id == "tank":
+			lines = ["🔒 Locked", "Defeat The Dreamer to unlock", "Something dreams at the bottom of the Abyss."]
 		else:
 			lines = ["🔒 Locked", "Defeat Doc Croc to unlock", "Something stirs in a glass capsule, deep in the Crocodile Lair."]
 		uBox(r, css("#221d38"), css("#4a4068"), 3, 12, 4.0, DARK)
@@ -143,7 +145,7 @@ func _heroCard(id: String, r: Rect2) -> void:
 		uGlow(r, GOLD, 4, 12)
 	uBox(r, css("#fff6d6") if on else Color(247 / 255.0, 251 / 255.0, 1, 0.94), GOLD if on else DARK, 3, 12, 4.0, DARK)
 	var pic = Rect2(r.position.x + 9, r.position.y + 9 - (absf(sin(realTime * PI / 1.2)) * 2.5 if on else 0.0), r.size.x - 18, 104)
-	var look = "%s_%s" % [id, chd.look.get("gender", "m")]
+	var look = lookOf(id)
 	var fps = float(Assets.hero_anim(look, "idle").fps)
 	heroPic(pic, id, "idle", floori(realTime * fps) if on else 0)
 	var y = r.position.y + 118
@@ -151,7 +153,7 @@ func _heroCard(id: String, r: Rect2) -> void:
 	y += 17
 	# gender toggle
 	var gw = 52.0
-	for gi in 2:
+	for gi in (0 if id == "tank" else 2):
 		var g = ["m", "f"][gi]
 		var gr = Rect2(r.get_center().x - gw - 2 + gi * (gw + 4), y, gw, 15)
 		var gon = chd.look.get("gender", "m") == g

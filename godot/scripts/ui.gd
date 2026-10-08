@@ -11,6 +11,7 @@ const CARD := {"fill": Color.WHITE, "border": INK}
 
 var curTab := "char"
 var shopTab := "gear"
+var skillSel := ""     # which advancement (job id), "boss" or "asc" the Skills tab is showing
 var panelRect := Rect2()
 var overRect := Rect2()
 var BEST_ANIM := {}
@@ -47,10 +48,12 @@ func openTab(id: String) -> void:
 func canBuy(t: Dictionary) -> bool:
 	if CH().level < t.lv or save.coins < t.coins:
 		return false
-	for k in t.mats:
+	if int(CH().get("armor", 0)) < t.get("needArmor", 0):
+		return false
+	for k in t.get("mats", {}):
 		if save.mats.get(k, 0) < t.mats[k]:
 			return false
-	return true
+	return hasParts(t.get("parts", {}))
 
 
 func _changed() -> void:
@@ -188,8 +191,7 @@ func heroPic(r: Rect2, cls: String, anim := "idle", f := 0, bg := true) -> void:
 		uBox(r, css("#e8f6ff"), INK, 2, 7)
 		uGrad(Rect2(r.position + Vector2(2, 2), Vector2(r.size.x - 4, r.size.y * 0.75 - 2)), css("#bfe6ff"), css("#d4eeff"), css("#e8f6ff"), 0.5)
 		uci.draw_rect(Rect2(r.position.x + 2, r.position.y + r.size.y * 0.75, r.size.x - 4, r.size.y * 0.25 - 2), css("#8fd06a"))
-	var c: Dictionary = save.chars[cls]
-	var look = "%s_%s" % [cls, c.get("look", {}).get("gender", "m")]
+	var look = lookOf(cls)
 	var A = Assets.hero_anim(look, anim)
 	var tex = Assets.hero_strip(look, anim, 1)
 	if tex == null:
@@ -235,7 +237,7 @@ func renderMenu(ci: CanvasItem) -> void:
 	var x = sheet.position.x + 7
 	var y = sheet.position.y + 7
 	var tabH = 21.0
-	var sys = [["⚙ Settings", func(): openSettings()], ["🏠 Home", func(): toggleMenu(false); travelHome()],
+	var sys = [["⚙ Settings", func(): openSettings()],
 		["Save", func(): persist(); toast("Game saved."); Sfx.buy()], ["Main Menu", func(): persist(); toggleMenu(false); toCharSelect()],
 		["Quit", func(): persist(); get_tree().quit()], ["Close", func(): toggleMenu(false)]]
 	var tabsW = 0.0
@@ -266,11 +268,20 @@ func renderMenu(ci: CanvasItem) -> void:
 	# the system buttons sit in a strip along the bottom of the sheet
 	var foot = sheet.end.y - 26
 	uci.draw_rect(Rect2(sheet.position.x + 1.5, foot, sheet.size.x - 3, 2), LINE)
-	uText("Tab or Esc closes · M opens the world map", sheet.position.x + 12, foot + 8, 8, MUTED, UF)
+	# the big way home, always in the same corner so it's easy to find
+	var atHome = mapId == "home"
+	var homeL = "🏠 You're home" if atHome else "🏠 TELEPORT HOME"
+	var hr = Rect2(sheet.position.x + 8, foot + 3, uW(homeL, 10) + 26, 21)
+	if not atHome:
+		uGlow(hr, Color(css("#3ad6a0"), 0.45 + 0.2 * sin(realTime * 4)), 8, 8)
+	uButton(hr, homeL, func(): toggleMenu(false); travelHome(), {"bg": css("#5ff0b4"), "size": 10, "shadow": 2.0, "disabled": atHome})
 	var sysW = 0.0
 	for sb in sys:
 		sysW += uW(sb[0], 8) + 14 + 4
 	var sx = sheet.end.x - 8 - sysW + 4
+	var help = "Tab or Esc closes · M opens the world map"
+	if hr.end.x + 10 + uW(help, 8, UF) < sx - 6:
+		uText(help, hr.end.x + 10, foot + 8, 8, MUTED, UF)
 	for sb in sys:
 		var w = uW(sb[0], 8) + 14
 		uButton(Rect2(sx, foot + 5, w, 17), sb[0], sb[1], {"bg": GOLD if sb[0] == "Close" else Color.WHITE, "size": 8, "shadow": 1.5})
@@ -291,7 +302,7 @@ func _tabBadge(id: String, c: Dictionary) -> String:
 			nexts.append(_tier(G.arrows, c.get("arrows", 0) + 1))
 		if nexts.any(func(t): return t != null and canBuy(t)):
 			return "new"
-	if id == "skills" and c.sp and classSkills().any(func(s): return skillUnlocked(s) and skillRank(s.id) < s.max):
+	if id == "skills" and c.sp and (ascCap() > ascSpent() or classSkills().any(func(s): return skillUnlocked(s) and baseRank(s.id) < s.max)):
 		return str(c.sp)
 	return ""
 
@@ -360,7 +371,7 @@ func attrDesc(a: String) -> String:
 func attrTip(a: String) -> String:
 	var res = CLASSES[classId].resource.to_lower()
 	var pn = PRIMARY[classId][1]
-	var why = {"rock": "the force behind every swing", "archer": "steady hands and a sure draw", "mage": "the sharpness of every spell", "summoner": "the bond that makes your companions fight harder"}[classId]
+	var why = {"rock": "the force behind every swing", "archer": "steady hands and a sure draw", "mage": "the sharpness of every spell", "summoner": "the bond that makes your companions fight harder", "tank": "the muscle behind every bolt you tighten"}.get(classId, "")
 	return {"STR": "%s: %s. +3 attack per point — the simplest way to hit harder." % [pn, why],
 		"WIL": "Willpower. Speeds up %s recovery and slightly raises its maximum. Each point helps a little less than the last, so skills never become free to spam." % res,
 		"VIT": "Vitality. +14 max HP and +0.9 defense per point. Defense blocks a share of damage that shrinks against higher-level monsters (75% at most).",
@@ -371,7 +382,7 @@ func attrTip(a: String) -> String:
 func _pChar(x: float, y: float, w: float) -> float:
 	var c = CH()
 	var s = PS
-	var vals = [str(c.level), str(save.get("bossCoins", 0)), "max" if c.level >= MAX_LV else "%s / %s" % [fmt(c.exp), fmt(expNeed(c.level))],
+	var vals = [str(c.level), str(save.get("bossCoins", 0)), "%s / %s" % [fmt(c.exp), fmt(expNeed(c.level))],
 		str(s.hp), str(s.atk), str(s.def), "%.1f%%" % s.crit, "%d%%" % roundi(s.critDmg * 100), "%d%%" % roundi(s.spd * 100),
 		"%d%%" % roundi(s.aspd * 100), fmt(c.kills), RANKS[save.bestRank].r if save.get("bestRank", -1) >= 0 else "none yet"]
 	var J = jobOf(c.level)
@@ -407,7 +418,7 @@ func _pChar(x: float, y: float, w: float) -> float:
 	y += uCards(x, y, w, 1, [func(X, Y, W):
 		uText("Boss treasures", X, Y, 11, css("#8a5a08"))
 		var yy = Y + 18
-		yy += muted("Rare finds in Crocboxes, Crimsonboxes and Dreamboxes (about 1 box in 7). Each one raises a stat for %s for good, and they stack." % C.name, X, yy, W) + 4
+		yy += muted("Rare finds in Crocboxes, Crimsonboxes, Dreamboxes and Yetiboxes (about 1 box in 7). Each one raises a stat for %s for good, and they stack." % C.name, X, yy, W) + 4
 		var cw = (W - 10) / 2
 		for i in BOON_ORDER.size():
 			var id: String = BOON_ORDER[i]
@@ -420,7 +431,7 @@ func _pChar(x: float, y: float, w: float) -> float:
 			var nw = uText(it.name, cx + 20, cy + 1, 9, Color(INK, a))
 			uText(("  ×%d" % n) if n else "", cx + 20 + nw, cy + 2, 8, css("#2a8a55"), UB)
 			var srcs = []
-			for bk in [["croc", "Crocbox"], ["warlord", "Crimsonbox"], ["dreamer", "Dreambox"]]:
+			for bk in [["croc", "Crocbox"], ["warlord", "Crimsonbox"], ["dreamer", "Dreambox"], ["kingYeti", "Yetibox"]]:
 				if BOXES[bk[0]].items.has(id):
 					srcs.append(bk[1])
 			var src = " & ".join(srcs)
@@ -451,6 +462,30 @@ func _pInv(x: float, y: float, w: float) -> float:
 				cards += 1
 	var y0 = y
 	y += currencyBag(x, y, w, "🃏 %d Monster cards" % cards)
+	var boxKinds = ["croc", "warlord", "dreamer", "kingYeti"].filter(func(k): return boxCount(k) > 0)
+	if not boxKinds.is_empty():
+		y += uCards(x, y, w, 1, [func(X, Y, W):
+			var yy = Y + h3("Boss boxes", X, Y)
+			yy += muted("Boxes you've collected. Open as many as you like at once — each one is rolled on its own.", X, yy, W) + 4
+			for k in boxKinds:
+				var BX: Dictionary = BOXES[k]
+				var n = boxCount(k)
+				var col = css("#1f6f9a") if k == "kingYeti" else css("#6a2a9a") if k == "dreamer" else (css("#9a1f35") if k == "warlord" else css("#2a7a3a"))
+				uText("📦 %s ×%d" % [BX.name, n], X + 2, yy + 3, 10, col, UB)
+				uText("from %s" % BX.boss, X + 2, yy + 18, 8, MUTED, UF)
+				var bx = X + W
+				for q in [["All", n], ["10", 10], ["5", 5], ["1", 1]]:
+					var cnt: int = q[1]
+					if cnt <= 0 or (cnt > n and q[0] != "All"):
+						continue
+					var label: String = "Open %s" % q[0]
+					var bw = uW(label, 9) + 16
+					bx -= bw + 4
+					uButton(Rect2(bx, yy, bw, 19), label, func(): toggleMenu(false); openBoxes(k, cnt), {"bg": MINT, "shadow": 0.0})
+				dashed(X, X + W, yy + 28)
+				yy += 32
+			return yy - Y], [{"fill": css("#fff8e6"), "border": css("#e0b34a")}])
+	y += 10
 	var card = func(X, Y, W):
 		var yy = Y + h3("Materials", X, Y)
 		for k in SLIME_KEYS:
@@ -469,16 +504,25 @@ func _pInv(x: float, y: float, w: float) -> float:
 		yy += muted("Materials are shared by all heroes and spent in the Shop.", X, yy, W)
 		return yy - Y
 	y += uCards(x, y, w, 1, [card])
-	if tb(save.get("keyItems", {}).get("dreamKey")):
+	var KI: Dictionary = save.get("keyItems", {})
+	if tb(KI.get("dreamKey")) or tb(KI.get("yetiPendant")):
 		y += 10
 		y += uCards(x, y, w, 1, [func(X, Y, W):
 			var yy = Y + h3("Key items", X, Y)
-			var t = Assets.tex("items/dream_key.png")
-			if t:
-				uci.draw_texture_rect(t, Rect2(X, yy, 32, 32), false)
-			uText("The Dream Key", X + 40, yy + 2, 10, css("#6a2a9a"))
-			uPara("Dropped by The Dreamer. It hums when you hold it. It can break the crystal that Glamrax keeps people imprisoned in, high over the Abyss Volcano.", X + 40, yy + 16, W - 40, 8, MUTED)
-			yy += 38
+			if tb(KI.get("dreamKey")):
+				var t = Assets.tex("items/dream_key.png")
+				if t:
+					uci.draw_texture_rect(t, Rect2(X, yy, 32, 32), false)
+				uText("The Dream Key", X + 40, yy + 2, 10, css("#6a2a9a"))
+				uPara("Dropped by The Dreamer. It hums when you hold it. It can break the crystal that Glamrax keeps people imprisoned in, high over the Abyss Volcano.", X + 40, yy + 16, W - 40, 8, MUTED)
+				yy += 38
+			if tb(KI.get("yetiPendant")):
+				var t = Assets.tex("items/yeti_pendant.png")
+				if t:
+					uci.draw_texture_rect(t, Rect2(X, yy, 32, 32), false)
+				uText("Glowing Pendant", X + 40, yy + 2, 10, css("#1f6f9a"))
+				uPara("Taken from King Yeti. Its light tore open the portal out of the collapsing cave, and it keeps that way to Glamrax's Gate open.", X + 40, yy + 16, W - 40, 8, MUTED)
+				yy += 38
 			return yy - Y], [{"fill": css("#f6efff"), "border": css("#6a2a9a")}])
 	return y - y0
 
@@ -488,7 +532,12 @@ func _pInv(x: float, y: float, w: float) -> float:
 func _pShop(x: float, y: float, w: float) -> float:
 	var y0 = y
 	var sx = x
-	for T in [["gear", "Gear"], ["abyss", "Abyssal Shop"], ["boss", "Boss Shop"], ["house", "House"]]:
+	var tabs = [["gear", "Gear"], ["abyss", "Abyssal Shop"], ["boss", "Boss Shop"], ["house", "House"]]
+	if classId == "tank":
+		tabs.insert(1, ["workshop", "Workshop"])
+	elif shopTab == "workshop":
+		shopTab = "gear"
+	for T in tabs:
 		var id: String = T[0]
 		var bw = uW(T[1], 9) + 18
 		uButton(Rect2(sx, y, bw, 18), T[1], func(): shopTab = id; scrollY.panel = 0.0; Sfx.ui(), {"on": shopTab == id, "bg": css("#f1f3fa"), "shadow": 0.0})
@@ -501,6 +550,7 @@ func _pShop(x: float, y: float, w: float) -> float:
 		"abyss": y += abyssCard(x, y, w)
 		"boss": y += bossCard(x, y, w)
 		"house": y += houseCard(x, y, w)
+		"workshop": y += workshopCard(x, y, w)
 		_: y += gearCards(x, y, w)
 	return y - y0
 
@@ -511,8 +561,12 @@ func costBlock(t: Dictionary, x: float, y: float, w: float) -> float:
 	if CH().level < t.lv:
 		chips.append([false, "Requires **Lv %d**" % t.lv, ""])
 	chips.append([save.coins >= t.coins, "**%s** coins (you have %s)" % [fmt(t.coins), fmt(save.coins)], "coin"])
-	for k in t.mats:
+	if int(CH().get("armor", 0)) < t.get("needArmor", 0):
+		chips.append([false, "Needs the **%s**" % GEAR.tank.armor[t.needArmor].name, ""])
+	for k in t.get("mats", {}):
 		chips.append([save.mats.get(k, 0) >= t.mats[k], "**%d / %d** %s" % [save.mats.get(k, 0), t.mats[k], matName(k).to_lower()], k])
+	for k in t.get("parts", {}):
+		chips.append([partCount(k) >= t.parts[k], "**%d / %d** %s" % [partCount(k), t.parts[k], PART_INFO[k].name.to_lower()], "p_" + k])
 	var items = [[uW("COST", 6, PX) + 2, func(X, Y): uText("COST", X, Y + 5, 6, css("#8a5a08"), PX)]]
 	for ch in chips:
 		var cw = uW(ch[1].replace("**", ""), 8) + (24 if ch[2] != "" else 12)
@@ -521,6 +575,11 @@ func costBlock(t: Dictionary, x: float, y: float, w: float) -> float:
 			var tx = X + 6
 			if ch[2] == "coin":
 				_coin(Vector2(X + 9, Y + 7.5), 4)
+				tx += 10
+			elif ch[2].begins_with("p_"):
+				var pt = Assets.tex("tank/part_%s.png" % ch[2].substr(2))
+				if pt:
+					uci.draw_texture_rect(pt, Rect2(X + 4, Y + 3, 9, 9), false)
 				tx += 10
 			elif ch[2] != "":
 				matDot(ch[2], X + 5, Y + 3.5)
@@ -560,6 +619,8 @@ func _gearCard(kind: String, tiers: Array, cur: int) -> Callable:
 
 
 func gearCards(x: float, y: float, w: float) -> float:
+	if classId == "tank":
+		return tankGearCards(x, y, w)
 	var c = CH()
 	var G = GEAR[classId]
 	var cards = [_gearCard("armor", G.armor, c.armor), _gearCard("weapon", G.weapon, c.weapon)]
@@ -613,7 +674,9 @@ func _arrowChip(t: Dictionary, x: float, y: float) -> void:
 func _buy(kind: String) -> void:
 	var c = CH()
 	var G = GEAR[classId]
-	var tiers: Array = G.armor if kind == "armor" else (G.weapon if kind == "weapon" else (G.get("staff", []) if kind == "staff" else (G.get("arrows", []) if kind == "arrows" else CHARM_TIERS)))
+	var tiers: Array = G.armor if kind == "armor" else (G.weapon if kind == "weapon" else (G.get("staff", []) if kind == "staff" else (G.get("arrows", []) if kind == "arrows" else (G.get("nade", []) if kind == "nade" else CHARM_TIERS))))
+	if kind == "nade" and not c.has("nade"):
+		c.nade = 0
 	if kind == "arrows" and not c.has("arrows"):
 		c.arrows = 0
 	if kind == "staff" and not c.has("staff"):
@@ -622,13 +685,14 @@ func _buy(kind: String) -> void:
 	if t == null or not canBuy(t):
 		return
 	save.coins -= t.coins
-	for k in t.mats:
+	for k in t.get("mats", {}):
 		save.mats[k] -= t.mats[k]
+	spendParts(t.get("parts", {}))
 	c[kind] += 1
 	PS = calcStats()
 	Sfx.buy()
 	Sfx.levelUp()
-	var big = {"armor": "Armor upgraded!", "staff": "New staff!", "arrows": "New arrows!", "charm": "Charm acquired!"}.get(kind,
+	var big = {"armor": "Exosuit upgraded!" if classId == "tank" else "Armor upgraded!", "nade": "New grenades!", "staff": "New staff!", "arrows": "New arrows!", "charm": "Charm acquired!"}.get(kind,
 		"New bow!" if classId == "archer" else ("New wand!" if classId == "mage" else "New weapon!"))
 	banner(big, t.name)
 	_changed()
@@ -914,6 +978,9 @@ func _ctoggle(id: String) -> void:
 
 # ================================================================ Skills
 
+## The Skills tab: your class's advancements down the left, the chosen one's skills on the right.
+## Each advancement is grander than the last — a heavier frame, a deeper colour, more stars — so the
+## tab itself shows how far the hero has come.
 func _pSkills(x: float, y: float, w: float) -> float:
 	var c = CH()
 	var cur = jobIndex(c.level)
@@ -923,31 +990,188 @@ func _pSkills(x: float, y: float, w: float) -> float:
 	uText("%d skill points" % c.sp, x + 7, y + 3, 9)
 	uText("3 per level. Actives and buffs go on hotkeys A S D F Q W E R.", x + pw + 8, y + 4, 8, MUTED, UF)
 	y += 24
-	var cards = []
-	var styles = []
+	# keep the selection sensible: default to the newest advancement you've reached
+	if skillSel == "":
+		skillSel = str(JOBS[cur].id)
+	var colW = minf(142.0, w * 0.32)
+	var paneX = x + colW + 10
+	var paneW = w - colW - 10
+	var ly = y
 	for ji in JOBS.size():
-		var J: Dictionary = JOBS[ji]
-		var locked = ji > cur
-		cards.append(func(X, Y, W):
-			var a = 0.55 if locked else 1.0
-			jobPill(J, X, Y)
-			uText(("Lv %d" % J.lv) if locked else ("Plain attacks only" if ji == 0 else "Skills hit up to %d enemies" % J.get("targets", 1)), X + W, Y + 2, 8, Color(MUTED, a), UF, 2)
-			var yy = Y + 20
-			for s in classSkills():
-				if s.get("job") == J.id:
-					yy += _skillRow(s, X, yy, W, locked)
-			return yy - Y)
-		styles.append({"fill": Color.WHITE if not locked else css("#f4f5fa"), "border": INK})
-	y += uCards(x, y, w, 1, cards, styles)
-	y += 12
+		ly += _jobBtn(ji, cur, x, ly, colW)
+	ly += 6
+	ly += _navBtn("boss", "☠ Boss skills", css("#9a1f35"), css("#ffe0e6"), false, x, ly, colW)
+	var ascOpen: bool = c.level > ASCEND_LV or ascSpent() > 0
+	ly += _navBtn("asc", "✦ Ascendency", css("#4a1c7a"), css("#efe0ff"), not ascOpen, x, ly, colW)
+	if not ascOpen:
+		uText("Unlocks past Lv %d" % ASCEND_LV, x + 4, ly, 7, MUTED, UF)
+		ly += 11
+	var ph: float
+	if skillSel == "boss":
+		ph = uCards(paneX, y, paneW, 1, [func(X, Y, W):
+			uText("Boss skills", X, Y, 11, css("#9a1f35"))
+			var yy = Y + 18
+			yy += muted("Very rare finds in boss boxes (about 1 box in 50). Any class can use them once found.", X, yy, W) + 4
+			for s in BOSS_SKILLS:
+				yy += _skillRow(s, X, yy, W, skillRank(s.id) == 0)
+			return yy - Y], [{"fill": css("#fff0ea"), "border": css("#a82a30")}])
+	elif skillSel == "asc":
+		ph = _ascPane(paneX, y, paneW)
+	else:
+		var ji = 0
+		for i in JOBS.size():
+			if str(JOBS[i].id) == skillSel:
+				ji = i
+		ph = _jobPane(ji, ji > cur, paneX, y, paneW)
+	return maxf(ly, y + ph) - y0
+
+
+## one advancement in the left-hand list. The deeper the tier, the heavier and brighter the button.
+func _jobBtn(ji: int, cur: int, x: float, y: float, w: float) -> float:
+	var J: Dictionary = JOBS[ji]
+	var locked = ji > cur
+	var t: float = ji / maxf(1.0, JOBS.size() - 1.0)
+	var on: bool = skillSel == str(J.id)
+	var h = 26.0 + 10 * t
+	var r = Rect2(x, y, w, h)
+	var col = css(J.color)
+	var bw = 2 + roundi(t * 2)
+	if locked:
+		uBox(r, css("#eceef6"), css("#c2c7d8"), 2, 7)
+		uText("🔒", x + 7, y + h / 2 - 6, 9, Color(MUTED, 0.9))
+		uText(J.name, x + 24, y + h / 2 - 7, 9, Color(MUTED, 0.9), UB)
+		uText("Lv %d" % J.lv, x + 24, y + h / 2 + 4, 7, Color(MUTED, 0.8), UF)
+		return h + 5
+	if on:
+		uGlow(r, Color(col, 0.55 + 0.3 * t), 5 + 5 * t, 8)
+	uGrad(r, col.lerp(Color.WHITE, 0.55 - 0.3 * t), col.lerp(Color.WHITE, 0.3 - 0.2 * t), col.lerp(DARK, 0.1 + 0.3 * t), 0.5)
+	uBox(r, Color(0, 0, 0, 0), GOLD if on else INK, bw, 7)
+	# stars: one per tier reached, so the bottom of the list is studded with them
+	var stars = ""
+	for i in ji:
+		stars += "✦"
+	if stars != "":
+		uText(stars, x + w - 5, y + 4, 6 + roundi(t * 2), Color(DARK if col.lerp(Color.WHITE, 0.3 - 0.2 * t).get_luminance() > 0.52 else GOLD, 0.85), UF, 2)
+	var fg = DARK if col.lerp(Color.WHITE, 0.3 - 0.2 * t).get_luminance() > 0.52 else Color.WHITE
+	uText(J.name, x + 8, y + h / 2 - 10 + 2 * t, 9 + roundi(t * 2), fg, UB, 0, Color(DARK, 0.0 if fg == DARK else 0.5))
+	uText("Lv %d · hits %d" % [J.lv, J.get("targets", 1)], x + 8, y + h / 2 + 3 + 2 * t, 7, Color(fg, 0.8), UF)
+	zone(r, func(): skillSel = str(J.id); scrollY.panel = 0.0; Sfx.ui(), "")
+	return h + 5
+
+
+func _navBtn(id: String, label: String, col: Color, bg: Color, locked: bool, x: float, y: float, w: float) -> float:
+	var r = Rect2(x, y, w, 24)
+	var on: bool = skillSel == id
+	if locked:
+		uBox(r, css("#eceef6"), css("#c2c7d8"), 2, 7)
+		uText(label, x + 8, y + 7, 9, Color(MUTED, 0.9), UB)
+		return 29.0
+	if on:
+		uGlow(r, Color(col, 0.5), 6, 8)
+	uBox(r, bg, GOLD if on else col, 2 + (1 if on else 0), 7)
+	uText(label, x + 8, y + 7, 9, col, UB)
+	zone(r, func(): skillSel = id; scrollY.panel = 0.0; Sfx.ui(), "")
+	return 29.0
+
+
+## the right-hand pane for one advancement: a banner that grows more ornate the deeper the tier
+func _jobPane(ji: int, locked: bool, x: float, y: float, w: float) -> float:
+	var J: Dictionary = JOBS[ji]
+	var t: float = ji / maxf(1.0, JOBS.size() - 1.0)
+	var col = css(J.color)
+	var y0 = y
+	var bh = 34.0 + 12 * t
+	var br = Rect2(x, y, w, bh)
+	if t > 0.25:
+		uGlow(br, Color(col, 0.35 + 0.35 * t), 6 + 8 * t, 10)
+	uGrad(br, col.lerp(Color.WHITE, 0.5 - 0.35 * t), col.lerp(Color.WHITE, 0.25 - 0.2 * t), col.lerp(DARK, 0.15 + 0.35 * t), 0.5)
+	uBox(br, Color(0, 0, 0, 0), GOLD if t > 0.5 else INK, 2 + roundi(t * 2), 10)
+	# rays behind the title for the late advancements
+	if t > 0.5:
+		for i in 9:
+			var ang = realTime * 0.25 + i * TAU / 9
+			uci.draw_line(br.get_center(), br.get_center() + Vector2(cos(ang), sin(ang) * 0.4) * (w * 0.5), Color(Color.WHITE, 0.07 * t), 3)
+	var fg = DARK if col.lerp(Color.WHITE, 0.25 - 0.2 * t).get_luminance() > 0.52 else Color.WHITE
+	uText(J.name.to_upper(), x + 12, y + 8 + 3 * t, 11 + roundi(t * 3), fg, PX, 0, Color(DARK, 0.6 if t >= 0.6 else 0.0), 2)
+	uText(("Unlocks at Lv %d" % J.lv) if locked else ("Plain attacks only" if ji == 0 else "Skills hit up to %d enemies" % J.get("targets", 1)),
+		x + 12, y + bh - 14 + 2 * t, 8, Color(fg, 0.85), UF)
+	if t > 0.25:
+		var stars = ""
+		for i in ji:
+			stars += "✦"
+		uText(stars, x + w - 10, y + 9, 8 + roundi(t * 3), Color(GOLD if fg == Color.WHITE else DARK, 0.9), UF, 2)
+	y += bh + 8
+	var rows = classSkills().filter(func(s): return s.get("job") == J.id)
 	y += uCards(x, y, w, 1, [func(X, Y, W):
-		uText("Boss skills", X, Y, 11, css("#9a1f35"))
-		var yy = Y + 18
-		yy += muted("Very rare finds in boss boxes (about 1 box in 50). Any class can use them once found.", X, yy, W) + 4
-		for s in BOSS_SKILLS:
-			yy += _skillRow(s, X, yy, W, skillRank(s.id) == 0)
-		return yy - Y], [{"fill": css("#fff0ea"), "border": css("#a82a30")}])
+		var yy = Y
+		for s in rows:
+			yy += _skillRow(s, X, yy, W, locked)
+		return yy - Y], [{"fill": Color.WHITE if not locked else css("#f4f5fa"), "border": col if t > 0.5 else INK}])
 	return y - y0
+
+
+## Ascendency: past level 200, skill points push the skills you already have beyond their limits
+func _ascPane(x: float, y: float, w: float) -> float:
+	var c = CH()
+	var y0 = y
+	var cap = ascCap()
+	var spent = ascSpent()
+	var br = Rect2(x, y, w, 46)
+	uGlow(br, Color(css("#b388ff"), 0.5 + 0.2 * sin(realTime * 2)), 12, 10)
+	uGrad(br, css("#3a1468"), css("#24103f"), css("#120620"), 0.5)
+	uBox(br, Color(0, 0, 0, 0), GOLD, 3, 10)
+	for i in 12:
+		var ang = realTime * 0.3 + i * TAU / 12
+		uci.draw_line(br.get_center(), br.get_center() + Vector2(cos(ang), sin(ang) * 0.4) * (w * 0.55), Color(css("#b388ff"), 0.1), 3)
+	uText("ASCENDENCY", x + 12, y + 10, 14, Color.WHITE, PX, 0, Color(DARK, 0.7), 3)
+	uText("Beyond the limits of the art", x + 12, y + 30, 8, css("#d8c0ff"), UF)
+	uText("%d / %d ranks held" % [spent, cap], x + w - 10, y + 16, 9, GOLD, UB, 2)
+	y += 54
+	y += uCards(x, y, w, 1, [func(X, Y, W):
+		var yy = Y
+		yy += muted("Every level past %d lets you hold one more Ascendency rank. A rank costs one skill point and raises the rank of skills you already know — past their maximum. Passive skills keep growing with every rank; actives gain about 4%% damage each." % ASCEND_LV, X, yy, W) + 6
+		for ji in JOBS.size():
+			var J: Dictionary = JOBS[ji]
+			if not classSkills().any(func(s): return s.get("job") == J.id):
+				continue
+			yy += _ascRow(str(J.id), "%s ascendency" % J.name, "+1 rank to every %s skill you know" % J.name, css(J.color), X, yy, W)
+		yy += 4
+		yy += _ascRow("all", "Transcendence", "+1 rank to every skill you know, of every advancement", css("#b388ff"), X, yy, W)
+		return yy - Y], [{"fill": css("#f7f1ff"), "border": css("#6a2a9a")}])
+	return y - y0
+
+
+func _ascRow(id: String, name: String, desc: String, col: Color, X: float, yy: float, W: float) -> float:
+	var c = CH()
+	var r = int(c.get("asc", {}).get(id, 0))
+	var cost = 2 if id == "all" else 1
+	var room = ascSpent() + 1 <= ascCap()
+	var can = c.sp >= cost and r < ASC_NODE_MAX and room
+	dashed(X, X + W, yy, LINE)
+	uci.draw_circle(Vector2(X + 11, yy + 14), 9, Color(col, 0.25))
+	uci.draw_circle(Vector2(X + 11, yy + 14), 9 - 2, col)
+	uText(str(r), X + 11, yy + 8, 10, Color.WHITE, UB, 1, Color(DARK, 0.8))
+	uText(name, X + 28, yy + 4, 10, css("#3a1468"), UB)
+	uPara(desc, X + 28, yy + 17, W - 28 - 60, 8, MUTED)
+	uText("%d / %d" % [r, ASC_NODE_MAX], X + W - 52, yy + 4, 8, MUTED, UF)
+	var label = "+1" if can else ("MAX" if r >= ASC_NODE_MAX else ("Lv up" if not room else "No SP"))
+	uButton(Rect2(X + W - 48, yy + 14, 48, 18), label, func(): _ascBuy(id, cost), {"disabled": not can, "bg": MINT})
+	return 38.0
+
+
+func _ascBuy(id: String, cost: int) -> void:
+	var c = CH()
+	if not (c.get("asc") is Dictionary):
+		c.asc = {}
+	var r = int(c.asc.get(id, 0))
+	if c.sp < cost or r >= ASC_NODE_MAX or ascSpent() + 1 > ascCap():
+		return
+	c.asc[id] = r + 1
+	c.sp -= cost
+	Sfx.rankUp(7)
+	toast("Ascended: %s is now rank %d." % [id if id == "all" else jobById(id).name, r + 1])
+	_restat()
+	_changed()
 
 
 func skillDesc(s: Dictionary, r: int) -> String:
@@ -956,7 +1180,8 @@ func skillDesc(s: Dictionary, r: int) -> String:
 
 func _skillRow(s: Dictionary, X: float, yy: float, W: float, locked: bool) -> float:
 	var c = CH()
-	var r = skillRank(s.id)
+	var r = baseRank(s.id)
+	var asc = ascBonus(s.id) if r > 0 else 0
 	var a = 0.55 if locked else 1.0
 	var bindable = (s.type == "active" or s.type == "buff") and not locked
 	var bossSk: bool = s.get("boss", "") != ""
@@ -969,8 +1194,10 @@ func _skillRow(s: Dictionary, X: float, yy: float, W: float, locked: bool) -> fl
 	nx += uPill(tags[0], nx, yy + 6, Color(css(tags[1]), a), Color(css(tags[2]), a), 7) + 4
 	if s.get("cost") and s.type != "utility":
 		nx += uPill("%d energy" % s.cost, nx, yy + 6, Color(css("#fff4c8"), a), Color(css("#8a5a08"), a), 7) + 4
-	uText("%d/%d" % [r, s.max], nx, yy + 6, 8, Color(MUTED, a), UF)
-	var desc = skillDesc(s, maxi(1, r)) + ((" · %ss cooldown" % str(s.cd)) if s.get("cd") else "")
+	nx += uText("%d/%d" % [r, s.max], nx, yy + 6, 8, Color(MUTED, a), UF) + 4
+	if asc > 0:
+		uPill("✦ +%d" % asc, nx, yy + 6, Color(css("#efe0ff"), a), Color(css("#4a1c7a"), a), 7)
+	var desc = skillDesc(s, maxi(1, r + asc)) + ((" · %ss cooldown" % str(s.cd)) if s.get("cd") else "")
 	var dh = uPara(desc, tx, yy + 19, tw, 8, Color(css("#40497a"), a))
 	var h = 21 + dh
 	if bindable:
@@ -992,12 +1219,12 @@ func _skillRow(s: Dictionary, X: float, yy: float, W: float, locked: bool) -> fl
 func _learn(id: String) -> void:
 	var c = CH()
 	var s: Dictionary = SKILL[id]
-	if not (c.sp > 0 and skillUnlocked(s) and skillRank(id) < s.max):
+	if not (c.sp > 0 and skillUnlocked(s) and baseRank(id) < s.max):
 		return
-	c.skills[id] = skillRank(id) + 1
+	c.skills[id] = baseRank(id) + 1
 	c.sp -= 1
 	Sfx.buy()
-	if c.skills[id] == 1 and (s.type == "active" or s.type == "buff"):
+	if baseRank(id) == 1 and (s.type == "active" or s.type == "buff"):
 		var pool = ["a", "s", "d", "f", "q", "w", "e", "r"] if s.type == "active" else ["q", "w", "e", "r", "a", "s", "d", "f"]
 		var key = ""
 		for k in pool:
@@ -1116,6 +1343,10 @@ func wmOpen(id: String) -> bool:
 		return tb(save.get("trophies", {}).get("warlord"))
 	if id == "bubble":
 		return tb(save.get("trophies", {}).get("dreamer"))
+	if id.begins_with("climb"):
+		return tb(save.get("trophies", {}).get("dreamer"))
+	if id == "peak":
+		return tb(save.get("trophies", {}).get("kingYeti"))
 	return true
 
 
@@ -1134,6 +1365,8 @@ func wmLinks() -> Array:
 		openDreamGate()
 	if wmOpen("bubble"):
 		openBubbleGate()
+	if wmOpen("peak"):
+		openPendantGate()
 	for id in MAPS:
 		for p in MAPS[id].get("portals", []):
 			if not MAPS.has(p.to):
@@ -1172,9 +1405,11 @@ func _pMap(x: float, y: float, w: float) -> float:
 	uPara("Hover an area for its monsters and levels. Dotted paths are portals — the label shows where each one is. Press M any time to open this map.", x + 72, y + 1, w - 72, 8, MUTED)
 	y += 26
 	var s = w / 1000.0
-	var r = Rect2(x, y, w, 430 * s)
+	var top = WM_TOP if wmOpen("climb1") else 0.0   # the volcano climb sits above the Abyss
+	var r = Rect2(x, y, w, (430 + top) * s)
+	var o = r.position + Vector2(0, top * s)
 	# which area is the mouse over?
-	var mp = (mouse - uOff - r.position) / s
+	var mp = (mouse - uOff - o) / s
 	wmHover = null
 	if uHover(r):
 		for id in WM_NODES:
@@ -1183,10 +1418,10 @@ func _pMap(x: float, y: float, w: float) -> float:
 			var n = WM_NODES[id]
 			if Vector2(mp.x - n.x, mp.y - n.y).length() < 34:
 				wmHover = id
-	withCtx(r.position, s, func(cx): drawWorldMap(cx, realTime))
+	withCtx(o, s, func(cx): drawWorldMap(cx, realTime))
 	uBox(r, NONE, INK, 3, 9)
 	if wmHover != null:
-		_wmTip(r, s)
+		_wmTip(r, s, o)
 	return r.end.y - y0
 
 
@@ -1194,12 +1429,13 @@ func drawWorldMap(x: Ctx, t: float) -> void:
 	var sea = x.createLinearGradient(0, 0, 0, 430)
 	sea.addColorStop(0, "#5fb2e8")
 	sea.addColorStop(1, "#3a86c8")
+	var top = WM_TOP if wmOpen("climb1") else 0.0
 	x.fillStyle = sea
-	x.fillRect(0, 0, 1000, 430)
+	x.fillRect(0, -top, 1000, 430 + top)
 	x.fillStyle = "rgba(255,255,255,0.35)"
 	for i in 60:
 		var wx = fmod(i * 97 + t * 8, 1020.0) - 10
-		var wy = (i * 53) % 430
+		var wy = (i * 53) % int(430 + top) - top
 		x.fillRect(roundf(wx), wy, 6, 1)
 	var blob = func(cx, cy, rx, ry, fill, edge):
 		x.fillStyle = edge
@@ -1244,6 +1480,8 @@ func drawWorldMap(x: Ctx, t: float) -> void:
 		if wmOpen("bubble"):
 			x.fillStyle = "rgba(255,255,255,0.18)"; x.beginPath(); x.arc(WM_NODES.bubble.x, WM_NODES.bubble.y, 24, 0, TAU); x.fill()
 			x.strokeStyle = "rgba(200,170,255,0.8)"; x.lineWidth = 2; x.beginPath(); x.arc(WM_NODES.bubble.x, WM_NODES.bubble.y, 24, 0, TAU); x.stroke()
+	if top > 0:
+		_wmVolcano(x, t)
 	# portal paths: dotted lines with a label at each end saying where the portal is
 	for l in wmLinks():
 		var A = WM_NODES.get(l.a)
@@ -1263,7 +1501,7 @@ func drawWorldMap(x: Ctx, t: float) -> void:
 		var m: Dictionary = MAPS[id]
 		var hov = wmHover == id
 		x.fillStyle = "#1a1030"; x.beginPath(); x.arc(n.x, n.y, 17 if hov else 14, 0, TAU); x.fill()
-		x.fillStyle = "#a82a30" if m.get("boss") else ("#ffc83d" if hov else ("#d8c8ff" if id.begins_with("abyss") else "#ffffff"))
+		x.fillStyle = "#a82a30" if m.get("boss") else ("#ffc83d" if hov else ("#d8c8ff" if id.begins_with("abyss") else ("#d8f0ff" if id.begins_with("climb") or id == "peak" else "#ffffff")))
 		x.beginPath(); x.arc(n.x, n.y, 14 if hov else 11, 0, TAU); x.fill()
 		x.fillStyle = "#ffe08a" if m.get("boss") else "#27335c"
 		x.font = '12px "Press Start 2P", monospace'; x.textAlign = "center"; x.textBaseline = "middle"
@@ -1280,10 +1518,44 @@ func drawWorldMap(x: Ctx, t: float) -> void:
 		x.fillStyle = "#fff"; x.beginPath(); x.arc(h.x, h.y - 32 + bob, 3, 0, TAU); x.fill()
 		x.font = "bold 11px Fredoka, sans-serif"; x.fillStyle = "#ff3a4a"; x.fillText("You are here", h.x, h.y - 48 + bob)
 	x.textBaseline = "alphabetic"
-	x.fillStyle = "rgba(26,16,48,0.8)"; x.fillRect(12, 12, 200, 26)
-	x.fillStyle = "#ffe08a"; x.font = '10px "Press Start 2P", monospace'; x.textAlign = "left"; x.fillText("SPROUTVALE REGION", 22, 30)
+	x.fillStyle = "rgba(26,16,48,0.8)"; x.fillRect(12, 12 - top, 200, 26)
+	x.fillStyle = "#ffe08a"; x.font = '10px "Press Start 2P", monospace'; x.textAlign = "left"; x.fillText("SPROUTVALE REGION", 22, 30 - top)
 	x.fillStyle = "rgba(255,248,230,0.92)"; x.fillRect(12, 392, 360, 26)
 	x.fillStyle = "#4a2e14"; x.font = "11px Fredoka, sans-serif"; x.fillText("●  Area     ☠  Boss     - - -  Portal (label = where the portal is)", 22, 409)
+
+
+const WM_TOP := 210.0
+
+
+## the climb to the Abyssal Volcano: a rocky ridge turning to snow, up to the smoking summit
+func _wmVolcano(x: Ctx, t: float) -> void:
+	# the ridge
+	x.fillStyle = "#3a3e48"
+	x.beginPath(); x.moveTo(70, -2); x.bezierCurveTo(120, -60, 260, -80, 360, -110); x.bezierCurveTo(470, -140, 600, -150, 700, -160)
+	x.lineTo(760, -150); x.bezierCurveTo(860, -110, 950, -60, 970, -4); x.closePath(); x.fill()
+	x.strokeStyle = "#1e2028"; x.lineWidth = 3; x.stroke()
+	x.fillStyle = "#6a6e7a"
+	x.beginPath(); x.moveTo(90, -6); x.bezierCurveTo(140, -54, 260, -70, 360, -98); x.bezierCurveTo(470, -126, 600, -136, 690, -146)
+	x.lineTo(700, -120); x.bezierCurveTo(560, -100, 300, -40, 200, -6); x.closePath(); x.fill()
+	# snow from the second climb on
+	x.fillStyle = "#e8f4ff"
+	x.beginPath(); x.moveTo(250, -74); x.bezierCurveTo(330, -98, 470, -132, 600, -142); x.lineTo(690, -150)
+	x.lineTo(680, -132); x.bezierCurveTo(560, -122, 420, -104, 300, -60); x.closePath(); x.fill()
+	# the volcano cone and its glowing crater
+	x.fillStyle = "#2a1a1a"
+	x.beginPath(); x.moveTo(700, -40); x.lineTo(790, -150); x.lineTo(850, -150); x.lineTo(940, -40); x.closePath(); x.fill()
+	x.fillStyle = "rgba(255,110,40,%.2f)" % (0.7 + 0.25 * sin(t * 3))
+	x.beginPath(); x.ellipse(820, -150, 32, 7, 0, 0, TAU); x.fill()
+	for i in 3:
+		var k = fmod(t * 0.25 + i / 3.0, 1.0)
+		x.fillStyle = "rgba(90,80,90,%.2f)" % (0.5 * (1 - k))
+		x.beginPath(); x.arc(820 + k * 30 + i * 6, -160 - k * 20, 8 + k * 10, 0, TAU); x.fill()
+	for i in 6:
+		x.fillStyle = "#ff6a2a"
+		var lx = 800 + i * 7
+		x.fillRect(lx, -146 + hsh(i + 40) * 30, 2, 10 + hsh(i + 41) * 20)
+	# the cave mouth on the snowy slope
+	x.fillStyle = "#141820"; x.beginPath(); x.ellipse(452, -112, 16, 9, 0, PI, TAU); x.fill()
 
 
 func _wmLabel(x: Ctx, from: Dictionary, to: Dictionary, text: String) -> void:
@@ -1299,7 +1571,7 @@ func _wmLabel(x: Ctx, from: Dictionary, to: Dictionary, text: String) -> void:
 	x.fillStyle = "#4a2e14"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(text, px2, py2)
 
 
-func _wmTip(r: Rect2, s: float) -> void:
+func _wmTip(r: Rect2, s: float, o: Vector2) -> void:
 	var m: Dictionary = MAPS[wmHover]
 	var mons = []
 	if m.get("boss"):
@@ -1317,8 +1589,8 @@ func _wmTip(r: Rect2, s: float) -> void:
 	var w = 190.0
 	var h = 34 + mons.size() * 13 + 14 + links.size() * 12 + (14 if mapId == wmHover else 0) + 6
 	var n = WM_NODES[wmHover]
-	var X = minf(r.end.x - w - 4, r.position.x + n.x * s + 24)
-	var Y = clampf(r.position.y + n.y * s - 30, r.position.y + 4, r.end.y - h - 4)
+	var X = minf(r.end.x - w - 4, o.x + n.x * s + 24)
+	var Y = clampf(o.y + n.y * s - 30, r.position.y + 4, r.end.y - h - 4)
 	uBox(Rect2(X, Y, w, h), Color(247 / 255.0, 251 / 255.0, 1, 0.97), INK, 2, 8, 3.0, INK)
 	var yy = Y + 6
 	var nw = uText(m.name, X + 8, yy, 10)
@@ -1345,11 +1617,11 @@ func _wmTip(r: Rect2, s: float) -> void:
 # ================================================================ Bestiary
 
 func bigEntry(k: String) -> bool:
-	return k == "croc" or k == "warlord" or k == "dreamer"
+	return k == "croc" or k == "warlord" or k == "dreamer" or k == "kingYeti"
 
 
 func bossTOf(k: String) -> Dictionary:
-	return BOSS_T if k == "croc" else (WARLORD_T if k == "warlord" else (DREAMER_T if k == "dreamer" else SLIME_TYPES[k]))
+	return BOSS_T if k == "croc" else (WARLORD_T if k == "warlord" else (DREAMER_T if k == "dreamer" else (YETI_T if k == "kingYeti" else SLIME_TYPES[k])))
 
 
 ## the frames an entry cycles through: [set, key, frame] for idle, or for its attack when clicked
@@ -1373,15 +1645,15 @@ func bestFrames(k: String, mode: String, shiny: bool) -> Array:
 		else:
 			add.call("warlord_ss", "idle", [0, 1])
 		return seq
-	if k == "dreamer":   # a portrait rather than strips: one frame calm, eighteen glaring
+	if k == "dreamer" or k == "kingYeti":   # a portrait rather than strips: one frame calm, eighteen glaring
 		for i in (18 if mode == "attack" else 1):
 			seq.append(["", "", 0])
 		return seq
 	var setn = k + ("_shiny" if shiny else "")
-	if k in ABYSS_MOBS:
+	if k in ABYSS_MOBS or k in CLIMB_MOBS:
 		var ks: Dictionary = Assets.mob_set(setn).get("keys", {})
 		if mode == "attack":
-			for key in ABYSS_BEST_ATTACK.get(k, []):
+			for key in ABYSS_BEST_ATTACK.get(k, CLIMB_BEST_ATTACK.get(k, [])):
 				add.call(setn, key, range(int(ks.get(key, 1))) if int(ks.get(key, 1)) > 1 else [0, 0, 0])
 		else:
 			var k0 = ks.keys()[0] if ks.size() else "idle"
@@ -1437,7 +1709,13 @@ func _bestPic(k: String, r: Rect2, known: bool, shinyView: bool, shinyKnown: boo
 	if k == "dreamer":
 		_bestDreamer(r, known, st.mode == "attack")
 		return
+	if k == "kingYeti":
+		_bestYeti(r, known, st.mode == "attack")
+		return
 	var fr = seq[posmod(f, seq.size())]
+	if k in CLIMB_MOBS:
+		_bestClimb(k, r, fr, known and (not shinyView or shinyKnown))
+		return
 	if k in ABYSS_MOBS:
 		_bestAbyss(k, r, fr, known and (not shinyView or shinyKnown))
 		return
@@ -1500,6 +1778,61 @@ func _bestAbyss(k: String, r: Rect2, fr: Array, known: bool) -> void:
 	uci.draw_texture_rect_region(tex, Rect2(ox, oy, dw, dh), Rect2(fw * clampi(fr[2], 0, nfr - 1), 0, fw, fh))
 
 
+## which strips the bestiary plays when you click a climb monster
+const CLIMB_BEST_ATTACK := {"boulder": ["float", "launch", "roll"], "lizard": ["whip", "leap"], "golem": ["wind", "smash"],
+	"warlock": ["cast", "blink"], "yeti": ["swipe", "leap", "slam"], "sword": ["fly", "fly"]}
+
+
+## a climb monster's picture: cold sky over grey rock (the cave ones in the dark), the whole frame fitted in
+func _bestClimb(k: String, r: Rect2, fr: Array, known: bool) -> void:
+	var cave = k in ["yeti", "sword"]
+	var snow = k in ["golem", "warlock"]
+	uBox(r, css("#1a2230"), INK, 2, 7)
+	uGrad(Rect2(r.position + Vector2(2, 2), r.size - Vector2(4, 4)), css("#1e2a3a") if cave else (css("#c8d8ea") if snow else css("#9fb4c8")),
+		css("#16202c") if cave else (css("#aabfd6") if snow else css("#8298ae")), css("#0c1018") if cave else css("#6a7c90"), 0.5)
+	var floorY = r.position.y + r.size.y * 0.86
+	if k != "sword":
+		uci.draw_rect(Rect2(r.position.x + 2, floorY, r.size.x - 4, r.end.y - floorY - 2), css("#2a3038") if cave else (css("#e8f2fa") if snow else css("#5a5e66")))
+	var tex = Assets.mob_strip(fr[0], fr[1])
+	if tex == null:
+		return
+	if not known:
+		tex = Assets.silhouette(tex, css("#05070c"))
+	var S = Assets.mob_set(fr[0])
+	var nfr = int(S.keys.get(fr[1], 1))
+	var fw = tex.get_width() / float(nfr)
+	var fh = float(tex.get_height())
+	var sc = minf((r.size.x - 8) / fw, (r.size.y - 8) / fh)
+	var dw = fw * sc
+	var dh = fh * sc
+	var ox = r.get_center().x - dw / 2
+	var oy = r.get_center().y - dh / 2
+	var D = S.get("dim")
+	if k != "sword" and D != null and D.has("ay"):
+		oy = floorY - float(D.ay) * 2 * sc * (fh / (float(D.get("h", fh / 2)) * 2))
+	uci.draw_texture_rect_region(tex, Rect2(ox, oy, dw, dh), Rect2(fw * clampi(fr[2], 0, nfr - 1), 0, fw, fh))
+
+
+## King Yeti's picture: his portrait in the cold cave (he roars when you click it)
+func _bestYeti(r: Rect2, known: bool, roar: bool) -> void:
+	uBox(r, css("#0e1620"), INK, 2, 7)
+	uGrad(Rect2(r.position + Vector2(2, 2), r.size - Vector2(4, 4)), css("#24384c"), css("#162432"), css("#080c12"), 0.5)
+	var tex = Assets.tex("boss/yeti_portrait.png")
+	if tex == null:
+		return
+	if not known:
+		tex = Assets.silhouette(tex, css("#05070c"))
+	var fh = float(tex.get_height())
+	var nf = maxi(1, roundi(tex.get_width() / (fh * 220.0 / 170.0)))
+	var fw = tex.get_width() / float(nf)
+	var sc = minf((r.size.x - 4) / fw, (r.size.y - 4) / fh)
+	var dst = Rect2(r.get_center().x - fw * sc / 2, r.end.y - 2 - fh * sc, fw * sc, fh * sc)
+	var fi = (nf - 1) if roar and known else 0
+	if roar and known and nf == 1:
+		dst = dst.grow(sin(realTime * 40) * 1.5)
+	uci.draw_texture_rect_region(tex, dst, Rect2(fw * fi, 0, fw, fh))
+
+
 ## The Dreamer's picture: its portrait over the abyss (it glares when you click it)
 func _bestDreamer(r: Rect2, known: bool, glare: bool) -> void:
 	uBox(r, css("#12081e"), INK, 2, 7)
@@ -1560,6 +1893,8 @@ func _bestCard(k: String) -> Callable:
 			where = [MAPS.crimson5]
 		elif k == "dreamer":
 			where = [MAPS.abyss5]
+		elif k == "kingYeti":
+			where = [MAPS.climb4]
 		else:
 			for id in MAPS:
 				if MAPS[id].get("spawn", {}).has(k):
@@ -1669,6 +2004,20 @@ const SUMMONER_CONTROLS := {
 }
 
 
+const TANK_CONTROLS := {
+	"title": "Tank's combos",
+	"combos": [["Z Z Z Z", "Pistol chain", "Three shots, then a burst"], ["Z Z X", "Cooked grenade", "A short-fuse grenade with a bigger blast"],
+		["Z Z Z X", "Grenade barrage", "Three grenades at once"], ["X", "Grenade", "Lobbed at the nearest enemy (launcher and missiles later)"],
+		["↑ + Z", "Shoot up", "Up close it's an uppercut that launches"], ["Z up close", "Pistol whip", "A shove that buys space"],
+		["Z in the air", "Air shots", "Shot, shot, burst · ↑/↓ to aim"], ["X in the air", "Drop a grenade", "Straight down"],
+		["1 – 7 / V", "Grenade type", "Frag, shrapnel, cryo, napalm, energy, EMP, cluster (built in the Workshop)"]],
+	"rows": [["H / J", "Health potion / Electricity potion (3 charges each, recharging)"], ["← →", "Move · double-tap to sprint"], ["↑ / Space", "Jump · double jump · hold Space to glide (Rocket Boots) or fly (Mecha Suit)"],
+		["↓", "Lie prone (Z still shoots)"], ["C", "Dodge · C again mid-dodge: double dash (Servo Legs), shoulder slam (Chest Rig)"], ["Shift", "Guard"],
+		["A S D F Q W E R", "Skills — they spend Electricity"], ["Tab / M", "Menu / world map"], ["F11", "Fullscreen"]],
+	"note": "Every exosuit piece you build in the Shop changes how Tank moves and fights. With the helmet, red markers show weak points: hitting one is a super crit.",
+}
+
+
 func _kbdRow(X: float, yy: float, W: float, key: String, text: String) -> float:
 	var kw = 96.0
 	var h = uPara(text, 0, 0, W - kw - 10, 9, INK, false)
@@ -1680,7 +2029,7 @@ func _kbdRow(X: float, yy: float, W: float, key: String, text: String) -> float:
 
 
 func _pControls(x: float, y: float, w: float) -> float:
-	var CT: Dictionary = {"archer": ARCHER_CONTROLS, "mage": MAGE_CONTROLS, "summoner": SUMMONER_CONTROLS}.get(classId, ROCK_CONTROLS)
+	var CT: Dictionary = {"archer": ARCHER_CONTROLS, "mage": MAGE_CONTROLS, "summoner": SUMMONER_CONTROLS, "tank": TANK_CONTROLS}.get(classId, ROCK_CONTROLS)
 	return uCards(x, y, w, 1, [func(X, Y, W):
 		var yy = Y + h3(CT.title, X, Y)
 		for r in CT.combos:
