@@ -11,6 +11,7 @@ const CARD := {"fill": Color.WHITE, "border": INK}
 
 var curTab := "char"
 var shopTab := "gear"
+var skillSel := ""     # which advancement (job id), "boss" or "asc" the Skills tab is showing
 var panelRect := Rect2()
 var overRect := Rect2()
 var BEST_ANIM := {}
@@ -291,7 +292,7 @@ func _tabBadge(id: String, c: Dictionary) -> String:
 			nexts.append(_tier(G.arrows, c.get("arrows", 0) + 1))
 		if nexts.any(func(t): return t != null and canBuy(t)):
 			return "new"
-	if id == "skills" and c.sp and classSkills().any(func(s): return skillUnlocked(s) and skillRank(s.id) < s.max):
+	if id == "skills" and c.sp and (ascCap() > ascSpent() or classSkills().any(func(s): return skillUnlocked(s) and baseRank(s.id) < s.max)):
 		return str(c.sp)
 	return ""
 
@@ -371,7 +372,7 @@ func attrTip(a: String) -> String:
 func _pChar(x: float, y: float, w: float) -> float:
 	var c = CH()
 	var s = PS
-	var vals = [str(c.level), str(save.get("bossCoins", 0)), "max" if c.level >= MAX_LV else "%s / %s" % [fmt(c.exp), fmt(expNeed(c.level))],
+	var vals = [str(c.level), str(save.get("bossCoins", 0)), "%s / %s" % [fmt(c.exp), fmt(expNeed(c.level))],
 		str(s.hp), str(s.atk), str(s.def), "%.1f%%" % s.crit, "%d%%" % roundi(s.critDmg * 100), "%d%%" % roundi(s.spd * 100),
 		"%d%%" % roundi(s.aspd * 100), fmt(c.kills), RANKS[save.bestRank].r if save.get("bestRank", -1) >= 0 else "none yet"]
 	var J = jobOf(c.level)
@@ -451,6 +452,30 @@ func _pInv(x: float, y: float, w: float) -> float:
 				cards += 1
 	var y0 = y
 	y += currencyBag(x, y, w, "🃏 %d Monster cards" % cards)
+	var boxKinds = ["croc", "warlord", "dreamer"].filter(func(k): return boxCount(k) > 0)
+	if not boxKinds.is_empty():
+		y += uCards(x, y, w, 1, [func(X, Y, W):
+			var yy = Y + h3("Boss boxes", X, Y)
+			yy += muted("Boxes you've collected. Open as many as you like at once — each one is rolled on its own.", X, yy, W) + 4
+			for k in boxKinds:
+				var BX: Dictionary = BOXES[k]
+				var n = boxCount(k)
+				var col = css("#6a2a9a") if k == "dreamer" else (css("#9a1f35") if k == "warlord" else css("#2a7a3a"))
+				uText("📦 %s ×%d" % [BX.name, n], X + 2, yy + 3, 10, col, UB)
+				uText("from %s" % BX.boss, X + 2, yy + 18, 8, MUTED, UF)
+				var bx = X + W
+				for q in [["All", n], ["10", 10], ["5", 5], ["1", 1]]:
+					var cnt: int = q[1]
+					if cnt <= 0 or (cnt > n and q[0] != "All"):
+						continue
+					var label: String = "Open %s" % q[0]
+					var bw = uW(label, 9) + 16
+					bx -= bw + 4
+					uButton(Rect2(bx, yy, bw, 19), label, func(): toggleMenu(false); openBoxes(k, cnt), {"bg": MINT, "shadow": 0.0})
+				dashed(X, X + W, yy + 28)
+				yy += 32
+			return yy - Y], [{"fill": css("#fff8e6"), "border": css("#e0b34a")}])
+	y += 10
 	var card = func(X, Y, W):
 		var yy = Y + h3("Materials", X, Y)
 		for k in SLIME_KEYS:
@@ -914,6 +939,9 @@ func _ctoggle(id: String) -> void:
 
 # ================================================================ Skills
 
+## The Skills tab: your class's advancements down the left, the chosen one's skills on the right.
+## Each advancement is grander than the last — a heavier frame, a deeper colour, more stars — so the
+## tab itself shows how far the hero has come.
 func _pSkills(x: float, y: float, w: float) -> float:
 	var c = CH()
 	var cur = jobIndex(c.level)
@@ -923,31 +951,188 @@ func _pSkills(x: float, y: float, w: float) -> float:
 	uText("%d skill points" % c.sp, x + 7, y + 3, 9)
 	uText("3 per level. Actives and buffs go on hotkeys A S D F Q W E R.", x + pw + 8, y + 4, 8, MUTED, UF)
 	y += 24
-	var cards = []
-	var styles = []
+	# keep the selection sensible: default to the newest advancement you've reached
+	if skillSel == "":
+		skillSel = str(JOBS[cur].id)
+	var colW = minf(142.0, w * 0.32)
+	var paneX = x + colW + 10
+	var paneW = w - colW - 10
+	var ly = y
 	for ji in JOBS.size():
-		var J: Dictionary = JOBS[ji]
-		var locked = ji > cur
-		cards.append(func(X, Y, W):
-			var a = 0.55 if locked else 1.0
-			jobPill(J, X, Y)
-			uText(("Lv %d" % J.lv) if locked else ("Plain attacks only" if ji == 0 else "Skills hit up to %d enemies" % J.get("targets", 1)), X + W, Y + 2, 8, Color(MUTED, a), UF, 2)
-			var yy = Y + 20
-			for s in classSkills():
-				if s.get("job") == J.id:
-					yy += _skillRow(s, X, yy, W, locked)
-			return yy - Y)
-		styles.append({"fill": Color.WHITE if not locked else css("#f4f5fa"), "border": INK})
-	y += uCards(x, y, w, 1, cards, styles)
-	y += 12
+		ly += _jobBtn(ji, cur, x, ly, colW)
+	ly += 6
+	ly += _navBtn("boss", "☠ Boss skills", css("#9a1f35"), css("#ffe0e6"), false, x, ly, colW)
+	var ascOpen: bool = c.level > ASCEND_LV or ascSpent() > 0
+	ly += _navBtn("asc", "✦ Ascendency", css("#4a1c7a"), css("#efe0ff"), not ascOpen, x, ly, colW)
+	if not ascOpen:
+		uText("Unlocks past Lv %d" % ASCEND_LV, x + 4, ly, 7, MUTED, UF)
+		ly += 11
+	var ph: float
+	if skillSel == "boss":
+		ph = uCards(paneX, y, paneW, 1, [func(X, Y, W):
+			uText("Boss skills", X, Y, 11, css("#9a1f35"))
+			var yy = Y + 18
+			yy += muted("Very rare finds in boss boxes (about 1 box in 50). Any class can use them once found.", X, yy, W) + 4
+			for s in BOSS_SKILLS:
+				yy += _skillRow(s, X, yy, W, skillRank(s.id) == 0)
+			return yy - Y], [{"fill": css("#fff0ea"), "border": css("#a82a30")}])
+	elif skillSel == "asc":
+		ph = _ascPane(paneX, y, paneW)
+	else:
+		var ji = 0
+		for i in JOBS.size():
+			if str(JOBS[i].id) == skillSel:
+				ji = i
+		ph = _jobPane(ji, ji > cur, paneX, y, paneW)
+	return maxf(ly, y + ph) - y0
+
+
+## one advancement in the left-hand list. The deeper the tier, the heavier and brighter the button.
+func _jobBtn(ji: int, cur: int, x: float, y: float, w: float) -> float:
+	var J: Dictionary = JOBS[ji]
+	var locked = ji > cur
+	var t: float = ji / maxf(1.0, JOBS.size() - 1.0)
+	var on: bool = skillSel == str(J.id)
+	var h = 26.0 + 10 * t
+	var r = Rect2(x, y, w, h)
+	var col = css(J.color)
+	var bw = 2 + roundi(t * 2)
+	if locked:
+		uBox(r, css("#eceef6"), css("#c2c7d8"), 2, 7)
+		uText("🔒", x + 7, y + h / 2 - 6, 9, Color(MUTED, 0.9))
+		uText(J.name, x + 24, y + h / 2 - 7, 9, Color(MUTED, 0.9), UB)
+		uText("Lv %d" % J.lv, x + 24, y + h / 2 + 4, 7, Color(MUTED, 0.8), UF)
+		return h + 5
+	if on:
+		uGlow(r, Color(col, 0.55 + 0.3 * t), 5 + 5 * t, 8)
+	uGrad(r, col.lerp(Color.WHITE, 0.55 - 0.3 * t), col.lerp(Color.WHITE, 0.3 - 0.2 * t), col.lerp(DARK, 0.1 + 0.3 * t), 0.5)
+	uBox(r, Color(0, 0, 0, 0), GOLD if on else INK, bw, 7)
+	# stars: one per tier reached, so the bottom of the list is studded with them
+	var stars = ""
+	for i in ji:
+		stars += "✦"
+	if stars != "":
+		uText(stars, x + w - 5, y + 4, 6 + roundi(t * 2), Color(DARK if col.lerp(Color.WHITE, 0.3 - 0.2 * t).get_luminance() > 0.52 else GOLD, 0.85), UF, 2)
+	var fg = DARK if col.lerp(Color.WHITE, 0.3 - 0.2 * t).get_luminance() > 0.52 else Color.WHITE
+	uText(J.name, x + 8, y + h / 2 - 10 + 2 * t, 9 + roundi(t * 2), fg, UB, 0, Color(DARK, 0.0 if fg == DARK else 0.5))
+	uText("Lv %d · hits %d" % [J.lv, J.get("targets", 1)], x + 8, y + h / 2 + 3 + 2 * t, 7, Color(fg, 0.8), UF)
+	zone(r, func(): skillSel = str(J.id); scrollY.panel = 0.0; Sfx.ui(), "")
+	return h + 5
+
+
+func _navBtn(id: String, label: String, col: Color, bg: Color, locked: bool, x: float, y: float, w: float) -> float:
+	var r = Rect2(x, y, w, 24)
+	var on: bool = skillSel == id
+	if locked:
+		uBox(r, css("#eceef6"), css("#c2c7d8"), 2, 7)
+		uText(label, x + 8, y + 7, 9, Color(MUTED, 0.9), UB)
+		return 29.0
+	if on:
+		uGlow(r, Color(col, 0.5), 6, 8)
+	uBox(r, bg, GOLD if on else col, 2 + (1 if on else 0), 7)
+	uText(label, x + 8, y + 7, 9, col, UB)
+	zone(r, func(): skillSel = id; scrollY.panel = 0.0; Sfx.ui(), "")
+	return 29.0
+
+
+## the right-hand pane for one advancement: a banner that grows more ornate the deeper the tier
+func _jobPane(ji: int, locked: bool, x: float, y: float, w: float) -> float:
+	var J: Dictionary = JOBS[ji]
+	var t: float = ji / maxf(1.0, JOBS.size() - 1.0)
+	var col = css(J.color)
+	var y0 = y
+	var bh = 34.0 + 12 * t
+	var br = Rect2(x, y, w, bh)
+	if t > 0.25:
+		uGlow(br, Color(col, 0.35 + 0.35 * t), 6 + 8 * t, 10)
+	uGrad(br, col.lerp(Color.WHITE, 0.5 - 0.35 * t), col.lerp(Color.WHITE, 0.25 - 0.2 * t), col.lerp(DARK, 0.15 + 0.35 * t), 0.5)
+	uBox(br, Color(0, 0, 0, 0), GOLD if t > 0.5 else INK, 2 + roundi(t * 2), 10)
+	# rays behind the title for the late advancements
+	if t > 0.5:
+		for i in 9:
+			var ang = realTime * 0.25 + i * TAU / 9
+			uci.draw_line(br.get_center(), br.get_center() + Vector2(cos(ang), sin(ang) * 0.4) * (w * 0.5), Color(Color.WHITE, 0.07 * t), 3)
+	var fg = DARK if col.lerp(Color.WHITE, 0.25 - 0.2 * t).get_luminance() > 0.52 else Color.WHITE
+	uText(J.name.to_upper(), x + 12, y + 8 + 3 * t, 11 + roundi(t * 3), fg, PX, 0, Color(DARK, 0.6 if t >= 0.6 else 0.0), 2)
+	uText(("Unlocks at Lv %d" % J.lv) if locked else ("Plain attacks only" if ji == 0 else "Skills hit up to %d enemies" % J.get("targets", 1)),
+		x + 12, y + bh - 14 + 2 * t, 8, Color(fg, 0.85), UF)
+	if t > 0.25:
+		var stars = ""
+		for i in ji:
+			stars += "✦"
+		uText(stars, x + w - 10, y + 9, 8 + roundi(t * 3), Color(GOLD if fg == Color.WHITE else DARK, 0.9), UF, 2)
+	y += bh + 8
+	var rows = classSkills().filter(func(s): return s.get("job") == J.id)
 	y += uCards(x, y, w, 1, [func(X, Y, W):
-		uText("Boss skills", X, Y, 11, css("#9a1f35"))
-		var yy = Y + 18
-		yy += muted("Very rare finds in boss boxes (about 1 box in 50). Any class can use them once found.", X, yy, W) + 4
-		for s in BOSS_SKILLS:
-			yy += _skillRow(s, X, yy, W, skillRank(s.id) == 0)
-		return yy - Y], [{"fill": css("#fff0ea"), "border": css("#a82a30")}])
+		var yy = Y
+		for s in rows:
+			yy += _skillRow(s, X, yy, W, locked)
+		return yy - Y], [{"fill": Color.WHITE if not locked else css("#f4f5fa"), "border": col if t > 0.5 else INK}])
 	return y - y0
+
+
+## Ascendency: past level 200, skill points push the skills you already have beyond their limits
+func _ascPane(x: float, y: float, w: float) -> float:
+	var c = CH()
+	var y0 = y
+	var cap = ascCap()
+	var spent = ascSpent()
+	var br = Rect2(x, y, w, 46)
+	uGlow(br, Color(css("#b388ff"), 0.5 + 0.2 * sin(realTime * 2)), 12, 10)
+	uGrad(br, css("#3a1468"), css("#24103f"), css("#120620"), 0.5)
+	uBox(br, Color(0, 0, 0, 0), GOLD, 3, 10)
+	for i in 12:
+		var ang = realTime * 0.3 + i * TAU / 12
+		uci.draw_line(br.get_center(), br.get_center() + Vector2(cos(ang), sin(ang) * 0.4) * (w * 0.55), Color(css("#b388ff"), 0.1), 3)
+	uText("ASCENDENCY", x + 12, y + 10, 14, Color.WHITE, PX, 0, Color(DARK, 0.7), 3)
+	uText("Beyond the limits of the art", x + 12, y + 30, 8, css("#d8c0ff"), UF)
+	uText("%d / %d ranks held" % [spent, cap], x + w - 10, y + 16, 9, GOLD, UB, 2)
+	y += 54
+	y += uCards(x, y, w, 1, [func(X, Y, W):
+		var yy = Y
+		yy += muted("Every level past %d lets you hold one more Ascendency rank. A rank costs one skill point and raises the rank of skills you already know — past their maximum. Passive skills keep growing with every rank; actives gain about 4%% damage each." % ASCEND_LV, X, yy, W) + 6
+		for ji in JOBS.size():
+			var J: Dictionary = JOBS[ji]
+			if not classSkills().any(func(s): return s.get("job") == J.id):
+				continue
+			yy += _ascRow(str(J.id), "%s ascendency" % J.name, "+1 rank to every %s skill you know" % J.name, css(J.color), X, yy, W)
+		yy += 4
+		yy += _ascRow("all", "Transcendence", "+1 rank to every skill you know, of every advancement", css("#b388ff"), X, yy, W)
+		return yy - Y], [{"fill": css("#f7f1ff"), "border": css("#6a2a9a")}])
+	return y - y0
+
+
+func _ascRow(id: String, name: String, desc: String, col: Color, X: float, yy: float, W: float) -> float:
+	var c = CH()
+	var r = int(c.get("asc", {}).get(id, 0))
+	var cost = 2 if id == "all" else 1
+	var room = ascSpent() + 1 <= ascCap()
+	var can = c.sp >= cost and r < ASC_NODE_MAX and room
+	dashed(X, X + W, yy, LINE)
+	uci.draw_circle(Vector2(X + 11, yy + 14), 9, Color(col, 0.25))
+	uci.draw_circle(Vector2(X + 11, yy + 14), 9 - 2, col)
+	uText(str(r), X + 11, yy + 8, 10, Color.WHITE, UB, 1, Color(DARK, 0.8))
+	uText(name, X + 28, yy + 4, 10, css("#3a1468"), UB)
+	uPara(desc, X + 28, yy + 17, W - 28 - 60, 8, MUTED)
+	uText("%d / %d" % [r, ASC_NODE_MAX], X + W - 52, yy + 4, 8, MUTED, UF)
+	var label = "+1" if can else ("MAX" if r >= ASC_NODE_MAX else ("Lv up" if not room else "No SP"))
+	uButton(Rect2(X + W - 48, yy + 14, 48, 18), label, func(): _ascBuy(id, cost), {"disabled": not can, "bg": MINT})
+	return 38.0
+
+
+func _ascBuy(id: String, cost: int) -> void:
+	var c = CH()
+	if not (c.get("asc") is Dictionary):
+		c.asc = {}
+	var r = int(c.asc.get(id, 0))
+	if c.sp < cost or r >= ASC_NODE_MAX or ascSpent() + 1 > ascCap():
+		return
+	c.asc[id] = r + 1
+	c.sp -= cost
+	Sfx.rankUp(7)
+	toast("Ascended: %s is now rank %d." % [id if id == "all" else jobById(id).name, r + 1])
+	_restat()
+	_changed()
 
 
 func skillDesc(s: Dictionary, r: int) -> String:
@@ -956,7 +1141,8 @@ func skillDesc(s: Dictionary, r: int) -> String:
 
 func _skillRow(s: Dictionary, X: float, yy: float, W: float, locked: bool) -> float:
 	var c = CH()
-	var r = skillRank(s.id)
+	var r = baseRank(s.id)
+	var asc = ascBonus(s.id) if r > 0 else 0
 	var a = 0.55 if locked else 1.0
 	var bindable = (s.type == "active" or s.type == "buff") and not locked
 	var bossSk: bool = s.get("boss", "") != ""
@@ -969,8 +1155,10 @@ func _skillRow(s: Dictionary, X: float, yy: float, W: float, locked: bool) -> fl
 	nx += uPill(tags[0], nx, yy + 6, Color(css(tags[1]), a), Color(css(tags[2]), a), 7) + 4
 	if s.get("cost") and s.type != "utility":
 		nx += uPill("%d energy" % s.cost, nx, yy + 6, Color(css("#fff4c8"), a), Color(css("#8a5a08"), a), 7) + 4
-	uText("%d/%d" % [r, s.max], nx, yy + 6, 8, Color(MUTED, a), UF)
-	var desc = skillDesc(s, maxi(1, r)) + ((" · %ss cooldown" % str(s.cd)) if s.get("cd") else "")
+	nx += uText("%d/%d" % [r, s.max], nx, yy + 6, 8, Color(MUTED, a), UF) + 4
+	if asc > 0:
+		uPill("✦ +%d" % asc, nx, yy + 6, Color(css("#efe0ff"), a), Color(css("#4a1c7a"), a), 7)
+	var desc = skillDesc(s, maxi(1, r + asc)) + ((" · %ss cooldown" % str(s.cd)) if s.get("cd") else "")
 	var dh = uPara(desc, tx, yy + 19, tw, 8, Color(css("#40497a"), a))
 	var h = 21 + dh
 	if bindable:
@@ -992,12 +1180,12 @@ func _skillRow(s: Dictionary, X: float, yy: float, W: float, locked: bool) -> fl
 func _learn(id: String) -> void:
 	var c = CH()
 	var s: Dictionary = SKILL[id]
-	if not (c.sp > 0 and skillUnlocked(s) and skillRank(id) < s.max):
+	if not (c.sp > 0 and skillUnlocked(s) and baseRank(id) < s.max):
 		return
-	c.skills[id] = skillRank(id) + 1
+	c.skills[id] = baseRank(id) + 1
 	c.sp -= 1
 	Sfx.buy()
-	if c.skills[id] == 1 and (s.type == "active" or s.type == "buff"):
+	if baseRank(id) == 1 and (s.type == "active" or s.type == "buff"):
 		var pool = ["a", "s", "d", "f", "q", "w", "e", "r"] if s.type == "active" else ["q", "w", "e", "r", "a", "s", "d", "f"]
 		var key = ""
 		for k in pool:

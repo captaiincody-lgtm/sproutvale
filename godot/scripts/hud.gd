@@ -28,7 +28,7 @@ const BOSS_INFO := {
 			"**Reward:** 30,000 EXP · a hoard of coins · a trophy · a **Crimsonbox** (500–2,500 coins, 1–5 Boss Coins, maybe a rare treasure, and very rarely his Crimson Rain skill)"],
 		"rec": "Recommended: Lv 45+. Walk right into the portal to enter."},
 	"dreamer": {"title": "⚠ Boss: The Dreamer", "stats": [["Level", "75"], ["HP", "120,000"], ["Attack", "210"], ["Defense", "60"]],
-		"paras": ["**Attacks:** too big to fit: hit its eyes, its brow and the tentacles that rise from the sea floor · **Gaze:** its eyes glow, then flash; dodge (C) in that moment or you're Confused · tentacle whips where you stand, one after another, feeding the Abyss · grabs and slams you like an octopus · **Devour:** drags you into its mouth and chews before spitting you out (hit its open mouth for big damage).",
+		"paras": ["**Attacks:** too big to fit: hit its eyes, its brow and the tentacles that rise from the sea floor · **Gaze:** its eyes glow, then flash; dodge (C) in that moment or you're Confused · tentacle whips where you stand, one after another, feeding the Abyss · grabs and slams you like an octopus · **Laser vision:** its eyes burn white, then a beam sweeps the sea floor and boils the water off it — get off the floor or dodge through it · **Devour:** drags you into its mouth and chews before spitting you out (hit its open mouth for big damage).",
 			"**Reward:** 80,000 EXP · a hoard of coins · a trophy · the key to Glamrax's crystal · a **Dreambox** (500–2,500 coins, 1–5 Boss Coins, maybe a rare treasure, and very rarely its Abyssal Devour skill)"],
 		"rec": "Recommended: Lv 70+. Walk right into the portal to enter."},
 }
@@ -239,6 +239,7 @@ func updateHud(rdt: float) -> void:
 	toasts = toasts.filter(func(t): return t.t < 3.4)
 	bannerMsg.t += rdt
 	comboMsg.t += rdt
+	keyGet.t += rdt
 	vignette = maxf(0, vignette - rdt / 0.45)
 	enShake = maxf(0, enShake - rdt)
 	if Style.popped > 0:
@@ -262,6 +263,7 @@ func renderHud(ci: CanvasItem) -> void:
 		_styleRank()
 	_hint()
 	_toasts()
+	_keyGet()
 	_flashText(bannerMsg, 2.6, UH * 0.24, true)
 	_flashText(comboMsg, 2.4, UH * 0.64, false)
 	if scene != null:
@@ -308,13 +310,13 @@ func _bottomBar() -> void:
 		uci.draw_rect(Rect2(inner.end.x - cut, inner.position.y, 1, inner.size.y), css("#c25cff"))
 		var mr = Rect2(x, UH - 23, unit, 16)
 		uText("%d / %d" % [ceili(P.hp), PS.hp], mr.get_center().x, mr.get_center().y - 6, 9, Color.WHITE, UB, 1, EDGE)
+	_abyssMeter(x, unit)
 	x += unit + 6
 	var sx = sin(enShake * 40) * 3 if enShake > 0.1 else 0.0
 	_meter(Rect2(x + sx, UH - 23, unit * 0.7, 16), P.en / PS.enMax, ["#fff0a8", "#ffc83d", "#d88a10"], CLASSES[classId].res, "%d / %d" % [floori(P.en), PS.enMax])
 	x += unit * 0.7 + 6
-	var maxed = c.level >= MAX_LV
-	var ep = 1.0 if maxed else float(c.exp) / expNeed(c.level)
-	_meter(Rect2(x, UH - 23, unit, 16), ep, ["#b9f6ff", "#6fe0ff", "#2fb3d6"], "EXP", "MAX" if maxed else "%.1f%%" % (ep * 100))
+	var ep = float(c.exp) / expNeed(c.level)
+	_meter(Rect2(x, UH - 23, unit, 16), ep, ["#b9f6ff", "#6fe0ff", "#2fb3d6"], "EXP", "%.1f%%" % (ep * 100))
 	x += unit + 10
 	_coin(Vector2(x + 6, UH - 15), 5.5)
 	uText(fmt(save.coins), x + 15, UH - 22, 11, Color.WHITE, UB)
@@ -322,6 +324,44 @@ func _bottomBar() -> void:
 	uButton(mb, "Menu · Tab", func(): toggleMenu(true), {"bg": GOLD, "border": EDGE, "size": 9})
 	if c.ap > 0 or c.sp > 0:
 		uci.draw_circle(Vector2(mb.end.x - 3, mb.position.y + 2), 4, PINK)
+
+
+## The Abyss sits right on top of the health bar, where you can't miss it mid-fight: a buildup bar
+## that fills as the dark water works on you, and, once it bursts, a pulsing badge counting the
+## health it has eaten and the seconds until it lets go.
+func _abyssMeter(x: float, unit: float) -> void:
+	var filling: bool = P.abyssB > 0.5 and P.abyssT <= 0
+	var struck: bool = P.abyssT > 0
+	var easing: bool = not struck and P.abyssDrain > 0.005
+	if not (filling or struck or easing):
+		return
+	var r = Rect2(x, UH - 34, unit, 10)
+	var pulse = 0.5 + 0.5 * sin(realTime * (9.0 if struck else 5.0))
+	if struck:
+		uGlow(r, Color(css("#ff3ad8"), 0.5 + 0.35 * pulse), 5, 5)
+	elif filling and P.abyssB > 70:
+		uGlow(r, Color(css("#c25cff"), 0.2 + 0.3 * pulse), 4, 5)
+	uBox(r, css("#180826"), css("#c25cff") if struck else EDGE, 2, 5)
+	var inner = r.grow(-2)
+	var frac: float = 1.0 if struck else (P.abyssDrain / 0.5 if easing else P.abyssB / 100.0)
+	var fw = inner.size.x * clampf(frac, 0, 1)
+	if fw > 0.5:
+		var fr = Rect2(inner.position, Vector2(fw, inner.size.y))
+		if struck:
+			uGrad(fr, Color(css("#ff7ae8"), 0.95), Color(css("#ff3ad8"), 0.95), Color(css("#8a0a78"), 0.95))
+		elif easing:
+			uGrad(fr, css("#6a4aa8"), css("#4a2a78"), css("#2a1048"))
+		else:
+			uGrad(fr, css("#d79cff"), css("#9a4ae0"), css("#4a1080"))
+			uci.draw_rect(Rect2(fr.end.x - 1, fr.position.y, 1, fr.size.y), Color(1, 1, 1, 0.5 + 0.5 * pulse))
+	var txt: String
+	if struck:
+		txt = "🌑 ABYSS  −%d%% MAX HP  %ds" % [roundi(P.abyssDrain * 100), ceili(P.abyssT)]
+	elif easing:
+		txt = "🌑 RECOVERING  −%d%% MAX HP" % roundi(P.abyssDrain * 100)
+	else:
+		txt = "🌑 ABYSS  %d%%" % roundi(P.abyssB)
+	uText(txt, r.get_center().x, r.position.y - 1, 8, Color.WHITE if struck else Color(1, 1, 1, 0.9), UB, 1, Color.BLACK)
 
 
 func _coin(p: Vector2, r: float, kind := "coin") -> void:
@@ -411,12 +451,7 @@ func _statusChips(indoor: bool) -> void:
 		chips.append("☠ Poisoned %ds" % ceili(P.poison.t))
 	if P.bleed != null and P.bleed.t > 0:
 		chips.append("🩸 Bleeding %ds" % ceili(P.bleed.t))
-	if P.abyssT > 0:
-		chips.append("🌑 Abyss −%d%% max HP %ds" % [roundi(P.abyssDrain * 100), ceili(P.abyssT)])
-	elif P.abyssDrain > 0.005:
-		chips.append("🌑 Recovering −%d%% max HP" % roundi(P.abyssDrain * 100))
-	if P.abyssB > 0.5 and P.abyssT <= 0:
-		chips.append("🌑 Abyss buildup %d%%" % roundi(P.abyssB))
+	# the Abyss has its own meter over the health bar (_abyssMeter), so it gets no chip here
 	if P.blindT > 0:
 		chips.append("🦑 Inked %ds" % ceili(P.blindT))
 	if P.confuseT > 0:
@@ -623,6 +658,34 @@ func _toasts() -> void:
 		uBox(r, Color(PANEL, 0.95 * a), Color(INK, a), 2, 6)
 		uPara(t.msg, r.position.x + 9, y + 3, tw + 6, 9, Color(INK, a))
 		y += r.size.y + 5
+
+
+## "You got the Dream Key!" — the item itself, held up in a burst of light so the moment lands
+func _keyGet() -> void:
+	var life := 3.4
+	var k: float = keyGet.t / life
+	if k >= 1 or keyGet.item == "":
+		return
+	var a = clampf(k / 0.12, 0, 1) if k < 0.12 else (1.0 if k < 0.78 else 1 - (k - 0.78) / 0.22)
+	var cx = UW / 2
+	var cy = UH * 0.42
+	var pop = 1.6 - 0.6 * clampf(k / 0.18, 0, 1)
+	uci.draw_rect(Rect2(0, 0, UW, UH), Color(css("#1a0528"), 0.4 * a))
+	# rays turning behind it
+	for i in 14:
+		var ang = realTime * 0.5 + i * TAU / 14
+		var len = 150.0 + 26 * sin(realTime * 2 + i)
+		var p0 = Vector2(cx, cy) + Vector2(cos(ang), sin(ang)) * 16
+		var p1 = Vector2(cx, cy) + Vector2(cos(ang), sin(ang)) * len
+		uci.draw_line(p0, p1, Color(css("#ff6af0"), 0.16 * a), 5.0)
+	var sz = 64.0 * pop
+	var tex = Assets.tex("items/dream_key.png")
+	var bob = sin(realTime * 2.4) * 3
+	uGlow(Rect2(cx - sz / 2, cy - sz / 2 + bob, sz, sz), Color(css("#ff6af0"), 0.7 * a), 16, 12)
+	if tex != null:
+		uci.draw_texture_rect(tex, Rect2(cx - sz / 2, cy - sz / 2 + bob, sz, sz), false, Color(1, 1, 1, a))
+	uText("YOU GOT THE %s!" % keyGet.name.to_upper(), cx, cy + sz / 2 + 14, 14, Color(1, 1, 1, a), PX, 1, Color(DARK, a), 3)
+	uText(keyGet.sub, cx, cy + sz / 2 + 34, 10, Color(css("#ffd0f4"), a), UB, 1, Color(DARK, a), 2)
 
 
 ## the banner and the combo result: pop in, hold, fade (the prototype's "ban" keyframes)

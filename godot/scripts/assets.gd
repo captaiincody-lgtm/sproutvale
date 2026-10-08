@@ -7,6 +7,7 @@ const ART := "res://art/"
 var data: Dictionary            # maps, monsters, moves, gear tiers… (res://data/game_data.json)
 var hero: Dictionary            # hero animation table (res://art/hero/hero.json)
 var mobs: Dictionary            # monster sprite table (res://art/mobs/mobs.json)
+var heads: Dictionary           # where the hero's head is in every frame (res://art/hero/heads.json)
 var font: FontFile              # "Press Start 2P", the pixel font used everywhere in the world
 var ui_font: FontFile           # "Fredoka" bold, the rounder font used by the HUD text
 var ui_reg: FontFile            # "Fredoka" medium, for body text in the menus
@@ -19,6 +20,8 @@ func _ready() -> void:
 	data = _json("res://data/game_data.json")
 	hero = _json(ART + "hero/hero.json")
 	mobs = _json(ART + "mobs/mobs.json")
+	if FileAccess.file_exists(ART + "hero/heads.json"):
+		heads = _json(ART + "hero/heads.json")
 	# the areas beyond the Warlord's Keep keep their art in art/abyss (same layout as art/)
 	if FileAccess.file_exists(ART + "abyss/mobs/mobs.json"):
 		mobs.sets.merge(_json(ART + "abyss/mobs/mobs.json").sets)
@@ -68,6 +71,15 @@ func hero_tail(look: String, anim: String, variant: int, f: int):
 	if t == null or t.is_empty():
 		return null
 	return t[clampi(f, 0, t.size() - 1)]
+
+
+## the head's middle in frame f of an animation, in hero pixels (null if unknown)
+func hero_head(look: String, anim: String, f: int):
+	var fr: Array = heads.get(look, {}).get(anim, [])
+	if fr.is_empty():
+		return null
+	var p = fr[clampi(f, 0, fr.size() - 1)]
+	return null if p == null else Vector2(p[0], p[1])
 
 
 func mob_strip(set_name: String, key: String) -> Texture2D:

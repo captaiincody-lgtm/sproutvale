@@ -14,7 +14,8 @@ const VW := 384
 const VH := 216
 const GRAV := 950.0
 const MAXFALL := 520.0
-const MAX_LV := 200
+const ASCEND_LV := 200     # there is no level cap; past this level skill points can go into Ascendency
+const ASC_NODE_MAX := 10   # how many ranks one Ascendency node takes
 const RES := 2
 const SAVE_PATH := "user://sproutvale_save.json"
 var SAVE_PATH_OVERRIDE := ""   # tests use a throwaway save
@@ -178,6 +179,7 @@ var lastTap := {}
 
 # ---------------------------------------------------------------- messages shown by the HUD
 var bannerMsg := {"big": "", "sub": "", "t": 99.0}
+var keyGet := {"item": "", "name": "", "sub": "", "t": 99.0}   # a key item just picked up: shown big and lit
 var comboMsg := {"html": "", "big": "", "sub": "", "t": 99.0}
 var toasts: Array = []
 var vignette := 0.0
@@ -368,12 +370,12 @@ func update_timers(rdt: float) -> void:
 # ================================================================ save
 
 func newChar() -> Dictionary:
-	return {"level": 1, "exp": 0, "ap": 0, "sp": 0, "attrs": {"STR": 1, "WIL": 1, "VIT": 1, "AGI": 1, "DEX": 1}, "skills": {}, "binds": {}, "introSeen": false,
+	return {"level": 1, "exp": 0, "ap": 0, "sp": 0, "attrs": {"STR": 1, "WIL": 1, "VIT": 1, "AGI": 1, "DEX": 1}, "skills": {}, "asc": {}, "binds": {}, "introSeen": false,
 		"charm": -1, "armor": 0, "weapon": 0, "arrows": 0, "staff": 0, "kills": 0}
 
 
 func newSave() -> Dictionary:
-	var s = {"coins": 0, "bossCoins": 0, "abyssCoins": 0, "house": {"owned": [], "placed": {}, "curios": [], "shelfItems": []}, "trophies": {}, "mats": {}, "chars": {},
+	var s = {"coins": 0, "bossCoins": 0, "abyssCoins": 0, "boxes": {}, "house": {"owned": [], "placed": {}, "curios": [], "shelfItems": []}, "trophies": {}, "mats": {}, "chars": {},
 		"quests": [], "qid": 0, "settings": {"vol": 0.5, "music": 0.5, "sfx": 0.8, "timeSpeed": 1, "weather": "auto", "help": true, "map": "home", "mute": false, "god": false},
 		"bestRank": -1, "cards": {}, "bestiary": {}, "main": {"q": 0, "stage": 0, "claimed": false}}
 	for k in SLIME_KEYS:
@@ -464,8 +466,38 @@ func CH() -> Dictionary:
 	return save.chars[classId]
 
 
-func skillRank(id: String) -> int:
+## the rank you paid for, before Ascendency
+func baseRank(id: String) -> int:
 	return int(CH().skills.get(id, 0))
+
+
+## the Ascendency ranks stacked on one skill (its own tier's node, plus the capstone)
+func ascBonus(id: String) -> int:
+	var c = CH()
+	if not (c.get("asc") is Dictionary):
+		return 0
+	var A: Dictionary = c.asc
+	if A.is_empty() or not SKILL.has(id):
+		return 0
+	return int(A.get(str(SKILL[id].get("job", "")), 0)) + int(A.get("all", 0))
+
+
+## how many Ascendency ranks you may hold: one per level past the Ascendency line
+func ascCap() -> int:
+	return maxi(0, CH().level - ASCEND_LV)
+
+
+func ascSpent() -> int:
+	var n = 0
+	for k in CH().get("asc", {}).values():
+		n += int(k)
+	return n
+
+
+## what a skill is actually worth: paid ranks plus Ascendency (which only lifts skills you know)
+func skillRank(id: String) -> int:
+	var base := int(CH().skills.get(id, 0))
+	return base + (ascBonus(id) if base > 0 else 0)
 
 
 static func expNeed(lv: int) -> int:
@@ -730,10 +762,8 @@ func endCombo(broken: bool) -> void:
 
 func gainExp(n: float) -> void:
 	var c = CH()
-	if c.level >= MAX_LV:
-		return
 	c.exp += roundi(n * (1 + PS.get("exp", 0) / 100.0))
-	while c.level < MAX_LV and c.exp >= expNeed(c.level):
+	while c.exp >= expNeed(c.level):
 		var oldJob = jobIndex(c.level)
 		c.exp -= expNeed(c.level)
 		c.level += 1
@@ -742,6 +772,10 @@ func gainExp(n: float) -> void:
 		PS = calcStats()
 		P.hp = PS.hp
 		Sfx.levelUp()
+		if c.level == ASCEND_LV + 1:
+			later(1.4, func():
+				banner("ASCENDENCY", "Past level %d your skill points can push your skills beyond their limits." % ASCEND_LV)
+				Sfx.rankUp(9))
 		banner("LEVEL UP!", "Level %d · 3 attribute points and 3 skill points" % c.level)
 		if jobIndex(c.level) > oldJob:
 			var J = jobOf(c.level)
@@ -950,7 +984,7 @@ func updateDrops(dt: float) -> void:
 				Sfx.tone(300, 0.2, "triangle", 0.08, 600)
 				pickupPop("abyss", "Abyssal Coins", d.val, "#ff9ef0")
 			elif d.kind == "box":
-				openBox(d.type)
+				collectBox(d.type)
 			elif d.kind == "key":
 				pickupKey()
 			elif d.kind == "card":
@@ -1071,6 +1105,11 @@ func toast(msg: String) -> void:
 		toasts.pop_front()
 
 
+## a key item picked up: the HUD shows it large and radiating for a moment
+func keyItemGet(item: String, label: String, sub := "") -> void:
+	keyGet = {"item": item, "name": label, "sub": sub, "t": 0.0}
+
+
 func banner(big: String, sub := "") -> void:
 	bannerMsg = {"big": big, "sub": sub, "t": 0.0}
 
@@ -1148,6 +1187,9 @@ func updateTail(_dt: float, _anchor: Vector2) -> void: pass
 func updateRocks(_dt: float) -> void: pass
 func updateVials(_dt: float) -> void: pass
 func openBox(_kind: String) -> void: pass
+func openBoxes(_kind: String, _n := 1) -> void: pass
+func collectBox(_kind: String, _n := 1) -> void: pass
+func boxCount(_kind: String) -> int: return 0
 func castBossSkill(_s: Dictionary) -> void: pass
 func openDreamGate(_fanfare := false) -> void: pass
 func initAbyssData() -> void: pass

@@ -48,7 +48,7 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 		MAPS.lair.portals.append({"x": MAPS.lair.w - 40, "to": "crimson1", "tx": 70, "label": "The Crimson Wastes"})
 	if id == "crimson5" and save.trophies.get("warlord"):
 		openDreamGate()
-	# a boss box left lying on the floor isn't lost: it opens as you leave
+	# a boss box left lying on the floor isn't lost: it goes in your bag as you leave
 	var unopened = []
 	for d in drops:
 		if d.kind == "box":
@@ -114,7 +114,7 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 	if inGame and not M.get("boss"):
 		banner(M.name, M.get("sub", "Tougher slimes live here" if M.get("lvBonus") else "Starter area"))
 	for k in unopened:
-		later(0.6, func(): openBox(k))
+		collectBox(k)
 
 
 func travel(portal: Dictionary) -> void:

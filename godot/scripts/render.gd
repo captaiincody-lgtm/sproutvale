@@ -15,6 +15,7 @@ const BOX := 84.0
 const BOY := 144.0
 const HP := 0.5        # one screen pixel, in world units
 const WIND_V := [-1.2, 0.0, 1.2, 2.4, 3.6]
+var heroHead := Vector2.ZERO   # the middle of the hero's head in the world, updated each time the hero is drawn
 const FONT := '8px "Press Start 2P", monospace'
 const F6 := '6px "Press Start 2P", monospace'
 const F5 := '5px "Press Start 2P", monospace'
@@ -597,6 +598,12 @@ func drawPlayer(x: Ctx, sx: float, sy: float, dt: float) -> void:
 	var nf = maxi(1, int(A.frames))
 	var f = clampi(playerFrame(), 0, nf - 1)
 	var tex = Assets.hero_strip(look, anim, vIdx)
+	# where the head is this frame (the air bubble underwater sits on it), with the same flip and spin as the sprite
+	var hd = Assets.hero_head(look, anim, f)
+	if hd == null:
+		hd = Vector2(RX - 6, GROUND - 39)
+	var q = Vector2(P.face * (hd.x - RX), hd.y - GROUND + 20).rotated(P.spin) - Vector2(0, 20)
+	heroHead = Vector2(P.x, P.y) + q
 	var blink: bool = not (P.state in ["dash", "held"]) and P.iframes > 0 and P.iframes < 0.9 and int(gameTime * 18) % 2 == 0
 	x.fillStyle = rgba(20, 30, 10, 0.25)
 	if P.grounded:

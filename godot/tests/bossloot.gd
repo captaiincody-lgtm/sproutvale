@@ -58,6 +58,15 @@ func _ready() -> void:
 	add.call(2.6, "shot", "box_skill")
 	add.call(0.1, "tap", KEY_Z)
 	add.call(0.3, "tap", KEY_Z)
+	add.call(0.1, "stash")
+	add.call(0.3, "tap", KEY_TAB)
+	add.call(0.2, "tab", "inv")
+	add.call(0.4, "shot", "inv_boxes")
+	add.call(0.1, "tap", KEY_TAB)
+	add.call(0.1, "openten")
+	add.call(2.6, "shot", "box_ten")
+	add.call(0.1, "tap", KEY_Z)
+	add.call(0.3, "tap", KEY_Z)
 	add.call(0.2, "summon")
 	add.call(2.0, "shot", "resummon")
 	add.call(0.1, "killboss")
@@ -79,6 +88,18 @@ func _ready() -> void:
 	add.call(0.1, "tab", "char")
 	add.call(0.1, "scroll", 2000)
 	add.call(0.3, "shot", "char_treasures")
+	add.call(0.1, "prestige")
+	add.call(0.2, "tab", "skills")
+	add.call(0.1, "scroll", -2000)
+	add.call(0.3, "shot", "skills_tiers")
+	add.call(0.1, "selskill", "avatar")
+	add.call(0.3, "shot", "skills_avatar")
+	add.call(0.1, "selskill", "asc")
+	add.call(0.3, "shot", "skills_ascendency")
+	add.call(0.1, "ascbuy")
+	add.call(0.3, "shot", "skills_ascendency_spent")
+	add.call(0.1, "selskill", "avatar")
+	add.call(0.3, "shot", "skills_avatar_ascended")
 	add.call(0.1, "reload")
 	add.call(0.2, "quit")
 
@@ -130,6 +151,13 @@ func _process(delta: float) -> void:
 					game.P.face = 1
 					b.hp = 1
 					game.damageSlime(b, {"dmg": 1.0})
+			"stash":
+				for k in ["croc", "warlord", "dreamer"]:
+					game.collectBox(k, 12)
+				print("stash: ", game.save.get("boxes"))
+			"openten":
+				game.openBoxes("dreamer", 10)
+				print("after opening 10 dreamboxes: ", game.save.get("boxes"), " coins ", game.save.coins)
 			"tobox":
 				var found = false
 				for d in game.drops:
@@ -150,11 +178,13 @@ func _process(delta: float) -> void:
 				var n = 0
 				while game.skillRank("crimsonRain") == 0 and n < 2000:
 					n += 1
-					game.openBox("warlord")
+					game.collectBox("warlord")
+					game.openBoxes("warlord", 1)
 				var m = 0
 				while game.skillRank("potionThrow") == 0 and m < 2000:
 					m += 1
-					game.openBox("croc")
+					game.collectBox("croc")
+					game.openBoxes("croc", 1)
 				print("boxes until Crimson Rain: %d, until Potion Throw: %d, boons: %s, binds: %s, coins: %d, bossCoins: %d" % [n, m, game.CH().get("boons"), game.CH().binds, game.save.coins, game.save.bossCoins])
 				print("stats: ", game.PS.hp, " ", game.PS.atk, " ", game.PS.def, " ", game.PS.crit)
 				game.loot.t = 0.0
@@ -174,6 +204,22 @@ func _process(delta: float) -> void:
 				game.P.en = 100
 				print("useSkill ", s[2], " -> ", game.useSkill(s[2]))
 			"tab": game.openTab(s[2])
+			"prestige":
+				# no level cap: push past the Ascendency line and check the points keep coming
+				var c = game.CH()
+				c.level = 204
+				c.sp = 20
+				c.skills["basics"] = 10
+				c.skills["avatarBlade"] = 5
+				game.PS = game.calcStats()
+				game.gainExp(game.expNeed(204) * 2)
+				print("level after exp past 200: ", c.level, " sp ", c.sp, " ap ", c.ap, " ascCap ", game.ascCap())
+			"selskill": game.skillSel = s[2]
+			"ascbuy":
+				game.CH().asc = {}
+				game._ascBuy("avatar", 1)
+				game._ascBuy("all", 2)
+				print("asc: ", game.CH().asc, " spent ", game.ascSpent(), "/", game.ascCap(), " basics rank ", game.skillRank("basics"), " base ", game.baseRank("basics"))
 			"scroll": game.scrollBy("panel", s[2])
 			"reload":
 				game.persist()

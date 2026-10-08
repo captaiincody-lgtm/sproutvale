@@ -430,24 +430,37 @@ func dropBox(e, kind: String) -> void:
 	drops.append(d)
 
 
-## open a box: coins, boss coins, maybe a stat treasure, very rarely the boss's own skill
-func openBox(kind: String) -> void:
+## a box goes into your bag; you open it from the inventory when you like
+func collectBox(kind: String, n := 1) -> void:
+	if not (save.get("boxes") is Dictionary):
+		save.boxes = {}
+	save.boxes[kind] = int(save.boxes.get(kind, 0)) + n
+	saveDirty = true
+	persist()
+	var B: Dictionary = BOXES.get(kind, BOXES.croc)
+	Sfx.buy()
+	pickupPop("box_" + kind, B.name, n, "#ff9ef0" if kind == "dreamer" else ("#ff8a9a" if kind == "warlord" else "#ffe14d"))
+	toast("📦 %s collected — open it from your inventory (Tab → Inventory)." % B.name)
+
+
+func boxCount(kind: String) -> int:
+	return int(save.get("boxes", {}).get(kind, 0))
+
+
+## one box's worth of prizes, folded into `acc`
+func _rollBox(kind: String, acc: Dictionary) -> void:
 	var B: Dictionary = BOXES.get(kind, BOXES.croc)
 	var c = CH()
 	if not (c.get("boons") is Dictionary):
 		c.boons = {}
-	var coins = rint(500, 2500)
-	var bc = rint(1, 5)
-	save.coins += coins
-	save.bossCoins = save.get("bossCoins", 0) + bc
-	var rows = [{"icon": "🪙", "text": "%s coins" % fmt(coins), "rare": 0}, {"icon": "🏅", "text": "%d Boss Coin%s" % [bc, "" if bc == 1 else "s"], "rare": 0}]
+	acc.coins += rint(500, 2500)
+	acc.bc += rint(1, 5)
 	if randf() < BOX_ITEM_RATE:
 		var id: String = B.items[rint(0, B.items.size() - 1)]
-		var it: Dictionary = BOONS[id]
 		c.boons[id] = int(c.boons.get(id, 0)) + 1
-		rows.append({"icon": it.icon, "text": "%s · %s, for good" % [it.name, it.desc], "rare": 1})
+		acc.items[id] = int(acc.items.get(id, 0)) + 1
 	var sk: String = B.skill
-	if skillRank(sk) == 0 and randf() < BOX_SKILL_RATE:
+	if skillRank(sk) == 0 and not acc.skills.has(sk) and randf() < BOX_SKILL_RATE:
 		c.skills[sk] = 1
 		var key = ""
 		for k in ["a", "s", "d", "f", "q", "w", "e", "r"]:
@@ -456,6 +469,31 @@ func openBox(kind: String) -> void:
 				break
 		if key != "":
 			c.binds[key] = sk
+		acc.skills[sk] = key
+
+
+## open boxes you're carrying: coins, boss coins, maybe stat treasures, very rarely the boss's skill
+func openBoxes(kind: String, n := 1) -> void:
+	var have = boxCount(kind)
+	n = mini(n, have)
+	if n <= 0:
+		toast("You have no boxes of that kind.")
+		return
+	var B: Dictionary = BOXES.get(kind, BOXES.croc)
+	var acc = {"coins": 0, "bc": 0, "items": {}, "skills": {}}
+	for i in n:
+		_rollBox(kind, acc)
+	save.boxes[kind] = have - n
+	save.coins += acc.coins
+	save.bossCoins = save.get("bossCoins", 0) + acc.bc
+	var rows = [{"icon": "🪙", "text": "%s coins" % fmt(acc.coins), "rare": 0},
+		{"icon": "🏅", "text": "%d Boss Coin%s" % [acc.bc, "" if acc.bc == 1 else "s"], "rare": 0}]
+	for id in acc.items:
+		var it: Dictionary = BOONS[id]
+		var cnt: int = acc.items[id]
+		rows.append({"icon": it.icon, "text": "%s%s · %s, for good" % [it.name, (" ×%d" % cnt) if cnt > 1 else "", it.desc], "rare": 1})
+	for sk in acc.skills:
+		var key: String = acc.skills[sk]
 		rows.append({"icon": SKILL[sk].icon, "text": "NEW SKILL: %s%s" % [SKILL[sk].name, (" (on " + key.to_upper() + ")") if key != "" else " (bind it in Skills)"], "rare": 2})
 	PS = calcStats()
 	saveDirty = true
@@ -463,10 +501,15 @@ func openBox(kind: String) -> void:
 	var best = 0
 	for r in rows:
 		best = maxi(best, r.rare)
-	loot = {"kind": kind, "name": B.name, "rows": rows, "t": 0.0, "best": best}
+	var title: String = B.name if n == 1 else "%d %ss" % [n, B.name]
+	loot = {"kind": kind, "name": title, "rows": rows, "t": 0.0, "best": best, "n": n}
 	P.vx = 0
 	Sfx.buy()
 	shake = 4
+
+
+func openBox(kind: String) -> void:
+	openBoxes(kind, 1)
 
 
 func updateLoot(dt: float) -> void:

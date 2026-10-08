@@ -116,11 +116,11 @@ func renderTitle(ci: CanvasItem) -> void:
 
 func _heroCard(id: String, r: Rect2) -> void:
 	if id == "???" or heroLocked(id):
-		var won = tb(save.get("trophies", {}).get("warlord"))
+		var won = tb(save.get("trophies", {}).get("dreamer"))
 		var lines: Array
 		if id == "???":
-			lines = ["Coming soon" if won else "🔒 Locked", "A new hero is on the way…" if won else "Defeat the Crimson Warlord to unlock",
-				"Something stirs in the Warlord's Keep." if won else "Someone is chained deep inside the Warlord's Keep."]
+			lines = ["Coming soon" if won else "🔒 Locked", "A new hero is on the way…" if won else "Defeat The Dreamer to unlock",
+				"Something woke when the Dreamer fell." if won else "Something dreams at the bottom of the Abyss."]
 		else:
 			lines = ["🔒 Locked", "Defeat Doc Croc to unlock", "Something stirs in a glass capsule, deep in the Crocodile Lair."]
 		uBox(r, css("#221d38"), css("#4a4068"), 3, 12, 4.0, DARK)

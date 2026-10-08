@@ -467,7 +467,10 @@ func updatePlayer(dt: float) -> void:
 		if dirIn:
 			P.runT = 1.0
 		dblTap = ""
-	var wet = inWater()
+	# the shallow pond takes moves away (you wade and splash); the deep sea of the Abyss keeps the
+	# whole kit — prone, slides, air chains, the plunge — so the player never loses control down there
+	var swimming = inWater()
+	var wet = swimming and M.get("sea") == null
 	var rNear = ropeAt()
 	var atRopeTop: bool = rNear != null and P.grounded and absf(P.y - rNear.y0) < 2
 	var climbable: bool = rNear != null and not atRopeTop
@@ -511,7 +514,7 @@ func updatePlayer(dt: float) -> void:
 		startClimb(rNear, true)
 	# jumping / swimming
 	if has.call("jump", 0.14) and canCancel:
-		if wet and P.state != "climb":
+		if swimming and P.state != "climb":
 			use.call("jump")
 			var Wp: Dictionary = waterBox()
 			var headOut: bool = P.y - 36 < Wp.surface + 2
@@ -667,7 +670,7 @@ func updatePlayer(dt: float) -> void:
 	var run = P.runT > 0.28
 	match P.state:
 		"move":
-			if inWater():
+			if inWater() and not (P.grounded and M.get("sea") != null):
 				P.vx = damp(P.vx, dirIn * 115 * PS.spd, 7, dt)
 				if dirIn:
 					P.face = dirIn
