@@ -237,7 +237,7 @@ func renderMenu(ci: CanvasItem) -> void:
 	var x = sheet.position.x + 7
 	var y = sheet.position.y + 7
 	var tabH = 21.0
-	var sys = [["⚙ Settings", func(): openSettings()], ["🏠 Home", func(): toggleMenu(false); travelHome()],
+	var sys = [["⚙ Settings", func(): openSettings()],
 		["Save", func(): persist(); toast("Game saved."); Sfx.buy()], ["Main Menu", func(): persist(); toggleMenu(false); toCharSelect()],
 		["Quit", func(): persist(); get_tree().quit()], ["Close", func(): toggleMenu(false)]]
 	var tabsW = 0.0
@@ -268,11 +268,20 @@ func renderMenu(ci: CanvasItem) -> void:
 	# the system buttons sit in a strip along the bottom of the sheet
 	var foot = sheet.end.y - 26
 	uci.draw_rect(Rect2(sheet.position.x + 1.5, foot, sheet.size.x - 3, 2), LINE)
-	uText("Tab or Esc closes · M opens the world map", sheet.position.x + 12, foot + 8, 8, MUTED, UF)
+	# the big way home, always in the same corner so it's easy to find
+	var atHome = mapId == "home"
+	var homeL = "🏠 You're home" if atHome else "🏠 TELEPORT HOME"
+	var hr = Rect2(sheet.position.x + 8, foot + 3, uW(homeL, 10) + 26, 21)
+	if not atHome:
+		uGlow(hr, Color(css("#3ad6a0"), 0.45 + 0.2 * sin(realTime * 4)), 8, 8)
+	uButton(hr, homeL, func(): toggleMenu(false); travelHome(), {"bg": css("#5ff0b4"), "size": 10, "shadow": 2.0, "disabled": atHome})
 	var sysW = 0.0
 	for sb in sys:
 		sysW += uW(sb[0], 8) + 14 + 4
 	var sx = sheet.end.x - 8 - sysW + 4
+	var help = "Tab or Esc closes · M opens the world map"
+	if hr.end.x + 10 + uW(help, 8, UF) < sx - 6:
+		uText(help, hr.end.x + 10, foot + 8, 8, MUTED, UF)
 	for sb in sys:
 		var w = uW(sb[0], 8) + 14
 		uButton(Rect2(sx, foot + 5, w, 17), sb[0], sb[1], {"bg": GOLD if sb[0] == "Close" else Color.WHITE, "size": 8, "shadow": 1.5})
@@ -409,7 +418,7 @@ func _pChar(x: float, y: float, w: float) -> float:
 	y += uCards(x, y, w, 1, [func(X, Y, W):
 		uText("Boss treasures", X, Y, 11, css("#8a5a08"))
 		var yy = Y + 18
-		yy += muted("Rare finds in Crocboxes, Crimsonboxes and Dreamboxes (about 1 box in 7). Each one raises a stat for %s for good, and they stack." % C.name, X, yy, W) + 4
+		yy += muted("Rare finds in Crocboxes, Crimsonboxes, Dreamboxes and Yetiboxes (about 1 box in 7). Each one raises a stat for %s for good, and they stack." % C.name, X, yy, W) + 4
 		var cw = (W - 10) / 2
 		for i in BOON_ORDER.size():
 			var id: String = BOON_ORDER[i]
@@ -422,7 +431,7 @@ func _pChar(x: float, y: float, w: float) -> float:
 			var nw = uText(it.name, cx + 20, cy + 1, 9, Color(INK, a))
 			uText(("  ×%d" % n) if n else "", cx + 20 + nw, cy + 2, 8, css("#2a8a55"), UB)
 			var srcs = []
-			for bk in [["croc", "Crocbox"], ["warlord", "Crimsonbox"], ["dreamer", "Dreambox"]]:
+			for bk in [["croc", "Crocbox"], ["warlord", "Crimsonbox"], ["dreamer", "Dreambox"], ["kingYeti", "Yetibox"]]:
 				if BOXES[bk[0]].items.has(id):
 					srcs.append(bk[1])
 			var src = " & ".join(srcs)
@@ -453,7 +462,7 @@ func _pInv(x: float, y: float, w: float) -> float:
 				cards += 1
 	var y0 = y
 	y += currencyBag(x, y, w, "🃏 %d Monster cards" % cards)
-	var boxKinds = ["croc", "warlord", "dreamer"].filter(func(k): return boxCount(k) > 0)
+	var boxKinds = ["croc", "warlord", "dreamer", "kingYeti"].filter(func(k): return boxCount(k) > 0)
 	if not boxKinds.is_empty():
 		y += uCards(x, y, w, 1, [func(X, Y, W):
 			var yy = Y + h3("Boss boxes", X, Y)
@@ -461,7 +470,7 @@ func _pInv(x: float, y: float, w: float) -> float:
 			for k in boxKinds:
 				var BX: Dictionary = BOXES[k]
 				var n = boxCount(k)
-				var col = css("#6a2a9a") if k == "dreamer" else (css("#9a1f35") if k == "warlord" else css("#2a7a3a"))
+				var col = css("#1f6f9a") if k == "kingYeti" else css("#6a2a9a") if k == "dreamer" else (css("#9a1f35") if k == "warlord" else css("#2a7a3a"))
 				uText("📦 %s ×%d" % [BX.name, n], X + 2, yy + 3, 10, col, UB)
 				uText("from %s" % BX.boss, X + 2, yy + 18, 8, MUTED, UF)
 				var bx = X + W
@@ -495,16 +504,25 @@ func _pInv(x: float, y: float, w: float) -> float:
 		yy += muted("Materials are shared by all heroes and spent in the Shop.", X, yy, W)
 		return yy - Y
 	y += uCards(x, y, w, 1, [card])
-	if tb(save.get("keyItems", {}).get("dreamKey")):
+	var KI: Dictionary = save.get("keyItems", {})
+	if tb(KI.get("dreamKey")) or tb(KI.get("yetiPendant")):
 		y += 10
 		y += uCards(x, y, w, 1, [func(X, Y, W):
 			var yy = Y + h3("Key items", X, Y)
-			var t = Assets.tex("items/dream_key.png")
-			if t:
-				uci.draw_texture_rect(t, Rect2(X, yy, 32, 32), false)
-			uText("The Dream Key", X + 40, yy + 2, 10, css("#6a2a9a"))
-			uPara("Dropped by The Dreamer. It hums when you hold it. It can break the crystal that Glamrax keeps people imprisoned in, high over the Abyss Volcano.", X + 40, yy + 16, W - 40, 8, MUTED)
-			yy += 38
+			if tb(KI.get("dreamKey")):
+				var t = Assets.tex("items/dream_key.png")
+				if t:
+					uci.draw_texture_rect(t, Rect2(X, yy, 32, 32), false)
+				uText("The Dream Key", X + 40, yy + 2, 10, css("#6a2a9a"))
+				uPara("Dropped by The Dreamer. It hums when you hold it. It can break the crystal that Glamrax keeps people imprisoned in, high over the Abyss Volcano.", X + 40, yy + 16, W - 40, 8, MUTED)
+				yy += 38
+			if tb(KI.get("yetiPendant")):
+				var t = Assets.tex("items/yeti_pendant.png")
+				if t:
+					uci.draw_texture_rect(t, Rect2(X, yy, 32, 32), false)
+				uText("Glowing Pendant", X + 40, yy + 2, 10, css("#1f6f9a"))
+				uPara("Taken from King Yeti. Its light tore open the portal out of the collapsing cave, and it keeps that way to Glamrax's Gate open.", X + 40, yy + 16, W - 40, 8, MUTED)
+				yy += 38
 			return yy - Y], [{"fill": css("#f6efff"), "border": css("#6a2a9a")}])
 	return y - y0
 
@@ -1325,6 +1343,10 @@ func wmOpen(id: String) -> bool:
 		return tb(save.get("trophies", {}).get("warlord"))
 	if id == "bubble":
 		return tb(save.get("trophies", {}).get("dreamer"))
+	if id.begins_with("climb"):
+		return tb(save.get("trophies", {}).get("dreamer"))
+	if id == "peak":
+		return tb(save.get("trophies", {}).get("kingYeti"))
 	return true
 
 
@@ -1343,6 +1365,8 @@ func wmLinks() -> Array:
 		openDreamGate()
 	if wmOpen("bubble"):
 		openBubbleGate()
+	if wmOpen("peak"):
+		openPendantGate()
 	for id in MAPS:
 		for p in MAPS[id].get("portals", []):
 			if not MAPS.has(p.to):
@@ -1381,9 +1405,11 @@ func _pMap(x: float, y: float, w: float) -> float:
 	uPara("Hover an area for its monsters and levels. Dotted paths are portals — the label shows where each one is. Press M any time to open this map.", x + 72, y + 1, w - 72, 8, MUTED)
 	y += 26
 	var s = w / 1000.0
-	var r = Rect2(x, y, w, 430 * s)
+	var top = WM_TOP if wmOpen("climb1") else 0.0   # the volcano climb sits above the Abyss
+	var r = Rect2(x, y, w, (430 + top) * s)
+	var o = r.position + Vector2(0, top * s)
 	# which area is the mouse over?
-	var mp = (mouse - uOff - r.position) / s
+	var mp = (mouse - uOff - o) / s
 	wmHover = null
 	if uHover(r):
 		for id in WM_NODES:
@@ -1392,10 +1418,10 @@ func _pMap(x: float, y: float, w: float) -> float:
 			var n = WM_NODES[id]
 			if Vector2(mp.x - n.x, mp.y - n.y).length() < 34:
 				wmHover = id
-	withCtx(r.position, s, func(cx): drawWorldMap(cx, realTime))
+	withCtx(o, s, func(cx): drawWorldMap(cx, realTime))
 	uBox(r, NONE, INK, 3, 9)
 	if wmHover != null:
-		_wmTip(r, s)
+		_wmTip(r, s, o)
 	return r.end.y - y0
 
 
@@ -1403,12 +1429,13 @@ func drawWorldMap(x: Ctx, t: float) -> void:
 	var sea = x.createLinearGradient(0, 0, 0, 430)
 	sea.addColorStop(0, "#5fb2e8")
 	sea.addColorStop(1, "#3a86c8")
+	var top = WM_TOP if wmOpen("climb1") else 0.0
 	x.fillStyle = sea
-	x.fillRect(0, 0, 1000, 430)
+	x.fillRect(0, -top, 1000, 430 + top)
 	x.fillStyle = "rgba(255,255,255,0.35)"
 	for i in 60:
 		var wx = fmod(i * 97 + t * 8, 1020.0) - 10
-		var wy = (i * 53) % 430
+		var wy = (i * 53) % int(430 + top) - top
 		x.fillRect(roundf(wx), wy, 6, 1)
 	var blob = func(cx, cy, rx, ry, fill, edge):
 		x.fillStyle = edge
@@ -1453,6 +1480,8 @@ func drawWorldMap(x: Ctx, t: float) -> void:
 		if wmOpen("bubble"):
 			x.fillStyle = "rgba(255,255,255,0.18)"; x.beginPath(); x.arc(WM_NODES.bubble.x, WM_NODES.bubble.y, 24, 0, TAU); x.fill()
 			x.strokeStyle = "rgba(200,170,255,0.8)"; x.lineWidth = 2; x.beginPath(); x.arc(WM_NODES.bubble.x, WM_NODES.bubble.y, 24, 0, TAU); x.stroke()
+	if top > 0:
+		_wmVolcano(x, t)
 	# portal paths: dotted lines with a label at each end saying where the portal is
 	for l in wmLinks():
 		var A = WM_NODES.get(l.a)
@@ -1472,7 +1501,7 @@ func drawWorldMap(x: Ctx, t: float) -> void:
 		var m: Dictionary = MAPS[id]
 		var hov = wmHover == id
 		x.fillStyle = "#1a1030"; x.beginPath(); x.arc(n.x, n.y, 17 if hov else 14, 0, TAU); x.fill()
-		x.fillStyle = "#a82a30" if m.get("boss") else ("#ffc83d" if hov else ("#d8c8ff" if id.begins_with("abyss") else "#ffffff"))
+		x.fillStyle = "#a82a30" if m.get("boss") else ("#ffc83d" if hov else ("#d8c8ff" if id.begins_with("abyss") else ("#d8f0ff" if id.begins_with("climb") or id == "peak" else "#ffffff")))
 		x.beginPath(); x.arc(n.x, n.y, 14 if hov else 11, 0, TAU); x.fill()
 		x.fillStyle = "#ffe08a" if m.get("boss") else "#27335c"
 		x.font = '12px "Press Start 2P", monospace'; x.textAlign = "center"; x.textBaseline = "middle"
@@ -1489,10 +1518,44 @@ func drawWorldMap(x: Ctx, t: float) -> void:
 		x.fillStyle = "#fff"; x.beginPath(); x.arc(h.x, h.y - 32 + bob, 3, 0, TAU); x.fill()
 		x.font = "bold 11px Fredoka, sans-serif"; x.fillStyle = "#ff3a4a"; x.fillText("You are here", h.x, h.y - 48 + bob)
 	x.textBaseline = "alphabetic"
-	x.fillStyle = "rgba(26,16,48,0.8)"; x.fillRect(12, 12, 200, 26)
-	x.fillStyle = "#ffe08a"; x.font = '10px "Press Start 2P", monospace'; x.textAlign = "left"; x.fillText("SPROUTVALE REGION", 22, 30)
+	x.fillStyle = "rgba(26,16,48,0.8)"; x.fillRect(12, 12 - top, 200, 26)
+	x.fillStyle = "#ffe08a"; x.font = '10px "Press Start 2P", monospace'; x.textAlign = "left"; x.fillText("SPROUTVALE REGION", 22, 30 - top)
 	x.fillStyle = "rgba(255,248,230,0.92)"; x.fillRect(12, 392, 360, 26)
 	x.fillStyle = "#4a2e14"; x.font = "11px Fredoka, sans-serif"; x.fillText("●  Area     ☠  Boss     - - -  Portal (label = where the portal is)", 22, 409)
+
+
+const WM_TOP := 210.0
+
+
+## the climb to the Abyssal Volcano: a rocky ridge turning to snow, up to the smoking summit
+func _wmVolcano(x: Ctx, t: float) -> void:
+	# the ridge
+	x.fillStyle = "#3a3e48"
+	x.beginPath(); x.moveTo(70, -2); x.bezierCurveTo(120, -60, 260, -80, 360, -110); x.bezierCurveTo(470, -140, 600, -150, 700, -160)
+	x.lineTo(760, -150); x.bezierCurveTo(860, -110, 950, -60, 970, -4); x.closePath(); x.fill()
+	x.strokeStyle = "#1e2028"; x.lineWidth = 3; x.stroke()
+	x.fillStyle = "#6a6e7a"
+	x.beginPath(); x.moveTo(90, -6); x.bezierCurveTo(140, -54, 260, -70, 360, -98); x.bezierCurveTo(470, -126, 600, -136, 690, -146)
+	x.lineTo(700, -120); x.bezierCurveTo(560, -100, 300, -40, 200, -6); x.closePath(); x.fill()
+	# snow from the second climb on
+	x.fillStyle = "#e8f4ff"
+	x.beginPath(); x.moveTo(250, -74); x.bezierCurveTo(330, -98, 470, -132, 600, -142); x.lineTo(690, -150)
+	x.lineTo(680, -132); x.bezierCurveTo(560, -122, 420, -104, 300, -60); x.closePath(); x.fill()
+	# the volcano cone and its glowing crater
+	x.fillStyle = "#2a1a1a"
+	x.beginPath(); x.moveTo(700, -40); x.lineTo(790, -150); x.lineTo(850, -150); x.lineTo(940, -40); x.closePath(); x.fill()
+	x.fillStyle = "rgba(255,110,40,%.2f)" % (0.7 + 0.25 * sin(t * 3))
+	x.beginPath(); x.ellipse(820, -150, 32, 7, 0, 0, TAU); x.fill()
+	for i in 3:
+		var k = fmod(t * 0.25 + i / 3.0, 1.0)
+		x.fillStyle = "rgba(90,80,90,%.2f)" % (0.5 * (1 - k))
+		x.beginPath(); x.arc(820 + k * 30 + i * 6, -160 - k * 20, 8 + k * 10, 0, TAU); x.fill()
+	for i in 6:
+		x.fillStyle = "#ff6a2a"
+		var lx = 800 + i * 7
+		x.fillRect(lx, -146 + hsh(i + 40) * 30, 2, 10 + hsh(i + 41) * 20)
+	# the cave mouth on the snowy slope
+	x.fillStyle = "#141820"; x.beginPath(); x.ellipse(452, -112, 16, 9, 0, PI, TAU); x.fill()
 
 
 func _wmLabel(x: Ctx, from: Dictionary, to: Dictionary, text: String) -> void:
@@ -1508,7 +1571,7 @@ func _wmLabel(x: Ctx, from: Dictionary, to: Dictionary, text: String) -> void:
 	x.fillStyle = "#4a2e14"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText(text, px2, py2)
 
 
-func _wmTip(r: Rect2, s: float) -> void:
+func _wmTip(r: Rect2, s: float, o: Vector2) -> void:
 	var m: Dictionary = MAPS[wmHover]
 	var mons = []
 	if m.get("boss"):
@@ -1526,8 +1589,8 @@ func _wmTip(r: Rect2, s: float) -> void:
 	var w = 190.0
 	var h = 34 + mons.size() * 13 + 14 + links.size() * 12 + (14 if mapId == wmHover else 0) + 6
 	var n = WM_NODES[wmHover]
-	var X = minf(r.end.x - w - 4, r.position.x + n.x * s + 24)
-	var Y = clampf(r.position.y + n.y * s - 30, r.position.y + 4, r.end.y - h - 4)
+	var X = minf(r.end.x - w - 4, o.x + n.x * s + 24)
+	var Y = clampf(o.y + n.y * s - 30, r.position.y + 4, r.end.y - h - 4)
 	uBox(Rect2(X, Y, w, h), Color(247 / 255.0, 251 / 255.0, 1, 0.97), INK, 2, 8, 3.0, INK)
 	var yy = Y + 6
 	var nw = uText(m.name, X + 8, yy, 10)
@@ -1554,11 +1617,11 @@ func _wmTip(r: Rect2, s: float) -> void:
 # ================================================================ Bestiary
 
 func bigEntry(k: String) -> bool:
-	return k == "croc" or k == "warlord" or k == "dreamer"
+	return k == "croc" or k == "warlord" or k == "dreamer" or k == "kingYeti"
 
 
 func bossTOf(k: String) -> Dictionary:
-	return BOSS_T if k == "croc" else (WARLORD_T if k == "warlord" else (DREAMER_T if k == "dreamer" else SLIME_TYPES[k]))
+	return BOSS_T if k == "croc" else (WARLORD_T if k == "warlord" else (DREAMER_T if k == "dreamer" else (YETI_T if k == "kingYeti" else SLIME_TYPES[k])))
 
 
 ## the frames an entry cycles through: [set, key, frame] for idle, or for its attack when clicked
@@ -1582,15 +1645,15 @@ func bestFrames(k: String, mode: String, shiny: bool) -> Array:
 		else:
 			add.call("warlord_ss", "idle", [0, 1])
 		return seq
-	if k == "dreamer":   # a portrait rather than strips: one frame calm, eighteen glaring
+	if k == "dreamer" or k == "kingYeti":   # a portrait rather than strips: one frame calm, eighteen glaring
 		for i in (18 if mode == "attack" else 1):
 			seq.append(["", "", 0])
 		return seq
 	var setn = k + ("_shiny" if shiny else "")
-	if k in ABYSS_MOBS:
+	if k in ABYSS_MOBS or k in CLIMB_MOBS:
 		var ks: Dictionary = Assets.mob_set(setn).get("keys", {})
 		if mode == "attack":
-			for key in ABYSS_BEST_ATTACK.get(k, []):
+			for key in ABYSS_BEST_ATTACK.get(k, CLIMB_BEST_ATTACK.get(k, [])):
 				add.call(setn, key, range(int(ks.get(key, 1))) if int(ks.get(key, 1)) > 1 else [0, 0, 0])
 		else:
 			var k0 = ks.keys()[0] if ks.size() else "idle"
@@ -1646,7 +1709,13 @@ func _bestPic(k: String, r: Rect2, known: bool, shinyView: bool, shinyKnown: boo
 	if k == "dreamer":
 		_bestDreamer(r, known, st.mode == "attack")
 		return
+	if k == "kingYeti":
+		_bestYeti(r, known, st.mode == "attack")
+		return
 	var fr = seq[posmod(f, seq.size())]
+	if k in CLIMB_MOBS:
+		_bestClimb(k, r, fr, known and (not shinyView or shinyKnown))
+		return
 	if k in ABYSS_MOBS:
 		_bestAbyss(k, r, fr, known and (not shinyView or shinyKnown))
 		return
@@ -1709,6 +1778,61 @@ func _bestAbyss(k: String, r: Rect2, fr: Array, known: bool) -> void:
 	uci.draw_texture_rect_region(tex, Rect2(ox, oy, dw, dh), Rect2(fw * clampi(fr[2], 0, nfr - 1), 0, fw, fh))
 
 
+## which strips the bestiary plays when you click a climb monster
+const CLIMB_BEST_ATTACK := {"boulder": ["float", "launch", "roll"], "lizard": ["whip", "leap"], "golem": ["wind", "smash"],
+	"warlock": ["cast", "blink"], "yeti": ["swipe", "leap", "slam"], "sword": ["fly", "fly"]}
+
+
+## a climb monster's picture: cold sky over grey rock (the cave ones in the dark), the whole frame fitted in
+func _bestClimb(k: String, r: Rect2, fr: Array, known: bool) -> void:
+	var cave = k in ["yeti", "sword"]
+	var snow = k in ["golem", "warlock"]
+	uBox(r, css("#1a2230"), INK, 2, 7)
+	uGrad(Rect2(r.position + Vector2(2, 2), r.size - Vector2(4, 4)), css("#1e2a3a") if cave else (css("#c8d8ea") if snow else css("#9fb4c8")),
+		css("#16202c") if cave else (css("#aabfd6") if snow else css("#8298ae")), css("#0c1018") if cave else css("#6a7c90"), 0.5)
+	var floorY = r.position.y + r.size.y * 0.86
+	if k != "sword":
+		uci.draw_rect(Rect2(r.position.x + 2, floorY, r.size.x - 4, r.end.y - floorY - 2), css("#2a3038") if cave else (css("#e8f2fa") if snow else css("#5a5e66")))
+	var tex = Assets.mob_strip(fr[0], fr[1])
+	if tex == null:
+		return
+	if not known:
+		tex = Assets.silhouette(tex, css("#05070c"))
+	var S = Assets.mob_set(fr[0])
+	var nfr = int(S.keys.get(fr[1], 1))
+	var fw = tex.get_width() / float(nfr)
+	var fh = float(tex.get_height())
+	var sc = minf((r.size.x - 8) / fw, (r.size.y - 8) / fh)
+	var dw = fw * sc
+	var dh = fh * sc
+	var ox = r.get_center().x - dw / 2
+	var oy = r.get_center().y - dh / 2
+	var D = S.get("dim")
+	if k != "sword" and D != null and D.has("ay"):
+		oy = floorY - float(D.ay) * 2 * sc * (fh / (float(D.get("h", fh / 2)) * 2))
+	uci.draw_texture_rect_region(tex, Rect2(ox, oy, dw, dh), Rect2(fw * clampi(fr[2], 0, nfr - 1), 0, fw, fh))
+
+
+## King Yeti's picture: his portrait in the cold cave (he roars when you click it)
+func _bestYeti(r: Rect2, known: bool, roar: bool) -> void:
+	uBox(r, css("#0e1620"), INK, 2, 7)
+	uGrad(Rect2(r.position + Vector2(2, 2), r.size - Vector2(4, 4)), css("#24384c"), css("#162432"), css("#080c12"), 0.5)
+	var tex = Assets.tex("boss/yeti_portrait.png")
+	if tex == null:
+		return
+	if not known:
+		tex = Assets.silhouette(tex, css("#05070c"))
+	var fh = float(tex.get_height())
+	var nf = maxi(1, roundi(tex.get_width() / (fh * 220.0 / 170.0)))
+	var fw = tex.get_width() / float(nf)
+	var sc = minf((r.size.x - 4) / fw, (r.size.y - 4) / fh)
+	var dst = Rect2(r.get_center().x - fw * sc / 2, r.end.y - 2 - fh * sc, fw * sc, fh * sc)
+	var fi = (nf - 1) if roar and known else 0
+	if roar and known and nf == 1:
+		dst = dst.grow(sin(realTime * 40) * 1.5)
+	uci.draw_texture_rect_region(tex, dst, Rect2(fw * fi, 0, fw, fh))
+
+
 ## The Dreamer's picture: its portrait over the abyss (it glares when you click it)
 func _bestDreamer(r: Rect2, known: bool, glare: bool) -> void:
 	uBox(r, css("#12081e"), INK, 2, 7)
@@ -1769,6 +1893,8 @@ func _bestCard(k: String) -> Callable:
 			where = [MAPS.crimson5]
 		elif k == "dreamer":
 			where = [MAPS.abyss5]
+		elif k == "kingYeti":
+			where = [MAPS.climb4]
 		else:
 			for id in MAPS:
 				if MAPS[id].get("spawn", {}).has(k):

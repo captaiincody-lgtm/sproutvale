@@ -50,6 +50,8 @@ func bossBox(e) -> Dictionary:
 		return hbox(e.x - 36, e.x + 36, e.y - 30 + e.data.get("sink", 0.0), e.y - 2 + e.data.get("sink", 0.0))
 	if e.bossKind == "warlord":
 		return hbox(e.x - 22, e.x + 22, e.y - 118, e.y)
+	if e.bossKind == "kingYeti":
+		return yetiBox(e)
 	if e.mode == "stand" or e.act in ["rise", "swipe", "stomp", "drop"]:
 		return hbox(e.x - 30, e.x + 34, e.y - 118, e.y)
 	return hbox(e.x - 58, e.x + 70, e.y - 50, e.y)   # four legs: long and low (tail excluded)
@@ -335,12 +337,12 @@ func killBoss(e) -> void:
 	Sfx.tone(80, 1.4, "sawtooth", 0.14, 40)
 	shake = 10
 	slowmo = 1.2
-	var coinN = {"warlord": 50, "dreamer": 60}.get(kind, 26)
+	var coinN = {"warlord": 50, "dreamer": 60, "kingYeti": 70}.get(kind, 26)
 	for i in coinN:
 		var d = S.Drop.new()
 		d.kind = "coin"; d.x = e.x; d.y = e.y - 30; d.vx = rand(-160, 160); d.vy = rand(-340, -180)
-		d.val = rint(14, 24) * {"warlord": 3, "dreamer": 5}.get(kind, 1)
-		d.surfY = M.floorY; d.x0 = 20; d.x1 = M.w - 20; d.spin = randf() * 4
+		d.val = rint(14, 24) * {"warlord": 3, "dreamer": 5, "kingYeti": 7}.get(kind, 1)
+		d.surfY = groundAt(e.x); d.x0 = 20; d.x1 = M.w - 20; d.spin = randf() * 4
 		drops.append(d)
 	var bx = roundi(mobExp(e) * (1 + cardBonus()))
 	gainExp(bx)
@@ -364,6 +366,8 @@ func killBoss(e) -> void:
 				Sfx.rankUp(9)))
 	elif kind == "dreamer":
 		dreamerFalls(e, firstKill)
+	elif kind == "kingYeti":
+		yetiFalls(e, firstKill)
 	elif kind == "warlord":
 		# the Warlord sinks to one knee; the first time, he has something to say before he falls
 		e.dying = true
@@ -388,7 +392,7 @@ func killBoss(e) -> void:
 			Sfx.rankUp(9))
 	var arena = M
 	later(2.6, func():
-		if arena.get("boss") and arena.get("pedestal") == null:
+		if arena.get("boss") and arena.get("pedestal") == null and not (kind == "kingYeti" and firstKill):
 			arena.pedestal = {"x": roundi(arena.w * (0.55 if kind == "croc" else 0.5)), "kind": kind})
 	styleAdd(120, "boss")
 
@@ -439,7 +443,7 @@ func collectBox(kind: String, n := 1) -> void:
 	persist()
 	var B: Dictionary = BOXES.get(kind, BOXES.croc)
 	Sfx.buy()
-	pickupPop("box_" + kind, B.name, n, "#ff9ef0" if kind == "dreamer" else ("#ff8a9a" if kind == "warlord" else "#ffe14d"))
+	pickupPop("box_" + kind, B.name, n, {"dreamer": "#ff9ef0", "warlord": "#ff8a9a", "kingYeti": "#9ff0ff"}.get(kind, "#ffe14d"))
 	toast("📦 %s collected — open it from your inventory (Tab → Inventory)." % B.name)
 
 
@@ -1081,7 +1085,7 @@ func summonFromPedestal() -> void:
 	shake = 8
 	Sfx.thunder()
 	for i in 30:
-		part(pd.x + rand(-12, 12), M.floorY - rand(0, 40), rand(-60, 60), rand(-140, -40), 0.8, {"warlord": "#ff3a4a", "dreamer": "#c25cff"}.get(pd.kind, "#8fff6a"), 0, 2)
+		part(pd.x + rand(-12, 12), M.floorY - rand(0, 40), rand(-60, 60), rand(-140, -40), 0.8, {"warlord": "#ff3a4a", "dreamer": "#c25cff", "kingYeti": "#7af0ff"}.get(pd.kind, "#8fff6a"), 0, 2)
 	if pd.kind == "warlord":
 		Warlord.introDone = true
 		spawnWarlord()
@@ -1089,13 +1093,15 @@ func summonFromPedestal() -> void:
 		w.x = minf(M.w - 80, P.x + 220)
 	elif pd.kind == "dreamer":
 		spawnDreamer()
+	elif pd.kind == "kingYeti":
+		spawnYeti(true)
 	else:
 		spawnBoss()
 		var b = _boss()
 		if b != null:
 			b.x = minf(M.w - 60, P.x + 200)
 	P.face = 1
-	Sfx.music(M.get("music", {"warlord": "warlord", "dreamer": "dreamer"}.get(pd.kind, "lair")))
+	Sfx.music("yeti" if pd.kind == "kingYeti" else M.get("music", {"warlord": "warlord", "dreamer": "dreamer"}.get(pd.kind, "lair")))
 
 
 # ================================================================ cutscenes

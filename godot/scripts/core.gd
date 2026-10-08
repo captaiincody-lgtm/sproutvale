@@ -135,6 +135,7 @@ const BOXES := {
 	"croc": {"name": "Crocbox", "boss": "Doc Croc", "skill": "potionThrow", "items": ["kombucha", "whetstone", "hide", "eyedrops"]},
 	"warlord": {"name": "Crimsonbox", "boss": "Crimson Warlord", "skill": "crimsonRain", "items": ["kombucha", "draught", "sigil", "rivet", "glassEye"]},
 	"dreamer": {"name": "Dreambox", "boss": "The Dreamer", "skill": "devour", "items": ["draught", "inkDraught", "dreamFang", "barnacle", "pearl"]},
+	"kingYeti": {"name": "Yetibox", "boss": "King Yeti", "skill": "swordThrow", "items": ["inkDraught", "yetiMilk", "kingFang", "frostHide", "iceEye"]},
 }
 const BOX_ITEM_RATE := 0.15   # chance a box holds a stat treasure
 const BOX_SKILL_RATE := 0.02  # chance a box holds the boss's skill (until you have it)
@@ -152,8 +153,12 @@ const BOONS := {
 	"dreamFang": {"name": "Dreamer's Fang", "icon": "🦷", "stat": "atk", "val": 9, "desc": "+9 attack"},
 	"barnacle": {"name": "Abyssal Barnacle", "icon": "🐚", "stat": "def", "val": 6, "desc": "+6 defense"},
 	"pearl": {"name": "Black Pearl", "icon": "🔮", "stat": "crit", "val": 1.5, "desc": "+1.5% critical rate"},
+	"yetiMilk": {"name": "Frostbite Tonic", "icon": "🧊", "stat": "hp", "val": 160, "desc": "+160 max HP"},
+	"kingFang": {"name": "King Yeti's Tusk", "icon": "🦣", "stat": "atk", "val": 13, "desc": "+13 attack"},
+	"frostHide": {"name": "Frost-Bound Hide", "icon": "🧥", "stat": "def", "val": 9, "desc": "+9 defense"},
+	"iceEye": {"name": "Pendant Shard", "icon": "💎", "stat": "crit", "val": 2.0, "desc": "+2% critical rate"},
 }
-const BOON_ORDER := ["kombucha", "whetstone", "hide", "eyedrops", "draught", "sigil", "rivet", "glassEye", "inkDraught", "dreamFang", "barnacle", "pearl"]
+const BOON_ORDER := ["kombucha", "whetstone", "hide", "eyedrops", "draught", "sigil", "rivet", "glassEye", "inkDraught", "dreamFang", "barnacle", "pearl", "yetiMilk", "kingFang", "frostHide", "iceEye"]
 ## skills learned from a boss: any class can use them once one drops
 const BOSS_SKILLS := [
 	{"id": "potionThrow", "boss": "croc", "name": "Potion Throw", "icon": "🧪", "type": "active", "max": 1, "cd": 4, "cost": 22,
@@ -162,6 +167,8 @@ const BOSS_SKILLS := [
 		"desc": ["Call down the Warlord's blood rain for 5s: every enemy on screen takes 80% damage every half second"]},
 	{"id": "devour", "boss": "dreamer", "name": "Abyssal Devour", "icon": "🐙", "type": "active", "max": 1, "cd": 25, "cost": 50,
 		"desc": ["Open the Dreamer's maw: suck in the nearest monster, chew it three times for 400% damage each, then spit it out"]},
+	{"id": "swordThrow", "boss": "kingYeti", "name": "Impaling Blade", "icon": "🗡️", "type": "active", "max": 1, "cd": 20, "cost": 45,
+		"desc": ["Hurl King Yeti's enchanted sword at lightning speed: it impales the first monster in its path for 600% damage, then tears back out for another 400%"]},
 ]
 
 # ---------------------------------------------------------------- player + save
@@ -246,9 +253,10 @@ func init_data() -> void:
 	W_PARAMS = D.wParams
 	PRIMARY = D.primary
 	ATTRS = D.attrs
-	CUR_TIPS.boss = "Boss Coins: 1–5 in every Crocbox, Crimsonbox and Dreambox. Spend them in the Boss Shop."
+	CUR_TIPS.boss = "Boss Coins: 1–5 in every Crocbox, Crimsonbox, Dreambox and Yetibox. Spend them in the Boss Shop."
 	initAbyssData()
 	initTankData()
+	initClimbData()
 	STAT_TIPS["Boss Coins"] = "Found in the boxes bosses drop (1–5 each). Spend them in the Boss Shop."
 
 
@@ -990,6 +998,8 @@ func updateDrops(dt: float) -> void:
 				tankPickup(d)
 			elif d.kind == "key":
 				pickupKey()
+			elif d.kind == "pendant":
+				pickupPendant()
 			elif d.kind == "card":
 				cardSet(d.type)[d.key] = true
 				saveDirty = true
@@ -1007,7 +1017,7 @@ func updateDrops(dt: float) -> void:
 				pickupPop("m_" + d.type, matName(d.type), n, "#ffffff")
 			saveDirty = true
 			continue
-		if d.t > 60 and d.kind != "box" and d.kind != "key":
+		if d.t > 60 and not (d.kind in ["box", "key", "pendant"]):
 			drops.remove_at(i)
 
 
@@ -1213,6 +1223,19 @@ func groundAt(_x: float) -> float: return 0.0
 func pickupKey() -> void: pass
 func castDevour() -> void: pass
 func dreamerHitOk(_e, _mv: Dictionary) -> bool: return true
+
+
+# ---------------- the climb to the volcano (climb.gd fills these in)
+func initClimbData() -> void: pass
+func climbAI(_e, _T: Dictionary, _dt: float, _dx: float, _dy: float, _pb: Dictionary) -> bool: return false
+func pickupPendant() -> void: pass
+func spawnYeti(_fromPedestal := false) -> void: pass
+func updateYeti(_e, _dt: float) -> void: pass
+func yetiFalls(_e, _firstKill: bool) -> void: pass
+func climbWind() -> float: return -1.0
+func climbStep(_heavy: bool) -> void: pass
+func climbMap() -> bool: return false
+func yetiBox(_e) -> Dictionary: return {}
 
 
 # ---------------- Tank (tank.gd fills these in)

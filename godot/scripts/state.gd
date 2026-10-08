@@ -80,6 +80,7 @@ class Player:
 	var kdT := 0.0
 	var kdPhase := ""
 	var kdBack := false
+	var kdLong := 0.0            # extra time lying on the floor after a bad fall (King Yeti's ceiling throw)
 	# the Abyss (Godot-only areas beyond the Warlord's Keep)
 	var abyssB := 0.0            # Abyss buildup 0–100; full = the Abyss debuff
 	var abyssT := 0.0            # seconds of the Abyss debuff left

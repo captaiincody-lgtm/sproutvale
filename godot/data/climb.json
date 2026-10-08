@@ -1,0 +1,797 @@
+{
+ "maps": {
+  "climb1": {
+   "name": "Coldstone Foothills",
+   "sub": "Lv 78–80 · the climb to the Abyssal Volcano begins",
+   "theme": "climb",
+   "cold": 0.4,
+   "w": 2000,
+   "h": 740,
+   "floorY": 640,
+   "target": 16,
+   "start": 80,
+   "music": "climb",
+   "ignoreUnlock": true,
+   "stepUp": 14,
+   "floor": [
+    [
+     20,
+     140,
+     640
+    ],
+    [
+     140,
+     198,
+     630
+    ],
+    [
+     198,
+     284,
+     620
+    ],
+    [
+     284,
+     388,
+     608
+    ],
+    [
+     388,
+     489,
+     576
+    ],
+    [
+     489,
+     587,
+     568
+    ],
+    [
+     587,
+     641,
+     556
+    ],
+    [
+     641,
+     707,
+     546
+    ],
+    [
+     707,
+     764,
+     514
+    ],
+    [
+     764,
+     845,
+     504
+    ],
+    [
+     845,
+     943,
+     492
+    ],
+    [
+     943,
+     1021,
+     484
+    ],
+    [
+     1021,
+     1101,
+     452
+    ],
+    [
+     1101,
+     1192,
+     440
+    ],
+    [
+     1192,
+     1266,
+     432
+    ],
+    [
+     1266,
+     1366,
+     422
+    ],
+    [
+     1366,
+     1429,
+     390
+    ],
+    [
+     1429,
+     1485,
+     382
+    ],
+    [
+     1485,
+     1566,
+     374
+    ],
+    [
+     1566,
+     1617,
+     366
+    ],
+    [
+     1617,
+     1724,
+     334
+    ],
+    [
+     1724,
+     1840,
+     322
+    ],
+    [
+     1840,
+     1980,
+     310
+    ]
+   ],
+   "plats": [
+    [
+     300,
+     558,
+     96
+    ],
+    [
+     720,
+     454,
+     96
+    ],
+    [
+     1150,
+     382,
+     96
+    ],
+    [
+     1560,
+     316,
+     96
+    ]
+   ],
+   "ropes": [],
+   "portals": [
+    {
+     "x": 44,
+     "y": 640,
+     "to": "bubble",
+     "tx": 1600,
+     "label": "Back into the Bubble"
+    },
+    {
+     "x": 1950,
+     "y": 310,
+     "to": "climb2",
+     "tx": 70,
+     "ty": 620,
+     "label": "Whiteout Ridge"
+    }
+   ],
+   "spawn": {
+    "boulder": 3,
+    "lizard": 3
+   }
+  },
+  "climb2": {
+   "name": "Whiteout Ridge",
+   "sub": "Lv 82–85 · a blizzard that never lets up",
+   "theme": "snow",
+   "cold": 1.0,
+   "blizzard": true,
+   "w": 2000,
+   "h": 720,
+   "floorY": 620,
+   "target": 14,
+   "start": 80,
+   "music": "climb",
+   "ignoreUnlock": true,
+   "stepUp": 14,
+   "floor": [
+    [
+     20,
+     140,
+     620
+    ],
+    [
+     140,
+     245,
+     608
+    ],
+    [
+     245,
+     355,
+     600
+    ],
+    [
+     355,
+     459,
+     590
+    ],
+    [
+     459,
+     512,
+     563
+    ],
+    [
+     512,
+     567,
+     551
+    ],
+    [
+     567,
+     622,
+     541
+    ],
+    [
+     622,
+     695,
+     529
+    ],
+    [
+     695,
+     798,
+     502
+    ],
+    [
+     798,
+     858,
+     490
+    ],
+    [
+     858,
+     955,
+     480
+    ],
+    [
+     955,
+     1056,
+     468
+    ],
+    [
+     1056,
+     1148,
+     441
+    ],
+    [
+     1148,
+     1252,
+     431
+    ],
+    [
+     1252,
+     1321,
+     419
+    ],
+    [
+     1321,
+     1387,
+     409
+    ],
+    [
+     1387,
+     1475,
+     382
+    ],
+    [
+     1475,
+     1538,
+     374
+    ],
+    [
+     1538,
+     1626,
+     366
+    ],
+    [
+     1626,
+     1678,
+     356
+    ],
+    [
+     1678,
+     1800,
+     329
+    ],
+    [
+     1800,
+     1980,
+     319
+    ]
+   ],
+   "plats": [
+    [
+     360,
+     540,
+     96
+    ],
+    [
+     820,
+     430,
+     96
+    ],
+    [
+     1260,
+     369,
+     96
+    ],
+    [
+     1640,
+     279,
+     96
+    ]
+   ],
+   "ropes": [],
+   "portals": [
+    {
+     "x": 44,
+     "y": 620,
+     "to": "climb1",
+     "tx": 1900,
+     "ty": 310,
+     "label": "Coldstone Foothills"
+    },
+    {
+     "x": 1940,
+     "y": 319,
+     "to": "climb3",
+     "tx": 70,
+     "ty": 430,
+     "label": "Into the cave"
+    }
+   ],
+   "spawn": {
+    "golem": 2,
+    "warlock": 3
+   },
+   "caveMouth": 1860
+  },
+  "climb3": {
+   "name": "Icefang Cave",
+   "sub": "Lv 87–90 · water drips somewhere in the dark",
+   "theme": "cave",
+   "cold": 0.8,
+   "drip": true,
+   "w": 1800,
+   "h": 520,
+   "floorY": 430,
+   "target": 12,
+   "start": 80,
+   "music": "cave",
+   "ignoreUnlock": true,
+   "stepUp": 14,
+   "floor": [
+    [
+     20,
+     160,
+     430
+    ],
+    [
+     160,
+     225,
+     425
+    ],
+    [
+     225,
+     312,
+     420
+    ],
+    [
+     312,
+     396,
+     412
+    ],
+    [
+     396,
+     454,
+     406
+    ],
+    [
+     454,
+     527,
+     398
+    ],
+    [
+     527,
+     635,
+     390
+    ],
+    [
+     635,
+     723,
+     384
+    ],
+    [
+     723,
+     803,
+     378
+    ],
+    [
+     803,
+     893,
+     370
+    ],
+    [
+     893,
+     980,
+     365
+    ],
+    [
+     980,
+     1034,
+     360
+    ],
+    [
+     1034,
+     1122,
+     352
+    ],
+    [
+     1122,
+     1172,
+     347
+    ],
+    [
+     1172,
+     1280,
+     339
+    ],
+    [
+     1280,
+     1383,
+     333
+    ],
+    [
+     1383,
+     1463,
+     325
+    ],
+    [
+     1463,
+     1529,
+     320
+    ],
+    [
+     1529,
+     1620,
+     312
+    ],
+    [
+     1620,
+     1780,
+     307
+    ]
+   ],
+   "ceil": 168,
+   "plats": [
+    [
+     380,
+     352,
+     104
+    ],
+    [
+     820,
+     316,
+     104
+    ],
+    [
+     1240,
+     279,
+     104
+    ]
+   ],
+   "ropes": [],
+   "portals": [
+    {
+     "x": 44,
+     "y": 430,
+     "to": "climb2",
+     "tx": 1880,
+     "ty": 319,
+     "label": "Whiteout Ridge"
+    },
+    {
+     "x": 1750,
+     "y": 307,
+     "to": "climb4",
+     "tx": 70,
+     "label": "Boss: King Yeti's Throne"
+    }
+   ],
+   "spawn": {
+    "yeti": 2,
+    "sword": 3
+   },
+   "bossSign": 1660,
+   "glowEnd": true
+  },
+  "climb4": {
+   "name": "King Yeti's Throne",
+   "theme": "cave",
+   "cold": 0.8,
+   "drip": true,
+   "w": 640,
+   "h": 300,
+   "floorY": 270,
+   "target": 0,
+   "start": 70,
+   "music": "yeti",
+   "boss": "kingYeti",
+   "ceil": 210,
+   "ceilY": 60,
+   "plats": [],
+   "ropes": [],
+   "portals": [
+    {
+     "x": 40,
+     "to": "climb3",
+     "tx": 1700,
+     "ty": 307,
+     "label": "Icefang Cave"
+    }
+   ],
+   "spawn": {},
+   "throneX": 566
+  },
+  "peak": {
+   "name": "Glamrax's Gate",
+   "sub": "The top of the Abyssal Volcano · the wind howls",
+   "theme": "peak",
+   "w": 1500,
+   "h": 600,
+   "floorY": 480,
+   "target": 0,
+   "start": 80,
+   "music": "peak",
+   "safe": true,
+   "stepUp": 14,
+   "floor": [
+    [
+     20,
+     140,
+     480
+    ],
+    [
+     140,
+     187,
+     472
+    ],
+    [
+     187,
+     236,
+     464
+    ],
+    [
+     236,
+     279,
+     457
+    ],
+    [
+     279,
+     342,
+     450
+    ],
+    [
+     342,
+     394,
+     442
+    ],
+    [
+     394,
+     449,
+     435
+    ],
+    [
+     449,
+     493,
+     428
+    ],
+    [
+     493,
+     535,
+     418
+    ],
+    [
+     535,
+     577,
+     410
+    ],
+    [
+     577,
+     617,
+     402
+    ],
+    [
+     617,
+     669,
+     395
+    ],
+    [
+     669,
+     726,
+     388
+    ],
+    [
+     726,
+     795,
+     380
+    ],
+    [
+     795,
+     844,
+     372
+    ],
+    [
+     844,
+     909,
+     362
+    ],
+    [
+     909,
+     973,
+     352
+    ],
+    [
+     973,
+     1014,
+     344
+    ],
+    [
+     1014,
+     1061,
+     337
+    ],
+    [
+     1061,
+     1117,
+     327
+    ],
+    [
+     1117,
+     1180,
+     319
+    ],
+    [
+     1180,
+     1480,
+     309
+    ]
+   ],
+   "plats": [],
+   "ropes": [],
+   "portals": [
+    {
+     "x": 44,
+     "y": 480,
+     "to": "climb4",
+     "tx": 520,
+     "label": "The Collapsed Cave"
+    },
+    {
+     "x": 1420,
+     "y": 309,
+     "to": "glamrax",
+     "tx": 70,
+     "label": "Glamrax's Lair",
+     "sealed": true
+    }
+   ],
+   "spawn": {}
+  }
+ },
+ "mobs": {
+  "boulder": {
+   "name": "Cursed Boulder",
+   "label": "cursed boulders",
+   "color": 6972528,
+   "lv": 78,
+   "hp": 5600,
+   "atk": 188,
+   "def": 110,
+   "exp": 1500,
+   "coins": [
+    130,
+    215
+   ],
+   "speed": 1.0,
+   "bw": 22,
+   "bh": 22,
+   "matName": "Staring Pebble"
+  },
+  "lizard": {
+   "name": "Lizardman",
+   "label": "lizardmen",
+   "color": 4880954,
+   "lv": 80,
+   "hp": 5200,
+   "atk": 196,
+   "def": 74,
+   "exp": 1560,
+   "coins": [
+    135,
+    220
+   ],
+   "speed": 1.2,
+   "bw": 16,
+   "bh": 38,
+   "matName": "Whip Leather"
+  },
+  "golem": {
+   "name": "Snow Golem",
+   "label": "snow golems",
+   "color": 14214384,
+   "lv": 83,
+   "hp": 13000,
+   "atk": 270,
+   "def": 125,
+   "exp": 2300,
+   "coins": [
+    160,
+    260
+   ],
+   "speed": 0.55,
+   "bw": 38,
+   "bh": 58,
+   "eliteScale": 1.5,
+   "matName": "Glowing Gemstone"
+  },
+  "warlock": {
+   "name": "Lizard Warlock",
+   "label": "lizard warlocks",
+   "color": 5913226,
+   "lv": 85,
+   "hp": 3900,
+   "atk": 290,
+   "def": 52,
+   "exp": 2000,
+   "coins": [
+    150,
+    245
+   ],
+   "speed": 1.0,
+   "bw": 16,
+   "bh": 40,
+   "matName": "Warlock's Scale"
+  },
+  "yeti": {
+   "name": "Cursed Yeti",
+   "label": "cursed yetis",
+   "color": 15265526,
+   "lv": 88,
+   "hp": 16000,
+   "atk": 300,
+   "def": 105,
+   "exp": 3000,
+   "coins": [
+    190,
+    300
+   ],
+   "speed": 1.35,
+   "bw": 40,
+   "bh": 80,
+   "eliteScale": 1.35,
+   "matName": "Cursed Yeti Fur"
+  },
+  "sword": {
+   "name": "Enchanted Sword",
+   "label": "enchanted swords",
+   "color": 10148095,
+   "lv": 90,
+   "hp": 6400,
+   "atk": 310,
+   "def": 85,
+   "exp": 2500,
+   "coins": [
+    180,
+    290
+   ],
+   "speed": 1.6,
+   "bw": 30,
+   "bh": 14,
+   "fly": true,
+   "matName": "Glittering Shard"
+  }
+ }
+}
