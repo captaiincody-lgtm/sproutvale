@@ -81,6 +81,11 @@ func drawClimbMid(x: Ctx, sx: float, sy: float) -> void:
 		var th = Assets.tex("boss/throne.png")
 		if th != null:
 			x.drawImage(th, roundf(tx - 50 - sx), roundf(groundAt(tx) - 110 - sy), 100, 110)
+	# the big stalactites he throws you into
+	var st = Assets.tex("boss/stalactite.png")
+	if st != null:
+		for cx in YT_STALS:
+			x.drawImage(st, roundf(cx - YT_STAL_W / 2 - sx), roundf(ceilAt(cx) - 6 - sy), YT_STAL_W, YT_STAL_LEN + 6)
 	if YS.get("state", "") == "ground":
 		_swordInFloor(x, YS.x, YS.y, sx, sy)
 	if not escapeGate.is_empty():
@@ -115,7 +120,7 @@ func _portalSwirl(x: Ctx, X: float, Y: float, k: float) -> void:
 	x.fillStyle = gl; x.beginPath(); x.arc(X, Y - 22, 40 * k, 0, TAU); x.fill()
 	for i in 28:
 		var a = t * 4 + i / 28.0 * TAU
-		var r = (12 + sin(t * 6 + i) * 2) * k
+		var r = (18 + sin(t * 6 + i) * 2) * k
 		x.fillStyle = "#7af0ff" if i % 3 else "#ffffff"
 		x.fillRect(roundf(X + cos(a) * r * 0.7), roundf(Y - 22 + sin(a) * r * 1.3), 2, 2)
 
@@ -369,6 +374,19 @@ func drawClimbFront(x: Ctx, sx: float, sy: float, dt: float) -> void:
 			g.addColorStop(0, rgba(122, 240, 255, a)); g.addColorStop(1, rgba(122, 240, 255, 0))
 			x.fillStyle = g; x.beginPath(); x.arc(mx, my, 70, 0, TAU); x.fill()
 		_bigSword(x, YS.x - sx, YS.y - sy, YS.ang)
+	# the point of the stalactite, through the hero
+	if P.held != null and P.held.get("kind") == "yeti" and P.held.get("phase") == "stuck":
+		var st = Assets.tex("boss/stalactite.png")
+		if st != null:
+			var cx: float = P.held.sx
+			var top = ceilAt(cx) - 6
+			var full = YT_STAL_LEN + 6
+			var cut = full * 0.5
+			var tw = st.get_width()
+			var th = st.get_height()
+			x.drawImageRegion(st, 0, th * 0.5, tw, th * 0.5, roundf(cx - YT_STAL_W / 2 - sx), roundf(top + cut - sy), YT_STAL_W, full - cut)
+			x.fillStyle = "#c81e2e"
+			x.fillRect(roundf(cx - 1 - sx), roundf(top + full - 4 - sy), 2, 4)
 	# the hero's Impaling Blade
 	if not pBlade.is_empty():
 		_bigSword(x, pBlade.x - sx - pBlade.face * 20, pBlade.y - sy, 0.0 if pBlade.face > 0 else PI, 0.55)
@@ -430,8 +448,8 @@ func drawClimbFront(x: Ctx, sx: float, sy: float, dt: float) -> void:
 	var theme: String = M.get("theme", "")
 	# the blizzard on Whiteout Ridge: snow streaming sideways, thick and fast
 	if theme == "snow" or (theme == "climb" and true):
-		var n = 150 if theme == "snow" else 40
-		var spd = 220.0 if theme == "snow" else 60.0
+		var n = 280 if theme == "snow" else 40
+		var spd = 320.0 if theme == "snow" else 60.0
 		for i in n:
 			var k = i * 1.37
 			var par = 0.6 + hsh(k) * 0.8
@@ -513,7 +531,7 @@ func climbTint(x: Ctx, D: Dictionary) -> void:
 	var col: Color
 	match theme:
 		"cave":
-			col = css("#6a76a0")
+			col = css("#98a4cc")
 		"peak":
 			col = css("#ffd2c0")
 		_:
@@ -542,9 +560,18 @@ func climbOverlay(x: Ctx) -> void:
 		gr.addColorStop(0, Color(c, a)); gr.addColorStop(1, Color(c, 0))
 		x.fillStyle = gr
 		x.beginPath(); x.arc(X, Y, r, 0, TAU); x.fill()
+	if not escapeGate.is_empty():
+		# the pendant's portal lights up the whole collapsing room
+		var X = escapeGate.x - sx
+		var Y = escapeGate.y - sy - 22
+		var k = minf(1, escapeGate.t * 2)
+		var gg = x.createRadialGradient(X, Y, 4, X, Y, 120 * k + 1)
+		gg.addColorStop(0, rgba(200, 255, 255, 0.55)); gg.addColorStop(1, rgba(122, 240, 255, 0))
+		x.fillStyle = gg
+		x.beginPath(); x.arc(X, Y, 120 * k + 1, 0, TAU); x.fill()
 	if theme == "cave":
 		var vg = x.createRadialGradient(VW * 0.5, VH * 0.52, VH * 0.36, VW * 0.5, VH * 0.52, VH * 0.95)
-		vg.addColorStop(0, rgba(2, 3, 8, 0)); vg.addColorStop(1, rgba(2, 3, 8, 0.5))
+		vg.addColorStop(0, rgba(2, 3, 8, 0)); vg.addColorStop(1, rgba(2, 3, 8, 0.38))
 		x.fillStyle = vg
 		x.fillRect(0, 0, VW, VH)
 		var px = P.x - sx
@@ -569,7 +596,7 @@ func climbOverlay(x: Ctx) -> void:
 			x.beginPath(); x.arc(gx, gy, 150, 0, TAU); x.fill()
 	elif theme == "snow":
 		# the whiteout: the far distance disappears into the blizzard
-		x.fillStyle = rgba(236, 242, 252, 0.16 + 0.05 * sin(t * 0.7))
+		x.fillStyle = rgba(236, 242, 252, 0.2 + 0.08 * maxf(0, sin(t * 0.7)) + 0.06 * maxf(0, sin(t * 2.3)))
 		x.fillRect(0, 0, VW, VH)
 	elif theme == "peak":
 		var vg = x.createRadialGradient(VW * 0.5, VH * 0.5, VH * 0.4, VW * 0.5, VH * 0.5, VH)

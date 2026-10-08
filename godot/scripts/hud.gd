@@ -558,7 +558,10 @@ func _topRight(indoor: bool) -> void:
 	var D = World
 	var hh = floori(D.t * 24)
 	var mm = floori((D.t * 24 - hh) * 6) * 10
-	var clock = "%02d:%02d · %s" % [hh, mm, WEATHERS[D.weather]]
+	var wx: String = WEATHERS[D.weather]
+	if climbMap():   # the climb has its own weather, whatever it's doing down below
+		wx = {"climb": "Cold", "snow": "Blizzard", "cave": "Underground", "peak": "Hot wind"}.get(M.get("theme"), wx)
+	var clock = "%02d:%02d · %s" % [hh, mm, wx]
 	var nm: String = M.get("name", "")
 	var w = maxf(uW(nm, 11), uW(clock, 8, UF)) + 18
 	var r = Rect2(UW - 8 - w, 8, w, 31)

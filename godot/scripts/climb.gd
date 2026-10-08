@@ -12,6 +12,8 @@ const YETI_T := {"name": "King Yeti", "lv": 95, "hp": 200000, "atk": 300, "def":
 const CLIMB_MOBS := ["boulder", "lizard", "golem", "warlock", "yeti", "sword"]
 const YT_SWORD_LEN := 118.0      # the King's sword, grip to tip (world units)
 const YT_STALS := [150.0, 262.0, 378.0, 486.0]   # where the big stalactites hang from the throne room's ceiling
+const YT_STAL_W := 16.0
+const YT_STAL_LEN := 52.0
 const RUIN_FLOOR := [[20, 150, 270], [150, 210, 260], [210, 430, 270], [430, 500, 256], [500, 620, 270]]
 
 var climbShots: Array = []   # the warlocks' spells, the King's boulders
@@ -821,6 +823,7 @@ func updateClimb(dt: float) -> void:
 				part(dx, cy + 3, 0, 40, 1.4, "#bfe4ff", 380, 1, groundAt(dx))
 			var near = clampf(1.0 - absf(dx - P.x) / 260.0, 0.2, 1.0)
 			Sfx.tone(rand(1500, 2600), 0.18, "sine", 0.05 * near, rand(700, 1100), rand(0.3, 0.8))
+	_updateEscape(dt)
 	# blizzard: you can feel it push at you
 	if M.get("blizzard") and P.state == "move" and not P.grounded:
 		P.vx -= 16 * dt
@@ -890,6 +893,25 @@ func _kingYeti():
 	return null
 
 
+## in the throne room the camera frames King Yeti: on him while he rises and speaks, then on both of you
+func updateCamera(dt: float) -> void:
+	var e = _kingYeti() if mapId == "climb4" else null
+	if e == null:
+		super.updateCamera(dt)
+		return
+	var tx: float
+	if e.state == "intro":
+		tx = e.x - VW * 0.62
+	elif absf(P.x - e.x) < VW - 90:
+		tx = (P.x + e.x) / 2.0 - VW / 2.0
+	else:
+		tx = P.x - VW / 2.0 + P.face * 36
+	tx = clampf(tx, 0, M.w - VW)
+	var ty = clampf(P.y - VH * 0.64, 0, M.h - VH)
+	cam.x = damp(cam.x, tx, 3.0 if e.state == "intro" else 6.0, dt)
+	cam.y = damp(cam.y, ty, 5, dt)
+
+
 func collapsed() -> bool:
 	return mapId == "climb4" and (not not save.trophies.get("kingYeti"))
 
@@ -915,6 +937,7 @@ func spawnYeti(fromPedestal := false) -> void:
 		Sfx.tone(60, 1.0, "sawtooth", 0.1, 40)
 		return
 	e.state = "intro"
+	e.data.sword = false   # it's still stuck in the floor by the throne
 	if Yeti.introDone:
 		# he's met you before: no speech, he just stands, grabs his sword and comes at you
 		e.data.phase = "rise"
@@ -1564,7 +1587,7 @@ func abyssHold(dt: float) -> bool:
 					Sfx.whoosh(1.4, true)
 					Sfx.tone(200, 0.4, "sawtooth", 0.08, 900)
 				var k = minf(1, H.t / 0.32)
-				var top = ceilAt(H.sx) + 30
+				var top = ceilAt(H.sx) + YT_STAL_LEN + 18   # the point goes through the chest
 				P.x = lerpf(H.x0, H.sx, easeOut(k))
 				P.y = lerpf(H.y0, top, easeOut(k))
 				if k >= 1:
@@ -1582,7 +1605,7 @@ func abyssHold(dt: float) -> bool:
 						return false
 		"stuck":
 			_yAnim(e, "roar")
-			var top = ceilAt(H.sx) + 30
+			var top = ceilAt(H.sx) + YT_STAL_LEN + 18   # the point goes through the chest
 			P.x = H.sx
 			# hangs there, then slowly slides off the point
 			P.y = top + maxf(0, H.t - 0.6) * 18
@@ -1640,7 +1663,6 @@ func yetiFalls(e, firstKill: bool) -> void:
 				dust(e.x + e.face * 40, e.y, 30)
 				banner("CAVE-IN!", "The whole cave is coming down")
 				_gatherLoot()
-				_dropPendant(e, true)
 				for i in 26:
 					dropStal(rand(40, M.w - 40), null, rand(0.0, 2.6), randf() < 0.4)
 				later(1.4, func():
@@ -1706,29 +1728,44 @@ func _pendantEscape() -> void:
 		return
 	var side = 1.0 if P.x < M.w - 120 else -1.0
 	var px = clampf(P.x + side * 60, 40, M.w - 40)
+	# the pendant comes off his neck and into your hand, blazing
+	if not (not not save.get("keyItems", {}).get("yetiPendant")):
+		pickupPendant()
 	escapeGate = {"x": px, "y": groundAt(px), "t": 0.0}
 	Sfx.tone(600, 1.2, "sine", 0.08, 1800)
 	Sfx.burst(1.0, "highpass", 800, 4000, 0.25)
-	floatText(P.x, P.y - 66, "The pendant is glowing!", "call")
-	later(1.2, func():
-		# a running leap into it
-		P.frozen = false
+	floatText(P.x, P.y - 66, "The pendant tears open a portal!", "call")
+	for i in 14:
+		dropStal(rand(40, M.w - 40), null, rand(0.2, 2.6), randf() < 0.4)
+	later(2.8, func():
+		# a running leap into it (scripted, so nothing can knock it off course)
 		P.face = int(side)
 		P.state = "move"
-		P.vy = -300
-		P.vx = side * 150
 		P.grounded = false
 		P.surf = null
-		Sfx.jump()
-		later(0.45, func():
-			Sfx.tone(520, 0.4, "sine", 0.12, 1400)
-			escapeGate = {}
-			P.frozen = false
-			fadeTo = {"map": "peak", "x": MAPS.peak.start}
-			later(1.0, func():
-				if mapId == "peak":
-					banner("Glamrax's Gate", "The top of the Abyssal Volcano")
-					Sfx.thunder())))
+		escapeGate.leap = {"t": 0.0, "x0": P.x, "y0": P.y}
+		Sfx.jump())
+
+
+## the hero's arc into the pendant's portal; through it, the summit
+func _updateEscape(dt: float) -> void:
+	if escapeGate.is_empty() or not escapeGate.has("leap"):
+		return
+	var L: Dictionary = escapeGate.leap
+	L.t += dt
+	var k = minf(1, L.t / 0.55)
+	P.x = lerpf(L.x0, escapeGate.x, k)
+	P.y = lerpf(L.y0, escapeGate.y - 20, k) - sin(k * PI) * 46
+	P.vx = 0; P.vy = 0
+	if k >= 1 and fadeTo == null:
+		Sfx.tone(520, 0.4, "sine", 0.12, 1400)
+		escapeGate = {}
+		P.frozen = false
+		fadeTo = {"map": "peak", "x": MAPS.peak.start}
+		later(1.0, func():
+			if mapId == "peak":
+				banner("Glamrax's Gate", "The top of the Abyssal Volcano")
+				Sfx.thunder())
 
 
 var escapeGate := {}   # the pendant's portal while it's open in the collapsing cave

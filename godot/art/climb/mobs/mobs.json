@@ -1,0 +1,337 @@
+{
+ "sets": {
+  "boulder": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 33,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "idle": 2,
+    "roll": 4,
+    "float": 2,
+    "launch": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "boulder_shiny": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 33,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "idle": 2,
+    "roll": 4,
+    "float": 2,
+    "launch": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "boulder_elite": {
+   "w": 88,
+   "h": 72,
+   "dim": {
+    "ax": 22,
+    "ay": 33,
+    "w": 44,
+    "h": 36
+   },
+   "keys": {
+    "idle": 2,
+    "roll": 4,
+    "float": 2,
+    "launch": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "lizard": {
+   "w": 100,
+   "h": 96,
+   "dim": {
+    "ax": 25,
+    "ay": 45,
+    "w": 50,
+    "h": 48
+   },
+   "keys": {
+    "idle": 2,
+    "walk": 4,
+    "whip": 2,
+    "leap": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "lizard_shiny": {
+   "w": 100,
+   "h": 96,
+   "dim": {
+    "ax": 25,
+    "ay": 45,
+    "w": 50,
+    "h": 48
+   },
+   "keys": {
+    "idle": 2,
+    "walk": 4,
+    "whip": 2,
+    "leap": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "lizard_elite": {
+   "w": 100,
+   "h": 96,
+   "dim": {
+    "ax": 25,
+    "ay": 45,
+    "w": 50,
+    "h": 48
+   },
+   "keys": {
+    "idle": 2,
+    "walk": 4,
+    "whip": 2,
+    "leap": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "golem": {
+   "w": 170,
+   "h": 150,
+   "dim": {
+    "ax": 42.5,
+    "ay": 72,
+    "w": 85,
+    "h": 75
+   },
+   "keys": {
+    "idle": 2,
+    "walk": 4,
+    "wind": 1,
+    "smash": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "golem_shiny": {
+   "w": 170,
+   "h": 150,
+   "dim": {
+    "ax": 42.5,
+    "ay": 72,
+    "w": 85,
+    "h": 75
+   },
+   "keys": {
+    "idle": 2,
+    "walk": 4,
+    "wind": 1,
+    "smash": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "golem_elite": {
+   "w": 170,
+   "h": 150,
+   "dim": {
+    "ax": 42.5,
+    "ay": 72,
+    "w": 85,
+    "h": 75
+   },
+   "keys": {
+    "idle": 2,
+    "walk": 4,
+    "wind": 1,
+    "smash": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "warlock": {
+   "w": 100,
+   "h": 100,
+   "dim": {
+    "ax": 25,
+    "ay": 47,
+    "w": 50,
+    "h": 50
+   },
+   "keys": {
+    "idle": 2,
+    "cast": 2,
+    "blink": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "warlock_shiny": {
+   "w": 100,
+   "h": 100,
+   "dim": {
+    "ax": 25,
+    "ay": 47,
+    "w": 50,
+    "h": 50
+   },
+   "keys": {
+    "idle": 2,
+    "cast": 2,
+    "blink": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "warlock_elite": {
+   "w": 100,
+   "h": 100,
+   "dim": {
+    "ax": 25,
+    "ay": 47,
+    "w": 50,
+    "h": 50
+   },
+   "keys": {
+    "idle": 2,
+    "cast": 2,
+    "blink": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "yeti": {
+   "w": 200,
+   "h": 200,
+   "dim": {
+    "ax": 50,
+    "ay": 96,
+    "w": 100,
+    "h": 100
+   },
+   "keys": {
+    "idle": 2,
+    "run": 4,
+    "swipe": 2,
+    "leap": 1,
+    "slam": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "yeti_shiny": {
+   "w": 200,
+   "h": 200,
+   "dim": {
+    "ax": 50,
+    "ay": 96,
+    "w": 100,
+    "h": 100
+   },
+   "keys": {
+    "idle": 2,
+    "run": 4,
+    "swipe": 2,
+    "leap": 1,
+    "slam": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "yeti_elite": {
+   "w": 200,
+   "h": 200,
+   "dim": {
+    "ax": 50,
+    "ay": 96,
+    "w": 100,
+    "h": 100
+   },
+   "keys": {
+    "idle": 2,
+    "run": 4,
+    "swipe": 2,
+    "leap": 1,
+    "slam": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "sword": {
+   "w": 120,
+   "h": 40,
+   "dim": {
+    "ax": 30,
+    "ay": 10,
+    "w": 60,
+    "h": 20
+   },
+   "keys": {
+    "fly": 2,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "sword_shiny": {
+   "w": 120,
+   "h": 40,
+   "dim": {
+    "ax": 30,
+    "ay": 10,
+    "w": 60,
+    "h": 20
+   },
+   "keys": {
+    "fly": 2,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "sword_elite": {
+   "w": 120,
+   "h": 40,
+   "dim": {
+    "ax": 30,
+    "ay": 10,
+    "w": 60,
+    "h": 20
+   },
+   "keys": {
+    "fly": 2,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  }
+ }
+}

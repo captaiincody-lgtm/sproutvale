@@ -42,7 +42,7 @@ func _ready() -> void:
 	add.call(0.1, "warp", "bubble")
 	add.call(2.0, "togate", "climb1")
 	add.call(0.3, "shot", "bubble_exit")
-	add.call(0.1, "tap", KEY_UP)
+	add.call(0.1, "enter")
 	# Map 1: cold rock
 	add.call(2.2, "shot", "climb1")
 	add.call(0.1, "near", "boulder")
@@ -57,7 +57,7 @@ func _ready() -> void:
 	add.call(0.6, "shot", "climb1_mid")
 	add.call(0.1, "togate", "climb2")
 	add.call(0.3, "shot", "climb1_end")
-	add.call(0.1, "tap", KEY_UP)
+	add.call(0.1, "enter")
 	# Map 2: blizzard
 	add.call(2.2, "shot", "climb2")
 	add.call(0.1, "near", "golem")
@@ -68,7 +68,7 @@ func _ready() -> void:
 	add.call(1.2, "shot", "warlock2")
 	add.call(0.1, "togate", "climb3")
 	add.call(0.4, "shot", "cave_mouth")
-	add.call(0.1, "tap", KEY_UP)
+	add.call(0.1, "enter")
 	# Map 3: the cave
 	add.call(2.2, "shot", "climb3")
 	add.call(0.1, "near", "yeti")
@@ -86,7 +86,7 @@ func _ready() -> void:
 	add.call(0.5, "shot", "world_map")
 	add.call(0.1, "tap", KEY_TAB)
 	add.call(0.2, "togate", "climb4")
-	add.call(0.1, "tap", KEY_UP)
+	add.call(0.1, "enter")
 	# Map 4: King Yeti
 	add.call(1.6, "shot", "throne")
 	add.call(1.4, "shot", "rise")
@@ -125,20 +125,20 @@ func _ready() -> void:
 	add.call(0.6, "shot", "kneel")
 	add.call(1.0, "shot", "slam")
 	add.call(0.8, "shot", "cave_in")
-	add.call(1.2, "shot", "pendant")
-	add.call(1.2, "shot", "portal")
-	add.call(0.5, "shot", "leap")
-	add.call(2.2, "shot", "peak")
+	add.call(1.9, "shot", "pendant")
+	add.call(1.6, "shot", "portal")
+	add.call(1.7, "shot", "leap")
+	add.call(1.8, "shot", "peak")
 	add.call(2.0, "shot", "peak2")
 	add.call(0.1, "walk", 2.0)
 	add.call(2.2, "shot", "peak_walk")
 	add.call(0.1, "togate", "glamrax")
 	add.call(0.3, "shot", "glamrax_gate")
-	add.call(0.1, "tap", KEY_UP)
+	add.call(0.1, "enter")
 	add.call(0.5, "shot", "glamrax_sealed")
 	# back down: the collapsed throne room and the pedestal
 	add.call(0.1, "togate", "climb4")
-	add.call(0.1, "tap", KEY_UP)
+	add.call(0.1, "enter")
 	add.call(2.2, "shot", "ruin")
 	add.call(0.1, "summon")
 	add.call(2.2, "shot", "resummon")
@@ -245,6 +245,12 @@ func _process(delta: float) -> void:
 					game.P.x = g.x
 					game.P.y = g.get("y", game.groundAt(g.x))
 					game.P.vy = 0
+					game.P.iframes = 1.5
+			"enter":
+				var g = game.portalAt()
+				print("enter portal: ", g.to if g != null else "none")
+				if g != null:
+					game.travel(g)
 			"near":
 				var e = _mob(s[2])
 				print("near %s: %s" % [s[2], e != null])
