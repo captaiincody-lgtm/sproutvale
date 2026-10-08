@@ -48,10 +48,12 @@ func openTab(id: String) -> void:
 func canBuy(t: Dictionary) -> bool:
 	if CH().level < t.lv or save.coins < t.coins:
 		return false
-	for k in t.mats:
+	if int(CH().get("armor", 0)) < t.get("needArmor", 0):
+		return false
+	for k in t.get("mats", {}):
 		if save.mats.get(k, 0) < t.mats[k]:
 			return false
-	return true
+	return hasParts(t.get("parts", {}))
 
 
 func _changed() -> void:
@@ -189,8 +191,7 @@ func heroPic(r: Rect2, cls: String, anim := "idle", f := 0, bg := true) -> void:
 		uBox(r, css("#e8f6ff"), INK, 2, 7)
 		uGrad(Rect2(r.position + Vector2(2, 2), Vector2(r.size.x - 4, r.size.y * 0.75 - 2)), css("#bfe6ff"), css("#d4eeff"), css("#e8f6ff"), 0.5)
 		uci.draw_rect(Rect2(r.position.x + 2, r.position.y + r.size.y * 0.75, r.size.x - 4, r.size.y * 0.25 - 2), css("#8fd06a"))
-	var c: Dictionary = save.chars[cls]
-	var look = "%s_%s" % [cls, c.get("look", {}).get("gender", "m")]
+	var look = lookOf(cls)
 	var A = Assets.hero_anim(look, anim)
 	var tex = Assets.hero_strip(look, anim, 1)
 	if tex == null:
@@ -361,7 +362,7 @@ func attrDesc(a: String) -> String:
 func attrTip(a: String) -> String:
 	var res = CLASSES[classId].resource.to_lower()
 	var pn = PRIMARY[classId][1]
-	var why = {"rock": "the force behind every swing", "archer": "steady hands and a sure draw", "mage": "the sharpness of every spell", "summoner": "the bond that makes your companions fight harder"}[classId]
+	var why = {"rock": "the force behind every swing", "archer": "steady hands and a sure draw", "mage": "the sharpness of every spell", "summoner": "the bond that makes your companions fight harder", "tank": "the muscle behind every bolt you tighten"}.get(classId, "")
 	return {"STR": "%s: %s. +3 attack per point — the simplest way to hit harder." % [pn, why],
 		"WIL": "Willpower. Speeds up %s recovery and slightly raises its maximum. Each point helps a little less than the last, so skills never become free to spam." % res,
 		"VIT": "Vitality. +14 max HP and +0.9 defense per point. Defense blocks a share of damage that shrinks against higher-level monsters (75% at most).",
@@ -513,7 +514,12 @@ func _pInv(x: float, y: float, w: float) -> float:
 func _pShop(x: float, y: float, w: float) -> float:
 	var y0 = y
 	var sx = x
-	for T in [["gear", "Gear"], ["abyss", "Abyssal Shop"], ["boss", "Boss Shop"], ["house", "House"]]:
+	var tabs = [["gear", "Gear"], ["abyss", "Abyssal Shop"], ["boss", "Boss Shop"], ["house", "House"]]
+	if classId == "tank":
+		tabs.insert(1, ["workshop", "Workshop"])
+	elif shopTab == "workshop":
+		shopTab = "gear"
+	for T in tabs:
 		var id: String = T[0]
 		var bw = uW(T[1], 9) + 18
 		uButton(Rect2(sx, y, bw, 18), T[1], func(): shopTab = id; scrollY.panel = 0.0; Sfx.ui(), {"on": shopTab == id, "bg": css("#f1f3fa"), "shadow": 0.0})
@@ -526,6 +532,7 @@ func _pShop(x: float, y: float, w: float) -> float:
 		"abyss": y += abyssCard(x, y, w)
 		"boss": y += bossCard(x, y, w)
 		"house": y += houseCard(x, y, w)
+		"workshop": y += workshopCard(x, y, w)
 		_: y += gearCards(x, y, w)
 	return y - y0
 
@@ -536,8 +543,12 @@ func costBlock(t: Dictionary, x: float, y: float, w: float) -> float:
 	if CH().level < t.lv:
 		chips.append([false, "Requires **Lv %d**" % t.lv, ""])
 	chips.append([save.coins >= t.coins, "**%s** coins (you have %s)" % [fmt(t.coins), fmt(save.coins)], "coin"])
-	for k in t.mats:
+	if int(CH().get("armor", 0)) < t.get("needArmor", 0):
+		chips.append([false, "Needs the **%s**" % GEAR.tank.armor[t.needArmor].name, ""])
+	for k in t.get("mats", {}):
 		chips.append([save.mats.get(k, 0) >= t.mats[k], "**%d / %d** %s" % [save.mats.get(k, 0), t.mats[k], matName(k).to_lower()], k])
+	for k in t.get("parts", {}):
+		chips.append([partCount(k) >= t.parts[k], "**%d / %d** %s" % [partCount(k), t.parts[k], PART_INFO[k].name.to_lower()], "p_" + k])
 	var items = [[uW("COST", 6, PX) + 2, func(X, Y): uText("COST", X, Y + 5, 6, css("#8a5a08"), PX)]]
 	for ch in chips:
 		var cw = uW(ch[1].replace("**", ""), 8) + (24 if ch[2] != "" else 12)
@@ -546,6 +557,11 @@ func costBlock(t: Dictionary, x: float, y: float, w: float) -> float:
 			var tx = X + 6
 			if ch[2] == "coin":
 				_coin(Vector2(X + 9, Y + 7.5), 4)
+				tx += 10
+			elif ch[2].begins_with("p_"):
+				var pt = Assets.tex("tank/part_%s.png" % ch[2].substr(2))
+				if pt:
+					uci.draw_texture_rect(pt, Rect2(X + 4, Y + 3, 9, 9), false)
 				tx += 10
 			elif ch[2] != "":
 				matDot(ch[2], X + 5, Y + 3.5)
@@ -585,6 +601,8 @@ func _gearCard(kind: String, tiers: Array, cur: int) -> Callable:
 
 
 func gearCards(x: float, y: float, w: float) -> float:
+	if classId == "tank":
+		return tankGearCards(x, y, w)
 	var c = CH()
 	var G = GEAR[classId]
 	var cards = [_gearCard("armor", G.armor, c.armor), _gearCard("weapon", G.weapon, c.weapon)]
@@ -638,7 +656,9 @@ func _arrowChip(t: Dictionary, x: float, y: float) -> void:
 func _buy(kind: String) -> void:
 	var c = CH()
 	var G = GEAR[classId]
-	var tiers: Array = G.armor if kind == "armor" else (G.weapon if kind == "weapon" else (G.get("staff", []) if kind == "staff" else (G.get("arrows", []) if kind == "arrows" else CHARM_TIERS)))
+	var tiers: Array = G.armor if kind == "armor" else (G.weapon if kind == "weapon" else (G.get("staff", []) if kind == "staff" else (G.get("arrows", []) if kind == "arrows" else (G.get("nade", []) if kind == "nade" else CHARM_TIERS))))
+	if kind == "nade" and not c.has("nade"):
+		c.nade = 0
 	if kind == "arrows" and not c.has("arrows"):
 		c.arrows = 0
 	if kind == "staff" and not c.has("staff"):
@@ -647,13 +667,14 @@ func _buy(kind: String) -> void:
 	if t == null or not canBuy(t):
 		return
 	save.coins -= t.coins
-	for k in t.mats:
+	for k in t.get("mats", {}):
 		save.mats[k] -= t.mats[k]
+	spendParts(t.get("parts", {}))
 	c[kind] += 1
 	PS = calcStats()
 	Sfx.buy()
 	Sfx.levelUp()
-	var big = {"armor": "Armor upgraded!", "staff": "New staff!", "arrows": "New arrows!", "charm": "Charm acquired!"}.get(kind,
+	var big = {"armor": "Exosuit upgraded!" if classId == "tank" else "Armor upgraded!", "nade": "New grenades!", "staff": "New staff!", "arrows": "New arrows!", "charm": "Charm acquired!"}.get(kind,
 		"New bow!" if classId == "archer" else ("New wand!" if classId == "mage" else "New weapon!"))
 	banner(big, t.name)
 	_changed()
@@ -1857,6 +1878,20 @@ const SUMMONER_CONTROLS := {
 }
 
 
+const TANK_CONTROLS := {
+	"title": "Tank's combos",
+	"combos": [["Z Z Z Z", "Pistol chain", "Three shots, then a burst"], ["Z Z X", "Cooked grenade", "A short-fuse grenade with a bigger blast"],
+		["Z Z Z X", "Grenade barrage", "Three grenades at once"], ["X", "Grenade", "Lobbed at the nearest enemy (launcher and missiles later)"],
+		["↑ + Z", "Shoot up", "Up close it's an uppercut that launches"], ["Z up close", "Pistol whip", "A shove that buys space"],
+		["Z in the air", "Air shots", "Shot, shot, burst · ↑/↓ to aim"], ["X in the air", "Drop a grenade", "Straight down"],
+		["1 – 7 / V", "Grenade type", "Frag, shrapnel, cryo, napalm, energy, EMP, cluster (built in the Workshop)"]],
+	"rows": [["H / J", "Health potion / Electricity potion (3 charges each, recharging)"], ["← →", "Move · double-tap to sprint"], ["↑ / Space", "Jump · double jump · hold Space to glide (Rocket Boots) or fly (Mecha Suit)"],
+		["↓", "Lie prone (Z still shoots)"], ["C", "Dodge · C again mid-dodge: double dash (Servo Legs), shoulder slam (Chest Rig)"], ["Shift", "Guard"],
+		["A S D F Q W E R", "Skills — they spend Electricity"], ["Tab / M", "Menu / world map"], ["F11", "Fullscreen"]],
+	"note": "Every exosuit piece you build in the Shop changes how Tank moves and fights. With the helmet, red markers show weak points: hitting one is a super crit.",
+}
+
+
 func _kbdRow(X: float, yy: float, W: float, key: String, text: String) -> float:
 	var kw = 96.0
 	var h = uPara(text, 0, 0, W - kw - 10, 9, INK, false)
@@ -1868,7 +1903,7 @@ func _kbdRow(X: float, yy: float, W: float, key: String, text: String) -> float:
 
 
 func _pControls(x: float, y: float, w: float) -> float:
-	var CT: Dictionary = {"archer": ARCHER_CONTROLS, "mage": MAGE_CONTROLS, "summoner": SUMMONER_CONTROLS}.get(classId, ROCK_CONTROLS)
+	var CT: Dictionary = {"archer": ARCHER_CONTROLS, "mage": MAGE_CONTROLS, "summoner": SUMMONER_CONTROLS, "tank": TANK_CONTROLS}.get(classId, ROCK_CONTROLS)
 	return uCards(x, y, w, 1, [func(X, Y, W):
 		var yy = Y + h3(CT.title, X, Y)
 		for r in CT.combos:

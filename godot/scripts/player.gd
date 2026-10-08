@@ -538,7 +538,7 @@ func updatePlayer(dt: float) -> void:
 		elif P.grounded or (now - P.coyote < 0.1 and P.jumps == 0 and P.vy >= 0):
 			use.call("jump")
 			var fromSlide = P.state == "slide"
-			P.vy = -335; P.lastJumpT = now; P.grounded = false; P.surf = null; P.jumps = 1; P.state = "move"
+			P.vy = -335 * tankJumpMul(); P.lastJumpT = now; P.grounded = false; P.surf = null; P.jumps = 1; P.state = "move"
 			if fromSlide:
 				P.vx *= 1.15
 			Sfx.jump()
@@ -578,6 +578,9 @@ func updatePlayer(dt: float) -> void:
 	if classId == "mage" and has.call("dash", 0.12) and canCancel and P.state != "climb":
 		use.call("dash")
 		blink(dirIn, up, down)
+	elif classId == "tank" and has.call("dash", 0.12) and canCancel and P.state != "climb" and P.state != "plunge":
+		use.call("dash")
+		tankDodge(dirIn)
 	elif has.call("dash", 0.12) and canCancel and P.state != "climb" and P.state != "plunge" and (P.grounded or P.airDash == 0):
 		use.call("dash")
 		if not P.grounded:
@@ -594,6 +597,8 @@ func updatePlayer(dt: float) -> void:
 		summonerInput(has, use, dirIn, up, down, wet, canAct, risingIntent)
 	elif classId == "mage":
 		mageInput(has, use, dirIn, up, down, wet, canAct, risingIntent)
+	elif classId == "tank":
+		tankInput(has, use, dirIn, up, down, wet, canAct, risingIntent)
 	elif classId == "archer":
 		archerInput(has, use, dirIn, up, down, wet, canAct, risingIntent)
 	else:
@@ -805,6 +810,7 @@ func updatePlayer(dt: float) -> void:
 		"attack":
 			_updateAttack(dt, aspd, dirIn, down)
 
+	tankMove(dt, dirIn, up, down)
 	# --- physics ---
 	if P.state != "climb":
 		var wetNow = inWater()

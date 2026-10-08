@@ -338,6 +338,9 @@ func damageSlime(e, mv: Dictionary, _from = null) -> void:
 	var dmg: float = PS.atk * mv.get("dmg", 1.0) * rand(0.9, 1.1) * 100 / (100 + e.def * 4)
 	if crit:
 		dmg *= PS.critDmg
+	if classId == "tank" and tankWeakHit(e):   # the Diagnostic Helmet: a weak point is a super crit, twice a crit
+		dmg *= (1.0 if crit else PS.critDmg) * 2.0
+		crit = true
 	if save.settings.get("god"):
 		dmg *= 40
 	if e.state == "shell" or (e.state == "spin" and e.type == "tortoise"):

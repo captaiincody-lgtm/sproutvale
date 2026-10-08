@@ -221,9 +221,7 @@ func drawVolcanoScene(x: Ctx, t: float, cls: String) -> void:
 
 
 func _ilook(cls: String) -> String:
-	var c: Dictionary = save.get("chars", {}).get(cls, {})
-	var g: String = c.get("look", {}).get("gender", "m")
-	return "%s_%s" % [cls, g]
+	return lookOf(cls)
 
 
 func hero_idle_frames(cls: String) -> int:
@@ -328,11 +326,14 @@ func playIntro(cls: String, done: Callable) -> void:
 		fallen = {"tex": Assets.hero_strip(look, "down", 1), "n": n, "f": n - 1}
 	var first = "defeat" if story.kin == "defeat" else ("capsule" if story.kin == "capsule" else "captive")
 	var scenes = [{"text": story.line, "title": false, "kind": first}]
+	if story.has("scenes"):   # Tank tells his own story, scene by scene
+		scenes = story.scenes.duplicate(true)
 	if story.has("line2"):
 		scenes.append({"text": story.line2, "title": false, "kind": "memory"})
-	if story.has("line3"):
+	if story.has("line3") and not story.has("scenes"):
 		scenes.append({"text": story.line3, "title": false, "kind": "rush"})
-	scenes.append({"text": "The Abyss Volcano", "title": true, "kind": "volcano"})
+	if not story.has("scenes"):
+		scenes.append({"text": "The Abyss Volcano", "title": true, "kind": "volcano"})
 	intro = {"cls": cls, "kin": story.kin, "scenes": scenes, "i": 0, "shown": 0, "t": 0.0, "done": done,
 		"fallen": fallen, "run": heroRunFrames(cls) if story.has("line3") else null, "btn": "Next"}
 	Sfx.music("hollow"); Sfx.tone(110, 2, "sine", 0.08, 70); Sfx.tone(165, 2, "triangle", 0.04, 140)
@@ -393,6 +394,7 @@ func renderIntro(ci: CanvasItem) -> void:
 		"memory": drawMemoryScene(x, t)
 		"rush": drawRushHomeScene(x, t, intro.run)
 		"volcano": drawVolcanoScene(x, t, intro.cls)
+		_: drawTankScene(x, t, S.kind)
 	ci.draw_set_transform_matrix(Transform2D.IDENTITY)
 	_drawIntroBox(ci, S)
 

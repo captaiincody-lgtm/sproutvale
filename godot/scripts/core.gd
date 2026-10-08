@@ -248,6 +248,7 @@ func init_data() -> void:
 	ATTRS = D.attrs
 	CUR_TIPS.boss = "Boss Coins: 1–5 in every Crocbox, Crimsonbox and Dreambox. Spend them in the Boss Shop."
 	initAbyssData()
+	initTankData()
 	STAT_TIPS["Boss Coins"] = "Found in the boxes bosses drop (1–5 each). Spend them in the Boss Shop."
 
 
@@ -371,11 +372,11 @@ func update_timers(rdt: float) -> void:
 
 func newChar() -> Dictionary:
 	return {"level": 1, "exp": 0, "ap": 0, "sp": 0, "attrs": {"STR": 1, "WIL": 1, "VIT": 1, "AGI": 1, "DEX": 1}, "skills": {}, "asc": {}, "binds": {}, "introSeen": false,
-		"charm": -1, "armor": 0, "weapon": 0, "arrows": 0, "staff": 0, "kills": 0}
+		"charm": -1, "armor": 0, "weapon": 0, "arrows": 0, "staff": 0, "kills": 0, "nade": 0, "drone": 0, "nades": ["frag"], "nadeSel": "frag"}
 
 
 func newSave() -> Dictionary:
-	var s = {"coins": 0, "bossCoins": 0, "abyssCoins": 0, "boxes": {}, "house": {"owned": [], "placed": {}, "curios": [], "shelfItems": []}, "trophies": {}, "mats": {}, "chars": {},
+	var s = {"coins": 0, "bossCoins": 0, "abyssCoins": 0, "boxes": {}, "parts": {}, "tankHouse": false, "house": {"owned": [], "placed": {}, "curios": [], "shelfItems": []}, "trophies": {}, "mats": {}, "chars": {},
 		"quests": [], "qid": 0, "settings": {"vol": 0.5, "music": 0.5, "sfx": 0.8, "timeSpeed": 1, "weather": "auto", "help": true, "map": "home", "mute": false, "god": false},
 		"bestRank": -1, "cards": {}, "bestiary": {}, "main": {"q": 0, "stage": 0, "claimed": false}}
 	for k in SLIME_KEYS:
@@ -396,7 +397,7 @@ func ensureLook(cls: String, c: Dictionary) -> void:
 	if not c.get("bshop"):
 		c.bshop = {}
 	if not c.get("look"):
-		var g = "m" if cls == "rock" or cls == "summoner" else "f"
+		var g = "m" if cls in ["rock", "summoner", "tank"] else "f"
 		c.look = {"gender": g}
 		c.look.merge(DEFAULT_LOOK[cls][g])
 	if not c.get("cos"):
@@ -579,7 +580,7 @@ func calcStats() -> Dictionary:
 	var arch = classId == "archer"
 	var mage = classId == "mage"
 	var stf: Dictionary = G.staff[c.get("staff", 0)] if mage else {"atk": 0, "def": 0}
-	var extra: int = R.call("avatarBody") * 5 + R.call("avatarSight") * 5 + R.call("avatarMind") * 5 + R.call("avatarBond") * 5
+	var extra: int = R.call("avatarBody") * 5 + R.call("avatarSight") * 5 + R.call("avatarMind") * 5 + R.call("avatarBond") * 5 + R.call("avatarEngine") * 5
 	var a = {"STR": c.attrs.STR + extra, "VIT": c.attrs.VIT + extra, "AGI": c.attrs.AGI + extra, "DEX": c.attrs.DEX + extra}
 	var AB: Dictionary = c.get("abyss", {"pot": {}, "eng": {}})
 	var ap = func(k): return AB.pot.get(k, 0)
@@ -985,6 +986,8 @@ func updateDrops(dt: float) -> void:
 				pickupPop("abyss", "Abyssal Coins", d.val, "#ff9ef0")
 			elif d.kind == "box":
 				collectBox(d.type)
+			elif d.kind == "part":
+				tankPickup(d)
 			elif d.kind == "key":
 				pickupKey()
 			elif d.kind == "card":
@@ -1210,3 +1213,30 @@ func groundAt(_x: float) -> float: return 0.0
 func pickupKey() -> void: pass
 func castDevour() -> void: pass
 func dreamerHitOk(_e, _mv: Dictionary) -> bool: return true
+
+
+# ---------------- Tank (tank.gd fills these in)
+func initTankData() -> void: pass
+func tankInput(_has: Callable, _use: Callable, _dirIn: int, _up: bool, _down: bool, _wet: bool, _canAct: bool, _rising: bool) -> void: pass
+func tankDodge(_dirIn: int) -> void: pass
+func tankMove(_dt: float, _dirIn: int, _up: bool, _down: bool) -> void: pass
+func tankJumpMul() -> float: return 1.0
+func tankWeakHit(_e) -> bool: return false
+func tankPickup(_d) -> void: pass
+func updateTank(_dt: float) -> void: pass
+
+
+## Tank's exosuit stage (0 work clothes … 4 helmet, 5 the full mecha suit), which picks his sprite set
+func exoStage(c: Dictionary) -> int:
+	var a = int(c.get("armor", 0))
+	return 5 if a >= 9 else mini(a, 4)
+
+
+## the sprite set ("look") a hero is drawn with
+func lookOf(cls: String) -> String:
+	var c: Dictionary = save.get("chars", {}).get(cls, {})
+	if cls == "tank":
+		if classId == "tank" and inGame and buffOn("titanProtocol"):
+			return "tank_m_5"
+		return "tank_m_%d" % exoStage(c)
+	return "%s_%s" % [cls, c.get("look", {}).get("gender", "m")]

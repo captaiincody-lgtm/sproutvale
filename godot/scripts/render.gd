@@ -1,4 +1,4 @@
-extends "res://scripts/abyss.gd"
+extends "res://scripts/tank.gd"
 ## Sproutvale, part 7: drawing the world, in the same order as the prototype's render().
 ## Everything is in world units on a 384×216 view; the layers it draws into are scaled 2×.
 ## `x` is a Canvas2D stand-in (ctx.gd), so the drawing code reads like the original.
@@ -70,9 +70,7 @@ func textOutline(x: Ctx, s: String, X: float, Y: float, fill, out = "#1a1030") -
 
 
 func heroLook() -> String:
-	var c: Dictionary = save.chars.get(classId, {})
-	var g: String = c.get("look", {}).get("gender", "m")
-	return "%s_%s" % [classId, g]
+	return lookOf(classId)
 
 
 func tailOn() -> bool:
@@ -169,6 +167,7 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 		if g.h > 2:
 			x.fillRect(X + lean, Y - g.h, 1, 1)
 	drawObelisk(x, sx, sy)
+	drawTankBack(x, sx, sy)
 	if M.get("slots"):
 		drawHouse(x, sx, sy)
 	if M.get("notes") or thought != null:
@@ -220,6 +219,8 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 				drawBossBox(x, d.type, X, Y + (roundf(sin(tt * 3) * 1.5) - 1 if d.vy == 0 else 0.0), tt)
 			"key":
 				drawKeyDrop(x, X, Y, tt)
+			"part":
+				drawPartDrop(x, d, X, Y, tt)
 			"abyss":
 				var gl = 0.5 + 0.5 * sin(tt * 5 + d.x)
 				x.fillStyle = rgba(255, 58, 216, 0.3 * gl)
@@ -262,6 +263,7 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 		drawTrophies(x, sx, sy)
 	drawFX(x, sx, sy)
 	drawArrows(x, sx, sy)
+	drawTankFront(x, sx, sy)
 	drawSpirit(x, sx, sy)
 	drawElemSpirit(x, sx, sy)
 	if bossRocks.size():

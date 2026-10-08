@@ -265,6 +265,7 @@ func _process(delta: float) -> void:
 			updateSlimes(dt)
 			updateFX(dt)
 			updateArrows(dt)
+			updateTank(dt)
 			updateSpirit(dt)
 			updateElemSpirit(dt)
 			updatePets(dt)

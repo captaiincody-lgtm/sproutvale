@@ -1,4 +1,4 @@
-extends "res://scripts/intro.gd"
+extends "res://scripts/tank_draw.gd"
 ## Sproutvale, part 9: the HUD, and the small immediate-mode toolkit it and the menus draw with.
 ## The prototype built these out of HTML and CSS. Here every box, label and button is drawn each
 ## frame in screen pixels (768×432), and anything clickable registers a "zone" for the mouse.
@@ -313,7 +313,10 @@ func _bottomBar() -> void:
 	_abyssMeter(x, unit)
 	x += unit + 6
 	var sx = sin(enShake * 40) * 3 if enShake > 0.1 else 0.0
-	_meter(Rect2(x + sx, UH - 23, unit * 0.7, 16), P.en / PS.enMax, ["#fff0a8", "#ffc83d", "#d88a10"], CLASSES[classId].res, "%d / %d" % [floori(P.en), PS.enMax])
+	var enCols = ["#c8f4ff", "#4fc8ff", "#1f7ad6"] if classId == "tank" else ["#fff0a8", "#ffc83d", "#d88a10"]
+	_meter(Rect2(x + sx, UH - 23, unit * 0.7, 16), P.en / PS.enMax, enCols, CLASSES[classId].res, "%d / %d" % [floori(P.en), PS.enMax])
+	if classId == "tank":
+		_sparkFrame(Rect2(x + sx, UH - 23, unit * 0.7, 16))
 	x += unit * 0.7 + 6
 	var ep = float(c.exp) / expNeed(c.level)
 	_meter(Rect2(x, UH - 23, unit, 16), ep, ["#b9f6ff", "#6fe0ff", "#2fb3d6"], "EXP", "%.1f%%" % (ep * 100))
@@ -426,11 +429,45 @@ func _chip(x: float, y: float, s: String, on: bool, lock: bool, size := 10) -> f
 	return w
 
 
+## Tank's Electricity: blue sparks crackle around the edge of the bar
+func _sparkFrame(r: Rect2) -> void:
+	var t = floorf(realTime * 14)
+	var per = 2.0 * (r.size.x + r.size.y)
+	for i in 3:
+		var d = fposmod(hsh(t + i * 7.3) * per + realTime * 40 * (i + 1), per)
+		var p: Vector2
+		var n: Vector2
+		if d < r.size.x:
+			p = Vector2(r.position.x + d, r.position.y); n = Vector2(0, -1)
+		elif d < r.size.x + r.size.y:
+			p = Vector2(r.end.x, r.position.y + d - r.size.x); n = Vector2(1, 0)
+		elif d < 2 * r.size.x + r.size.y:
+			p = Vector2(r.end.x - (d - r.size.x - r.size.y), r.end.y); n = Vector2(0, 1)
+		else:
+			p = Vector2(r.position.x, r.end.y - (d - 2 * r.size.x - r.size.y)); n = Vector2(-1, 0)
+		var pts = PackedVector2Array([p])
+		var q = p
+		var tang = Vector2(-n.y, n.x)
+		for k in 4:
+			q += n * (1.5 + hsh(t + i + k) * 2.5) + tang * (hsh(t * 3 + i * 5 + k) - 0.5) * 7
+			pts.append(q)
+		uci.draw_polyline(pts, Color(0.62, 0.9, 1, 0.9), 1.5)
+		uci.draw_polyline(pts, Color(1, 1, 1, 0.8), 0.6)
+	uci.draw_rect(r.grow(1), Color(0.3, 0.75, 1, 0.25 + 0.15 * sin(realTime * 9)), false, 1.0)
+
+
 func _elemChips() -> void:
-	if classId != "mage" and classId != "summoner":
+	if classId != "mage" and classId != "summoner" and classId != "tank":
 		return
 	var x = 8.0
 	var y = UH - 36 - 17
+	if classId == "tank":
+		var own = nadesOwned()
+		for i in NADES.size():
+			var q: Dictionary = NADES[i]
+			if own.has(q.id):
+				x += _chip(x, y, "%d%s" % [i + 1, q.icon], q.id == nadeType(), false) + 3
+		return
 	if classId == "summoner":
 		x += _chip(x, y, "🐉", true, false) + 3
 		for i in SUMMONS.size():
@@ -457,7 +494,7 @@ func _statusChips(indoor: bool) -> void:
 	if P.confuseT > 0:
 		chips.append("💫 Confused %ds" % ceili(P.confuseT))
 	var x = 8.0
-	var y = UH - 36 - 17 - (0 if indoor or (classId != "mage" and classId != "summoner") else 21)
+	var y = UH - 36 - 17 - (0 if indoor or not (classId in ["mage", "summoner", "tank"]) else 21)
 	for s in chips:
 		var w = uW(s, 9) + 12
 		uBox(Rect2(x, y, w, 16), Color(20 / 255.0, 26 / 255.0, 58 / 255.0, 0.85), EDGE, 2, 6)
