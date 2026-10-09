@@ -3,7 +3,7 @@ extends "res://scripts/screens.gd"
 ## and mouse clicks into the prototype's input, and runs the frame loop (the prototype's frame()).
 ##
 ## The game is one node whose script is split across files that extend each other:
-##   core → world → player → mobs → skills → bosses → abyss → tank → climb → volcano → render → abyss_draw
+##   core → world → player → mobs → skills → bosses → abyss → tank → climb → volcano → mecha → render → abyss_draw
 ##   → intro → tank_draw → climb_draw → volcano_draw → hud → ui → tank_ui → screens → game
 ## Units: the world is measured in "world pixels" exactly like the HTML prototype (a 384×216 view),
 ## painted at 2× into a 768×432 pixel-art buffer. The HUD and menus are drawn on top at the

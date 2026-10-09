@@ -37,7 +37,7 @@ func _ready() -> void:
 	add.call(1.2, "tap", KEY_ENTER)
 	add.call(0.1, "tap", KEY_ENTER)
 	add.call(0.5, "skip")
-	add.call(1.0, "exp", 40000000)
+	add.call(1.0, "exp", int(OS.get_environment("VOLC_EXP")) if OS.get_environment("VOLC_EXP") != "" else 40000000)
 	if part in ["all", "maps"]:
 		# the summit's gate is open now
 		add.call(0.1, "warp", "peak")
@@ -100,7 +100,82 @@ func _ready() -> void:
 		add.call(0.6, "shot", "cells_far")
 		add.call(0.1, "warp", "volcano4")
 		add.call(2.2, "shot", "sanctum")
-	add.call(0.1, "links")
+	if part == "slam":
+		add.call(0.1, "warp", "volcano2")
+		add.call(1.6, "go", 200)
+		add.call(3.0, "bossact", ["slam", "crouch"])
+		for i in 34:
+			add.call(0.1, "shot", "slam%d" % i)
+	if part in ["all", "mk2"]:
+		add.call(0.1, "warp", "volcano2")
+		add.call(1.6, "shot", "bay_hang")
+		add.call(0.1, "go", 200)
+		add.call(1.4, "shot", "mk2_drop")
+		add.call(0.8, "shot", "mk2_landed")
+		add.call(1.2, "shot", "mk2_rifle")
+		add.call(0.1, "keep", false)
+		add.call(0.1, "bossact", ["kick", ""])
+		add.call(0.35, "shot", "kick_wind")
+		add.call(0.22, "shot", "kick_hit")
+		add.call(0.2, "shot", "kick_wall")
+		add.call(0.3, "shot", "kick_catch")
+		add.call(0.5, "shot", "kick_shoot")
+		add.call(0.75, "shot", "kick_nade")
+		add.call(0.6, "shot", "kick_lift")
+		add.call(0.35, "shot", "kick_smash")
+		add.call(0.1, "keep", true)
+		add.call(1.6, "bossact", ["slam", "crouch"])
+		add.call(0.6, "shot", "slam_rise")
+		add.call(0.35, "shot", "slam_dive")
+		add.call(0.3, "shot", "slam_launched")
+		add.call(0.35, "shot", "slam_punch")
+		add.call(1.8, "bossact", ["bash", ""])
+		add.call(0.4, "shot", "bash_wind")
+		add.call(0.3, "shot", "bash")
+		add.call(1.2, "bossact", ["punch", ""])
+		add.call(0.5, "shot", "punch")
+		add.call(1.0, "bossact", ["fly", "up"])
+		add.call(1.5, "shot", "fly")
+		add.call(0.6, "nade")
+		add.call(0.5, "shot", "nade")
+		add.call(0.45, "shot", "nade_boom")
+		add.call(1.6, "bosshp", 0.48)
+		add.call(0.1, "bossact", ["transform", ""])
+		add.call(0.8, "shot", "transform")
+		add.call(1.0, "shot", "blades")
+		add.call(0.2, "bossact", ["slash", ""])
+		add.call(0.3, "shot", "slash1")
+		add.call(0.42, "shot", "slash2")
+		add.call(0.42, "shot", "slash3")
+		add.call(1.0, "bosshp", 0.18)
+		add.call(0.1, "bossact", ["deploy", ""])
+		add.call(0.9, "shot", "deploy")
+		add.call(2.0, "shot", "drone")
+		add.call(1.0, "shot", "drone_aim")
+		add.call(1.0, "killboss")
+		add.call(0.8, "shot", "mk2_dying")
+		add.call(1.4, "shot", "mk2_dead")
+		add.call(1.4, "shot", "mk2_box")
+		add.call(1.6, "shot", "bay_after")
+		add.call(0.1, "togate", "volcano3")
+		add.call(0.1, "enter")
+		add.call(2.0, "shot", "through_gate")
+		add.call(0.1, "warp", "volcano2")
+		add.call(2.0, "go", 300)
+		add.call(0.3, "shot", "pedestal")
+		add.call(0.1, "summon")
+		add.call(1.6, "shot", "resummoned")
+		add.call(0.1, "killboss")
+		add.call(0.1, "skill", "laserDrone")
+		add.call(1.5, "shot", "hero_drone")
+		add.call(0.1, "opencard", "mk2")
+		add.call(0.1, "warp", "trophy")
+		add.call(2.0, "go", 296)
+		add.call(0.5, "shot", "trophy_mk2")
+		add.call(0.1, "warp", "volcano1")
+		add.call(2.0, "go", 2070)
+		add.call(0.6, "shot", "boss_sign")
+		add.call(0.1, "links")
 	add.call(0.1, "reload")
 	add.call(0.2, "quit")
 
@@ -220,6 +295,56 @@ func _process(delta: float) -> void:
 					e.t = 0
 					e.hitDone = false
 					print("mobact ", s[2])
+			"keep":
+				keepAlive = s[2]
+				print("hp before: %d / %d" % [game.P.hp, game.PS.hp])
+			"bossact":
+				var e = _boss()
+				if e != null:
+					game.P.held = null
+					game.P.iframes = 0
+					game.P.state = "move"
+					game.P.spin = 0
+					e.state = "fight"
+					var D = e.data
+					for k in ["actCd", "kickCd", "slamCd", "bashCd", "flyCd"]:
+						D[k] = 99
+					D.nadeT = 99
+					e.x = clampf(game.P.x + {"kick": 60, "punch": 70, "slash": 80, "bash": 200, "fly": 120}.get(s[2][0], 120), 60, game.M.w - 60)
+					if game.P.x > game.M.w - 150:
+						e.x = game.P.x - 70
+					e.face = int(signf(game.P.x - e.x))
+					e.y = game.groundAt(e.x)
+					e.vx = 0; e.vy = 0
+					D.boots = 0.0
+					game._mk2Act(e, s[2][0], s[2][1])
+					print("bossact ", s[2], " at ", e.x, " p ", game.P.x)
+			"bosshp":
+				var e = _boss()
+				if e != null:
+					e.hp = e.maxHp * s[2]
+			"nade":
+				var e = _boss()
+				if e != null:
+					game._mk2Nade(e, game.P.x)
+			"killboss":
+				var e = _boss()
+				if e != null and e.state != "dead":
+					e.hp = 1
+					game.damageSlime(e, {"dmg": 50.0})
+			"summon":
+				if game.M.get("pedestal"):
+					game.summonFromPedestal()
+				print("summon: ", _boss() != null)
+			"skill":
+				game.CH().skills[s[2]] = 1
+				game.castBossSkill(game.SKILL[s[2]])
+				for i in 3:
+					game.spawnAbyssMob("sentinel", game.SLIME_TYPES.sentinel, true, false)
+			"opencard":
+				print("monsterName: ", game.monsterName(s[2]), " box ", game.BOXES[s[2]].name)
+				game.collectBox(s[2], 3)
+				print("boxes: ", game.save.boxes)
 			"burn":
 				game.ignite({"atk": 370, "lv": 104})
 			"links":
@@ -252,5 +377,5 @@ func _shot(name: String) -> void:
 	var P = game.P
 	var b = _boss()
 	print("shot %s map=%s state=%s pos=%.0f,%.0f hp=%d/%d held=%s mobs=%d boss=%s burn=%.1f" % [name, game.mapId, P.state, P.x, P.y, P.hp, game.PS.hp,
-		P.held.kind if P.held != null else "-", game.slimes.size(), ("%s %d/%d" % [b.state, b.hp, b.maxHp]) if b != null else "-", game.Burn.t])
+		P.held.kind if P.held != null else "-", game.slimes.size(), ("%s %d/%d %s/%s y=%.0f x=%.0f" % [b.state, b.hp, b.maxHp, b.data.get("act", ""), b.data.get("ph", ""), b.y, b.x]) if b != null else "-", game.Burn.t])
 	busy = false

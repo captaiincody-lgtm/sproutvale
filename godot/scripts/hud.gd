@@ -541,7 +541,7 @@ func _bossUI() -> void:
 	var sign = M.get("bossSign")
 	if sign != null and absf(P.x - sign) < 70 and absf(P.y - groundAt(P.x)) < (60.0 if M.get("sea") != null else 4.0):
 		var th = M.get("theme")
-		var I: Dictionary = BOSS_INFO.warlord if th == "crimson" else (BOSS_INFO.dreamer if th == "abyss" else (BOSS_INFO.kingYeti if th == "cave" else BOSS_INFO.croc))
+		var I: Dictionary = MORE_BOSSES[M.signBoss].info if MORE_BOSSES.has(M.get("signBoss", "")) else BOSS_INFO.warlord if th == "crimson" else (BOSS_INFO.dreamer if th == "abyss" else (BOSS_INFO.kingYeti if th == "cave" else BOSS_INFO.croc))
 		var w = minf(UW * 0.7, 336.0)
 		var x = UW / 2 - w / 2
 		var tw = w - 22
@@ -795,18 +795,20 @@ func _lootPanel() -> void:
 	var w = 340.0
 	var h = 140.0 + n * 22
 	var r = Rect2(UW / 2 - w / 2, UH / 2 - h / 2, w, h)
-	var edge = css("#ff5d73") if red else (css("#c25cff") if dream else (css("#7af0ff") if icy else css("#e8b830")))
+	var mb: Array = MORE_BOSSES.get(L.kind, {}).get("loot", [])   # [edge, panel, body, shine, band]
+	var hm = not mb.is_empty()
+	var edge = css(mb[0]) if hm else css("#ff5d73") if red else (css("#c25cff") if dream else (css("#7af0ff") if icy else css("#e8b830")))
 	uGlow(r, Color(edge, 0.45), 14, 12)
-	uBox(r, css("#1c0a10") if red else (css("#120820") if dream else (css("#08182a") if icy else css("#10200e"))), edge, 3, 12)
+	uBox(r, css(mb[1]) if hm else css("#1c0a10") if red else (css("#120820") if dream else (css("#08182a") if icy else css("#10200e"))), edge, 3, 12)
 	uText(String(L.name).to_upper(), UW / 2, r.position.y + 12, 12, edge, PX, 1, Color.BLACK, 2)
 	# the box itself
 	var bx = UW / 2
 	var by = r.position.y + 100
 	var open = t > 0.8
 	var jig = 0.0 if open else sin(t * 60) * (t / 0.8) * 3
-	var body = css("#8a1a24") if red else (css("#2a1040") if dream else (css("#3a6a8a") if icy else css("#3f7a2c")))
-	var shine = css("#b8303c") if red else (css("#4a2068") if dream else (css("#9ad8f0") if icy else css("#5fa83e")))
-	var band = css("#2a1418") if red else (css("#120618") if dream else (css("#e8f6ff") if icy else css("#e8b830")))
+	var body = css(mb[2]) if hm else css("#8a1a24") if red else (css("#2a1040") if dream else (css("#3a6a8a") if icy else css("#3f7a2c")))
+	var shine = css(mb[3]) if hm else css("#b8303c") if red else (css("#4a2068") if dream else (css("#9ad8f0") if icy else css("#5fa83e")))
+	var band = css(mb[4]) if hm else css("#2a1418") if red else (css("#120618") if dream else (css("#e8f6ff") if icy else css("#e8b830")))
 	if open:
 		uGlow(Rect2(bx - 26, by - 46, 52, 30), Color(edge, 0.5 + 0.3 * sin(realTime * 6)), 10, 12)
 		for i in 6:

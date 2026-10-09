@@ -137,6 +137,7 @@ const BOXES := {
 	"warlord": {"name": "Crimsonbox", "boss": "Crimson Warlord", "skill": "crimsonRain", "items": ["kombucha", "draught", "sigil", "rivet", "glassEye"]},
 	"dreamer": {"name": "Dreambox", "boss": "The Dreamer", "skill": "devour", "items": ["draught", "inkDraught", "dreamFang", "barnacle", "pearl"]},
 	"kingYeti": {"name": "Yetibox", "boss": "King Yeti", "skill": "swordThrow", "items": ["inkDraught", "yetiMilk", "kingFang", "frostHide", "iceEye"]},
+	"mk2": {"name": "Mechabox", "boss": "the Mk II", "skill": "laserDrone", "items": ["yetiMilk", "servoOil", "mk2Core", "mk2Plating", "targetChip"]},
 }
 const BOX_ITEM_RATE := 0.15   # chance a box holds a stat treasure
 const BOX_SKILL_RATE := 0.02  # chance a box holds the boss's skill (until you have it)
@@ -158,8 +159,12 @@ const BOONS := {
 	"kingFang": {"name": "King Yeti's Tusk", "icon": "🦣", "stat": "atk", "val": 13, "desc": "+13 attack"},
 	"frostHide": {"name": "Frost-Bound Hide", "icon": "🧥", "stat": "def", "val": 9, "desc": "+9 defense"},
 	"iceEye": {"name": "Pendant Shard", "icon": "💎", "stat": "crit", "val": 2.0, "desc": "+2% critical rate"},
+	"servoOil": {"name": "Mana Servo Oil", "icon": "🛢️", "stat": "hp", "val": 240, "desc": "+240 max HP"},
+	"mk2Core": {"name": "Mk II Reactor Core", "icon": "⚙️", "stat": "atk", "val": 18, "desc": "+18 attack"},
+	"mk2Plating": {"name": "Anti-Personnel Plating", "icon": "🛡️", "stat": "def", "val": 12, "desc": "+12 defense"},
+	"targetChip": {"name": "Targeting Chip", "icon": "🎯", "stat": "crit", "val": 2.5, "desc": "+2.5% critical rate"},
 }
-const BOON_ORDER := ["kombucha", "whetstone", "hide", "eyedrops", "draught", "sigil", "rivet", "glassEye", "inkDraught", "dreamFang", "barnacle", "pearl", "yetiMilk", "kingFang", "frostHide", "iceEye"]
+const BOON_ORDER := ["kombucha", "whetstone", "hide", "eyedrops", "draught", "sigil", "rivet", "glassEye", "inkDraught", "dreamFang", "barnacle", "pearl", "yetiMilk", "kingFang", "frostHide", "iceEye", "servoOil", "mk2Core", "mk2Plating", "targetChip"]
 ## skills learned from a boss: any class can use them once one drops
 const BOSS_SKILLS := [
 	{"id": "potionThrow", "boss": "croc", "name": "Potion Throw", "icon": "🧪", "type": "active", "max": 1, "cd": 4, "cost": 22,
@@ -170,6 +175,8 @@ const BOSS_SKILLS := [
 		"desc": ["Open the Dreamer's maw: suck in the nearest monster, chew it three times for 400% damage each, then spit it out"]},
 	{"id": "swordThrow", "boss": "kingYeti", "name": "Impaling Blade", "icon": "🗡️", "type": "active", "max": 1, "cd": 20, "cost": 45,
 		"desc": ["Hurl King Yeti's enchanted sword at lightning speed: it impales the first monster in its path for 600% damage, then tears back out for another 400%"]},
+	{"id": "laserDrone", "boss": "mk2", "name": "Laser Drone", "icon": "🛸", "type": "active", "max": 1, "cd": 30, "cost": 50,
+		"desc": ["Launch the Mk II's laser drone for 10s: it hovers over your shoulder and fires a laser at the nearest monster every 0.7s for 220% damage"]},
 ]
 
 # ---------------------------------------------------------------- player + save
@@ -931,6 +938,8 @@ func monsterName(type: String) -> String:
 		return WARLORD_T.name
 	if type == "dreamer":
 		return "The Dreamer"
+	if MORE_BOSSES.has(type):
+		return MORE_BOSSES[type].T.name
 	return SLIME_TYPES[type].name if SLIME_TYPES.has(type) else type
 
 
@@ -1294,9 +1303,22 @@ func climbMap() -> bool: return false
 func yetiBox(_e) -> Dictionary: return {}
 
 
-# ---------------- Glamrax's volcano (volcano.gd, glamrax.gd and finale.gd fill these in)
+# ---------------- Glamrax's volcano (volcano.gd, mecha.gd, glamrax.gd and finale.gd fill these in)
+## bosses added after King Yeti: kind → {T (stats), name, short, box, col, ui, music, coins, mul, map, info}.
+## Each base-game spot that lists the bosses (loot, the pedestal, the trophy hall, the bestiary) reads this too.
+var MORE_BOSSES := {}
 func initVolcanoData() -> void: pass
 func statusExtra() -> Array: return []
+func spawnBossKind(_kind: String, _fromPedestal := false) -> bool: return false
+func updateBossKind(_e, _dt: float) -> bool: return false
+func drawBossKind(_x: Ctx, _e, _X: float, _Y: float) -> bool: return false
+func bossBoxKind(_e) -> Dictionary: return {}
+func bossFallsKind(_e, _firstKill: bool) -> bool: return false
+func drawBossBoxKind(_x: Ctx, _kind: String, _X: float, _Y: float, _tt: float) -> bool: return false
+func drawBossPortrait(_x: Ctx, _kind: String, _X: float, _Y: float, _w: float, _h: float, _angry: bool) -> bool: return false
+func drawTrophyKind(_x: Ctx, _id: String, _X: float, _Y: float) -> bool: return false
+func bossDmgMul(_e, _mv: Dictionary) -> float: return 1.0
+func frontBusy() -> bool: return false
 
 
 # ---------------- Tank (tank.gd fills these in)

@@ -401,6 +401,7 @@ func drawVolcanoFront(x: Ctx, sx: float, sy: float) -> void:
 					var a = i / 8.0 * TAU + s.t * 9
 					x.fillStyle = "#ffffff" if i % 2 else "#7af0ff"
 					x.fillRect(roundf(X + cos(a) * r), roundf(Y + sin(a) * r * 0.6), 2, 2)
+	drawMk2Front(x, sx, sy)
 
 
 # ================================================================ light

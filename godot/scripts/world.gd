@@ -101,7 +101,7 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 	scene = null
 	if M.get("boss"):
 		P.face = 1   # arenas: you always walk in facing the boss
-	var bk = M.boss if M.get("boss") in ["warlord", "dreamer", "kingYeti"] else "croc"
+	var bk = M.boss if M.get("boss") in ["warlord", "dreamer", "kingYeti"] or MORE_BOSSES.has(M.get("boss", "")) else "croc"
 	M.pedestal = {"x": roundi(M.w * (0.55 if bk == "croc" else 0.5)), "kind": bk} if M.get("boss") and heroBeat(bk) else null
 	abyssOnLoad()
 	if M.get("boss") and not M.pedestal:
@@ -111,6 +111,8 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 			spawnDreamer()
 		elif M.boss == "kingYeti":
 			spawnYeti()
+		elif spawnBossKind(M.boss):
+			pass
 		else:
 			spawnBoss()
 	if inGame and not M.get("boss"):
