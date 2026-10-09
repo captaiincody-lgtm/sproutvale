@@ -264,6 +264,7 @@ func init_data() -> void:
 	initAbyssData()
 	initTankData()
 	initClimbData()
+	initVolcanoData()
 	STAT_TIPS["Boss Coins"] = "Found in the boxes bosses drop (1–5 each). Spend them in the Boss Shop."
 
 
@@ -1291,6 +1292,11 @@ func climbWind() -> float: return -1.0
 func climbStep(_heavy: bool) -> void: pass
 func climbMap() -> bool: return false
 func yetiBox(_e) -> Dictionary: return {}
+
+
+# ---------------- Glamrax's volcano (volcano.gd, glamrax.gd and finale.gd fill these in)
+func initVolcanoData() -> void: pass
+func statusExtra() -> Array: return []
 
 
 # ---------------- Tank (tank.gd fills these in)

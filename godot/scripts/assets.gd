@@ -28,6 +28,9 @@ func _ready() -> void:
 	# …and the climb to the volcano keeps its art in art/climb
 	if FileAccess.file_exists(ART + "climb/mobs/mobs.json"):
 		mobs.sets.merge(_json(ART + "climb/mobs/mobs.json").sets)
+	# …and Glamrax's volcano keeps its art in art/volcano
+	if FileAccess.file_exists(ART + "volcano/mobs/mobs.json"):
+		mobs.sets.merge(_json(ART + "volcano/mobs/mobs.json").sets)
 	font = _font("res://fonts/PressStart2P-Regular.ttf")
 	emoji = load("res://fonts/NotoColorEmoji.ttf")
 	ui_font = load("res://fonts/Fredoka-700.ttf")
@@ -43,6 +46,8 @@ func tex(path: String) -> Texture2D:
 			_tex[path] = load(ART + "abyss/" + path)
 		if _tex[path] == null and ResourceLoader.exists(ART + "climb/" + path):
 			_tex[path] = load(ART + "climb/" + path)
+		if _tex[path] == null and ResourceLoader.exists(ART + "volcano/" + path):
+			_tex[path] = load(ART + "volcano/" + path)
 		if _tex[path] == null:
 			push_warning("missing art: " + path)
 	return _tex[path]

@@ -1,4 +1,4 @@
-extends "res://scripts/climb.gd"
+extends "res://scripts/volcano.gd"
 ## Sproutvale, part 7: drawing the world, in the same order as the prototype's render().
 ## Everything is in world units on a 384×216 view; the layers it draws into are scaled 2×.
 ## `x` is a Canvas2D stand-in (ctx.gd), so the drawing code reads like the original.
@@ -89,7 +89,7 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 	var sy = roundf(cam.y + (rand(-shk, shk) if shk > 0.2 else 0.0))
 	var theme: String = M.get("theme", "meadow")
 	var crimson = theme == "crimson"
-	var climb = theme in ["climb", "snow", "cave", "peak"]
+	var climb = climbMap()   # the climb, the summit, and the volcano inside it
 	var noSky = crimson or theme == "abyss" or theme == "bubble" or climb
 	if theme == "abyss" or theme == "bubble":
 		drawAbyssBack(x, sx, sy, dt)
@@ -345,7 +345,7 @@ func renderOverlay(ci: CanvasItem) -> void:
 	if not M.is_empty():
 		var D = dayInfo()
 		var night: float = 1 - D.day
-		var outdoors: bool = not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble", "cave", "peak"])
+		var outdoors: bool = not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble", "cave", "peak", "volcano"])
 		if outdoors and night > 0.3:
 			var lx = roundf(P.x - cam.x)
 			var ly = roundf(P.y - cam.y - 20)

@@ -1348,6 +1348,8 @@ func wmOpen(id: String) -> bool:
 		return tb(save.get("trophies", {}).get("dreamer"))
 	if id == "peak":
 		return tb(save.get("trophies", {}).get("kingYeti"))
+	if id.begins_with("volcano"):   # inside Glamrax's volcano: past the Mk II, the cell block and the sanctum
+		return tb(save.get("trophies", {}).get("mk2" if id in ["volcano3", "volcano4"] else "kingYeti"))
 	return true
 
 
@@ -1502,7 +1504,7 @@ func drawWorldMap(x: Ctx, t: float) -> void:
 		var m: Dictionary = MAPS[id]
 		var hov = wmHover == id
 		x.fillStyle = "#1a1030"; x.beginPath(); x.arc(n.x, n.y, 17 if hov else 14, 0, TAU); x.fill()
-		x.fillStyle = "#a82a30" if m.get("boss") else ("#ffc83d" if hov else ("#d8c8ff" if id.begins_with("abyss") else ("#d8f0ff" if id.begins_with("climb") or id == "peak" else "#ffffff")))
+		x.fillStyle = "#a82a30" if m.get("boss") else ("#ffc83d" if hov else ("#d8c8ff" if id.begins_with("abyss") else ("#d8f0ff" if id.begins_with("climb") or id == "peak" else ("#f0c8ff" if id.begins_with("volcano") else "#ffffff"))))
 		x.beginPath(); x.arc(n.x, n.y, 14 if hov else 11, 0, TAU); x.fill()
 		x.fillStyle = "#ffe08a" if m.get("boss") else "#27335c"
 		x.font = '12px "Press Start 2P", monospace'; x.textAlign = "center"; x.textBaseline = "middle"
@@ -1783,12 +1785,15 @@ func _bestAbyss(k: String, r: Rect2, fr: Array, known: bool) -> void:
 
 ## which strips the bestiary plays when you click a climb monster
 const CLIMB_BEST_ATTACK := {"boulder": ["float", "launch", "roll"], "lizard": ["whip", "leap"], "golem": ["wind", "smash"],
-	"warlock": ["cast", "blink"], "yeti": ["swipe", "leap", "slam"], "sword": ["fly", "fly"]}
+	"warlock": ["cast", "blink"], "yeti": ["swipe", "leap", "slam"], "sword": ["fly", "fly"],
+	# inside the volcano
+	"sentinel": ["idle", "charge", "slam", "slam"], "secgolem": ["fire", "fire", "wind", "punch"], "sentgolem": ["fire", "laser", "dash", "punch"],
+	"dog": ["pounce", "pin", "pin"], "ferro": ["hop", "spark", "hot", "hot"]}
 
 
 ## a climb monster's picture: cold sky over grey rock (the cave ones in the dark), the whole frame fitted in
 func _bestClimb(k: String, r: Rect2, fr: Array, known: bool) -> void:
-	var cave = k in ["yeti", "sword"]
+	var cave = k in ["yeti", "sword"] or k in VOLCANO_MOBS   # (the volcano's monsters: dark too)
 	var snow = k in ["golem", "warlock"]
 	uBox(r, css("#1a2230"), INK, 2, 7)
 	uGrad(Rect2(r.position + Vector2(2, 2), r.size - Vector2(4, 4)), css("#1e2a3a") if cave else (css("#c8d8ea") if snow else css("#9fb4c8")),

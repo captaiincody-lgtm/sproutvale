@@ -62,7 +62,7 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 	surfaces = surfacesOf(M)
 	tufts.clear()
 	for s in surfaces:
-		if s.water or M.get("indoor") or M.get("floor") or M.get("theme") in ["bubble", "cave", "peak"] or (M.get("tree") and not s.floor):
+		if s.water or M.get("indoor") or M.get("floor") or M.get("theme") in ["bubble", "cave", "peak", "volcano"] or (M.get("tree") and not s.floor):
 			continue
 		var x: float = s.x0 + 3
 		while x < s.x1 - 3:
@@ -316,7 +316,7 @@ func updateWorld(dt: float) -> void:
 	World.ambT -= dt
 	if World.ambT <= 0:
 		World.ambT = 0.3
-		var outdoors: bool = inGame and not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble", "climb", "snow", "cave", "peak"])
+		var outdoors: bool = inGame and not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble", "climb", "snow", "cave", "peak", "volcano"])
 		var cw = climbWind() if inGame else -1.0
 		if cw >= 0:
 			Sfx.ambience(0.0, cw)

@@ -1,0 +1,298 @@
+{
+ "sets": {
+  "sentinel": {
+   "w": 72,
+   "h": 72,
+   "dim": {
+    "ax": 18,
+    "ay": 32,
+    "w": 36,
+    "h": 36
+   },
+   "keys": {
+    "idle": 4,
+    "charge": 2,
+    "slam": 1,
+    "hurt": 2,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "sentinel_shiny": {
+   "w": 72,
+   "h": 72,
+   "dim": {
+    "ax": 18,
+    "ay": 32,
+    "w": 36,
+    "h": 36
+   },
+   "keys": {
+    "idle": 4,
+    "charge": 2,
+    "slam": 1,
+    "hurt": 2,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "sentinel_elite": {
+   "w": 72,
+   "h": 72,
+   "dim": {
+    "ax": 18,
+    "ay": 32,
+    "w": 36,
+    "h": 36
+   },
+   "keys": {
+    "idle": 4,
+    "charge": 2,
+    "slam": 1,
+    "hurt": 2,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "secgolem": {
+   "w": 180,
+   "h": 220,
+   "dim": {
+    "ax": 45,
+    "ay": 107,
+    "w": 90,
+    "h": 110
+   },
+   "keys": {
+    "idle": 2,
+    "walk": 4,
+    "fire": 2,
+    "wind": 1,
+    "punch": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "secgolem_shiny": {
+   "w": 180,
+   "h": 220,
+   "dim": {
+    "ax": 45,
+    "ay": 107,
+    "w": 90,
+    "h": 110
+   },
+   "keys": {
+    "idle": 2,
+    "walk": 4,
+    "fire": 2,
+    "wind": 1,
+    "punch": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "secgolem_elite": {
+   "w": 180,
+   "h": 220,
+   "dim": {
+    "ax": 45,
+    "ay": 107,
+    "w": 90,
+    "h": 110
+   },
+   "keys": {
+    "idle": 2,
+    "walk": 4,
+    "fire": 2,
+    "wind": 1,
+    "punch": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "sentgolem": {
+   "w": 180,
+   "h": 220,
+   "dim": {
+    "ax": 45,
+    "ay": 107,
+    "w": 90,
+    "h": 110
+   },
+   "keys": {
+    "idle": 2,
+    "walk": 4,
+    "fire": 2,
+    "wind": 1,
+    "punch": 1,
+    "dash": 2,
+    "laser": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "sentgolem_shiny": {
+   "w": 180,
+   "h": 220,
+   "dim": {
+    "ax": 45,
+    "ay": 107,
+    "w": 90,
+    "h": 110
+   },
+   "keys": {
+    "idle": 2,
+    "walk": 4,
+    "fire": 2,
+    "wind": 1,
+    "punch": 1,
+    "dash": 2,
+    "laser": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "sentgolem_elite": {
+   "w": 180,
+   "h": 220,
+   "dim": {
+    "ax": 45,
+    "ay": 107,
+    "w": 90,
+    "h": 110
+   },
+   "keys": {
+    "idle": 2,
+    "walk": 4,
+    "fire": 2,
+    "wind": 1,
+    "punch": 1,
+    "dash": 2,
+    "laser": 1,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "dog": {
+   "w": 100,
+   "h": 64,
+   "dim": {
+    "ax": 25,
+    "ay": 30,
+    "w": 50,
+    "h": 32
+   },
+   "keys": {
+    "idle": 2,
+    "run": 4,
+    "pounce": 1,
+    "pin": 2,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "dog_shiny": {
+   "w": 100,
+   "h": 64,
+   "dim": {
+    "ax": 25,
+    "ay": 30,
+    "w": 50,
+    "h": 32
+   },
+   "keys": {
+    "idle": 2,
+    "run": 4,
+    "pounce": 1,
+    "pin": 2,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "dog_elite": {
+   "w": 100,
+   "h": 64,
+   "dim": {
+    "ax": 25,
+    "ay": 30,
+    "w": 50,
+    "h": 32
+   },
+   "keys": {
+    "idle": 2,
+    "run": 4,
+    "pounce": 1,
+    "pin": 2,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "ferro": {
+   "w": 64,
+   "h": 48,
+   "dim": {
+    "ax": 16,
+    "ay": 22,
+    "w": 32,
+    "h": 24
+   },
+   "keys": {
+    "idle": 2,
+    "hop": 2,
+    "hot": 2,
+    "spark": 2,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "ferro_shiny": {
+   "w": 64,
+   "h": 48,
+   "dim": {
+    "ax": 16,
+    "ay": 22,
+    "w": 32,
+    "h": 24
+   },
+   "keys": {
+    "idle": 2,
+    "hop": 2,
+    "hot": 2,
+    "spark": 2,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  },
+  "ferro_elite": {
+   "w": 64,
+   "h": 48,
+   "dim": {
+    "ax": 16,
+    "ay": 22,
+    "w": 32,
+    "h": 24
+   },
+   "keys": {
+    "idle": 2,
+    "hop": 2,
+    "hot": 2,
+    "spark": 2,
+    "hurt": 1,
+    "dead": 1,
+    "white": 1
+   }
+  }
+ }
+}

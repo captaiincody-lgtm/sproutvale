@@ -1,4 +1,4 @@
-extends "res://scripts/climb_draw.gd"
+extends "res://scripts/volcano_draw.gd"
 ## Sproutvale, part 9: the HUD, and the small immediate-mode toolkit it and the menus draw with.
 ## The prototype built these out of HTML and CSS. Here every box, label and button is drawn each
 ## frame in screen pixels (768×432), and anything clickable registers a "zone" for the mouse.
@@ -508,6 +508,7 @@ func _statusChips(indoor: bool) -> void:
 		chips.append("🦑 Inked %ds" % ceili(P.blindT))
 	if P.confuseT > 0:
 		chips.append("💫 Confused %ds" % ceili(P.confuseT))
+	chips += statusExtra()   # burning, shocked… (volcano.gd)
 	var x = 8.0
 	var y = UH - 36 - 17 - (0 if indoor or not (classId in ["mage", "summoner", "tank"]) else 21)
 	for s in chips:
@@ -575,7 +576,7 @@ func _topRight(indoor: bool) -> void:
 	var mm = floori((D.t * 24 - hh) * 6) * 10
 	var wx: String = WEATHERS[D.weather]
 	if climbMap():   # the climb has its own weather, whatever it's doing down below
-		wx = {"climb": "Cold", "snow": "Blizzard", "cave": "Underground", "peak": "Hot wind"}.get(M.get("theme"), wx)
+		wx = {"climb": "Cold", "snow": "Blizzard", "cave": "Underground", "peak": "Hot wind", "volcano": "Inside the volcano"}.get(M.get("theme"), wx)
 	var clock = "%02d:%02d · %s" % [hh, mm, wx]
 	var nm: String = M.get("name", "")
 	var w = maxf(uW(nm, 11), uW(clock, 8, UF)) + 18

@@ -1,0 +1,32 @@
+{
+ "maps": {
+  "volcano1": {"name": "Glamrax's Laboratory", "sub": "Lv 96–100 · the security system doesn't play games", "theme": "volcano", "w": 2200, "h": 320, "floorY": 280, "ceilY": 46,
+   "target": 15, "start": 70, "music": "lab", "ignoreUnlock": true, "lab": true,
+   "plats": [[300, 222, 120], [560, 176, 110], [820, 222, 130], [1120, 182, 110], [1400, 222, 120], [1660, 176, 110], [1900, 222, 110]],
+   "ropes": [],
+   "portals": [{"x": 44, "to": "peak", "tx": 1380, "ty": 309, "label": "Glamrax's Gate"}, {"x": 2156, "to": "volcano2", "tx": 70, "label": "Boss: Containment Bay"}],
+   "spawn": {"sentinel": 46, "secgolem": 28, "sentgolem": 2}},
+  "volcano2": {"name": "Containment Bay", "theme": "volcano", "w": 640, "h": 340, "floorY": 300, "ceilY": 40, "target": 0, "start": 70, "music": "mecha", "boss": "mk2",
+   "plats": [], "ropes": [], "alarm": true,
+   "portals": [{"x": 40, "to": "volcano1", "tx": 2110, "label": "Glamrax's Laboratory"}, {"x": 604, "to": "volcano3", "tx": 70, "label": "The Cell Block", "lockedBy": "mk2"}],
+   "spawn": {}},
+  "volcano3": {"name": "The Cell Block", "sub": "Lv 102–104 · something watches from every cell", "theme": "volcano", "w": 2400, "h": 300, "floorY": 262, "ceilY": 70,
+   "target": 14, "start": 70, "music": "cells", "ignoreUnlock": true, "cells": true,
+   "plats": [[420, 206, 100], [900, 206, 110], [1380, 206, 100], [1860, 206, 110]],
+   "ropes": [],
+   "portals": [{"x": 44, "to": "volcano2", "tx": 560, "label": "Containment Bay"}, {"x": 2356, "to": "volcano4", "tx": 70, "label": "Boss: Glamrax's Sanctum"}],
+   "spawn": {"dog": 50, "ferro": 44}},
+  "volcano4": {"name": "Glamrax's Sanctum", "theme": "volcano", "w": 800, "h": 380, "floorY": 340, "ceilY": 30, "target": 0, "start": 70, "music": "glamrax", "boss": "glamrax",
+   "plats": [[120, 270, 90], [355, 232, 90], [590, 270, 90], [235, 186, 70], [495, 186, 70]],
+   "ropes": [], "sanctum": true,
+   "portals": [{"x": 40, "to": "volcano3", "tx": 2310, "label": "The Cell Block"}],
+   "spawn": {}}
+ },
+ "mobs": {
+  "sentinel": {"name": "Security Sentinel", "label": "security sentinels", "color": 3815994, "lv": 96, "hp": 6800, "atk": 290, "def": 92, "exp": 3300, "coins": [200, 320], "speed": 1.4, "bw": 22, "bh": 22, "fly": true, "matName": "Cracked Lens", "metal": true},
+  "secgolem": {"name": "Security Golem", "label": "security golems", "color": 4868697, "lv": 98, "hp": 26000, "atk": 330, "def": 140, "exp": 4800, "coins": [240, 380], "speed": 0.6, "bw": 40, "bh": 100, "eliteScale": 1.3, "matName": "Mana Conduit"},
+  "sentgolem": {"name": "Sentinel-Golem", "label": "sentinel-golems", "color": 13148725, "lv": 100, "hp": 64000, "atk": 380, "def": 155, "exp": 16000, "coins": [1100, 1600], "speed": 0.75, "bw": 44, "bh": 106, "eliteScale": 1.2, "matName": "Gilded Core"},
+  "dog": {"name": "Security Dog", "label": "security dogs", "color": 2829099, "lv": 102, "hp": 9400, "atk": 350, "def": 104, "exp": 4300, "coins": [230, 360], "speed": 1.7, "bw": 34, "bh": 24, "matName": "Steel Fang"},
+  "ferro": {"name": "Ferro-Slime", "label": "ferro-slimes", "color": 9083568, "lv": 104, "hp": 12500, "atk": 370, "def": 165, "exp": 5000, "coins": [250, 390], "speed": 1.0, "bw": 26, "bh": 18, "matName": "Ferrofluid Drop", "metal": true}
+ }
+}

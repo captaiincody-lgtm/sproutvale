@@ -9,7 +9,7 @@ extends "res://scripts/tank.gd"
 ## King Yeti: the boss of the throne room at the back of the cave
 const YETI_T := {"name": "King Yeti", "lv": 95, "hp": 200000, "atk": 300, "def": 85, "exp": 140000, "coins": [4000, 6500],
 	"color": 0xe8eef6, "critter": false, "matName": "King's Fur"}
-const CLIMB_MOBS := ["boulder", "lizard", "golem", "warlock", "yeti", "sword"]
+var CLIMB_MOBS := ["boulder", "lizard", "golem", "warlock", "yeti", "sword"]   # (the volcano adds its own: they share the climb's art pipeline)
 const YT_SWORD_LEN := 118.0      # the King's sword, grip to tip (world units)
 const YT_STALS := [150.0, 262.0, 378.0, 486.0]   # where the big stalactites hang from the throne room's ceiling
 const YT_STAL_W := 16.0
