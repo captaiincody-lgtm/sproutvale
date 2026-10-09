@@ -437,7 +437,7 @@ func killSlime(e) -> void:
 		banner("Elite defeated!", "%s · huge rewards" % e.T.name)
 		shake = 6
 	if e.type == "abyss":
-		var n = rint(1, 2) if randf() < 0.45 else 0
+		var n = rint(1, 3) if randf() < 0.6 else 0   # they're five levels above you now: more coins
 		for k in n:
 			_drop("abyss", e, rand(-60, 60), rand(-240, -160))
 	rollCards(e)

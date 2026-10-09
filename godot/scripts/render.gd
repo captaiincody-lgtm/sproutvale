@@ -84,8 +84,9 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 	var x = ctx
 	x.begin(ci)
 	var D = dayInfo()
-	var sx = roundf(cam.x + (rand(-shake, shake) if shake > 0.2 else 0.0))
-	var sy = roundf(cam.y + (rand(-shake, shake) if shake > 0.2 else 0.0))
+	var shk: float = shake * float(save.settings.get("shake", 1.0))   # the Screen shake setting scales it, 0–100%
+	var sx = roundf(cam.x + (rand(-shk, shk) if shk > 0.2 else 0.0))
+	var sy = roundf(cam.y + (rand(-shk, shk) if shk > 0.2 else 0.0))
 	var theme: String = M.get("theme", "meadow")
 	var crimson = theme == "crimson"
 	var climb = theme in ["climb", "snow", "cave", "peak"]
@@ -611,16 +612,24 @@ func drawPlayer(x: Ctx, sx: float, sy: float, dt: float) -> void:
 	for i in WIND_V.size():
 		if absf(WIND_V[i] - P.windV) < absf(WIND_V[vIdx] - P.windV):
 			vIdx = i
-	var anim: String = P.anim if Assets.hero.looks.get(look, {}).get("anims", {}).has(P.anim) else "idle"
+	var anims: Dictionary = Assets.hero.looks.get(look, {}).get("anims", {})
+	var anim: String = P.anim
+	var pose = heroPose()   # [anim, frame] when a hero holds a pose of their own (Tank aiming at a monster)
+	if pose != null and anims.has(pose[0]):
+		anim = pose[0]
+	elif not anims.has(anim):
+		anim = animFallback(anim)
+		if not anims.has(anim):
+			anim = "idle"
 	var A = Assets.hero_anim(look, anim)
 	var nf = maxi(1, int(A.frames))
-	var f = clampi(playerFrame(), 0, nf - 1)
+	var f = clampi(int(pose[1]) if pose != null and anim == pose[0] else playerFrame(), 0, nf - 1)
 	var tex = Assets.hero_strip(look, anim, vIdx)
 	# where the head is this frame (the air bubble underwater sits on it), with the same flip and spin as the sprite
 	var hd = Assets.hero_head(look, anim, f)
 	if hd == null:
 		hd = Vector2(RX - 6, GROUND - 39)
-	var q = Vector2(P.face * (hd.x - RX), hd.y - GROUND + 20).rotated(P.spin) - Vector2(0, 20)
+	var q = Vector2(P.face * (hd.x - RX), hd.y - GROUND + P.spinY).rotated(P.spin) - Vector2(0, P.spinY)
 	heroHead = Vector2(P.x, P.y) + q
 	var blink: bool = not (P.state in ["dash", "held"]) and P.iframes > 0 and P.iframes < 0.9 and int(gameTime * 18) % 2 == 0
 	x.fillStyle = rgba(20, 30, 10, 0.25)
@@ -655,9 +664,9 @@ func drawPlayer(x: Ctx, sx: float, sy: float, dt: float) -> void:
 		x.save()
 		x.translate(X, Y)
 		if P.spin != 0:
-			x.translate(0, -20)
+			x.translate(0, -P.spinY)
 			x.rotate(P.spin)
-			x.translate(0, 20)
+			x.translate(0, P.spinY)
 		if P.face < 0:
 			x.scale(-1, 1)
 		x.drawFrame(tex, nf, f, -RX, -GROUND, SW, SH)
@@ -1623,7 +1632,9 @@ func drawHouse(x: Ctx, sx: float, sy: float) -> void:
 ## ten pedestals along the hall; trophies for bosses you've beaten
 func drawTrophyStand(x: Ctx, sx: float, sy: float) -> void:
 	var Y: float = M.floorY - sy
-	var T: Dictionary = save.trophies
+	var T: Dictionary = {}   # this hero's own trophies
+	for k in CH().get("bossKills", {}):
+		T[k] = heroBeat(k)
 	x.fillStyle = "#5a3a20"; x.fillRect(80 - sx, Y - 6, 480, 6)
 	x.fillStyle = "#8e5c36"; x.fillRect(80 - sx, Y - 6, 480, 1.5)
 	for i in TROPHIES.size():

@@ -25,14 +25,14 @@ func drawClimbBack(x: Ctx, sx: float, sy: float, dt: float, D: Dictionary) -> vo
 			x.fillStyle = g
 			x.fillRect(0, 0, VW, VH)
 		"peak":
-			# a burning sky over the volcano: smoke-black above, ember-red at the horizon
+			# an abyssal sky over the volcano, purple like the opening cutscene: black above, magenta at the horizon
 			var g = x.createLinearGradient(0, 0, 0, VH)
-			g.addColorStop(0, "#12060a"); g.addColorStop(0.45, "#3a0c10"); g.addColorStop(0.8, "#8a2a14"); g.addColorStop(1, "#d8641e")
+			g.addColorStop(0, "#0a0418"); g.addColorStop(0.45, "#3a0f4a"); g.addColorStop(0.8, "#8a2a6a"); g.addColorStop(1, "#d84ab0")
 			x.fillStyle = g
 			x.fillRect(0, 0, VW, VH)
 			var mx = VW * 0.7 - sx * 0.02
-			x.fillStyle = rgba(255, 120, 60, 0.16); x.beginPath(); x.arc(mx, 62, 34, 0, TAU); x.fill()
-			x.fillStyle = rgba(255, 190, 120, 0.4); x.beginPath(); x.arc(mx, 62, 16, 0, TAU); x.fill()
+			x.fillStyle = rgba(232, 216, 255, 0.16); x.beginPath(); x.arc(mx, 62, 34, 0, TAU); x.fill()
+			x.fillStyle = rgba(232, 216, 255, 0.45); x.beginPath(); x.arc(mx, 62, 16, 0, TAU); x.fill()
 			# storm clouds racing past
 			for i in 9:
 				var cx = fmod(hsh(i * 3.3) * (VW + 200) - t * (30 + hsh(i) * 40) - sx * 0.1, VW + 200)
@@ -40,7 +40,7 @@ func drawClimbBack(x: Ctx, sx: float, sy: float, dt: float, D: Dictionary) -> vo
 					cx += VW + 200
 				cx -= 100
 				var cy = 20 + hsh(i * 7.1) * 70
-				x.fillStyle = rgba(30, 8, 12, 0.5)
+				x.fillStyle = rgba(26, 8, 34, 0.5)
 				x.beginPath(); x.ellipse(cx, cy, 60 + hsh(i) * 40, 9 + hsh(i * 2) * 6, 0, 0, TAU); x.fill()
 		_:
 			drawSky(x, D)
@@ -56,7 +56,7 @@ func drawClimbBack(x: Ctx, sx: float, sy: float, dt: float, D: Dictionary) -> vo
 		midY = roundf(floorScr * 0.65 + VH * 0.35 - 110)
 	var fo = -fmod(roundf(sx * 0.15), VW * 2.0)
 	var mo = -fmod(roundf(sx * 0.4), VW * 2.0)
-	var under = {"climb": "#3a4458", "snow": "#c8d4e4", "cave": "#06080e", "peak": "#140608"}[theme]
+	var under = {"climb": "#3a4458", "snow": "#c8d4e4", "cave": "#06080e", "peak": "#140820"}[theme]
 	for L in [[theme + "_far", fo, farY, 0.9], [theme + "_mid", mo, midY, 1.0]]:
 		var tex = Assets.tex("sky/%s.png" % L[0])
 		if tex == null:
@@ -387,6 +387,35 @@ func drawClimbFront(x: Ctx, sx: float, sy: float, dt: float) -> void:
 			x.drawImageRegion(st, 0, th * 0.5, tw, th * 0.5, roundf(cx - YT_STAL_W / 2 - sx), roundf(top + cut - sy), YT_STAL_W, full - cut)
 			x.fillStyle = "#c81e2e"
 			x.fillRect(roundf(cx - 1 - sx), roundf(top + full - 4 - sy), 2, 4)
+	# King Yeti's pendant held high while it tears the portal open, its beam reaching for the spot
+	if not escapeGate.is_empty() and not escapeGate.has("leap"):
+		var k = minf(1, escapeGate.t * 1.5)
+		var hx = heroHead.x - sx + P.face * 3
+		var hy = heroHead.y - sy - 16 - 4 * k
+		var tt = realTime
+		var gr = x.createRadialGradient(hx, hy, 1, hx, hy, 34 * k + 2)
+		gr.addColorStop(0, rgba(220, 255, 255, 0.8)); gr.addColorStop(1, rgba(122, 240, 255, 0))
+		x.fillStyle = gr; x.beginPath(); x.arc(hx, hy, 34 * k + 2, 0, TAU); x.fill()
+		# light rays turning around it
+		for i in 8:
+			var a = tt * 1.5 + i * TAU / 8
+			x.strokeStyle = rgba(190, 250, 255, 0.35 * k); x.lineWidth = 1
+			x.beginPath(); x.moveTo(hx + cos(a) * 8, hy + sin(a) * 8); x.lineTo(hx + cos(a) * (22 + 10 * k), hy + sin(a) * (22 + 10 * k)); x.stroke()
+		# the chain down to the raised hand
+		x.strokeStyle = rgba(230, 240, 255, 0.9); x.lineWidth = 1
+		x.beginPath(); x.moveTo(hx, hy + 6); x.lineTo(hx - P.face * 2, hy + 14); x.stroke()
+		var tex = Assets.tex("items/yeti_pendant.png")
+		if tex != null:
+			x.drawImage(tex, roundf(hx - 7), roundf(hy - 7), 14, 14)
+		# the beam to where the portal opens
+		if escapeGate.t > 0.4:
+			var bk = minf(1, (escapeGate.t - 0.4) * 2.5)
+			var gx = escapeGate.x - sx
+			var gy = escapeGate.y - sy - 22
+			x.strokeStyle = rgba(122, 240, 255, 0.5 * bk); x.lineWidth = 5
+			x.beginPath(); x.moveTo(hx, hy); x.lineTo(lerpf(hx, gx, bk), lerpf(hy, gy, bk)); x.stroke()
+			x.strokeStyle = rgba(255, 255, 255, 0.9 * bk); x.lineWidth = 1.5
+			x.beginPath(); x.moveTo(hx, hy); x.lineTo(lerpf(hx, gx, bk), lerpf(hy, gy, bk)); x.stroke()
 	# the hero's Impaling Blade
 	if not pBlade.is_empty():
 		_bigSword(x, pBlade.x - sx - pBlade.face * 20, pBlade.y - sy, 0.0 if pBlade.face > 0 else PI, 0.55)
@@ -467,7 +496,7 @@ func drawClimbFront(x: Ctx, sx: float, sy: float, dt: float) -> void:
 				x.fillRect(roundf(px), roundf(py), 4 * par, 1)
 			else:
 				x.fillRect(roundf(px), roundf(py), 1 if par < 1 else 2, 1 if par < 1 else 2)
-	# the summit: embers and ash on a roaring wind
+	# the summit: magenta embers and ash on a roaring wind
 	if theme == "peak":
 		for i in 70:
 			var k = i * 2.11
@@ -481,10 +510,10 @@ func drawClimbFront(x: Ctx, sx: float, sy: float, dt: float) -> void:
 			px -= 40
 			py -= 20
 			if i % 4 == 0:
-				x.fillStyle = rgba(255, 150 + hsh(k * 9) * 80, 60, 0.7 + 0.3 * sin(t * 8 + k))
+				x.fillStyle = rgba(255, 80 + hsh(k * 9) * 80, 230, 0.7 + 0.3 * sin(t * 8 + k))
 				x.fillRect(roundf(px), roundf(py), 1, 1)
 			else:
-				x.fillStyle = rgba(60, 50, 56, 0.5)
+				x.fillStyle = rgba(60, 40, 70, 0.5)
 				x.fillRect(roundf(px), roundf(py), 2 if par > 1 else 1, 1)
 		# wind streaks
 		for i in 10:
@@ -493,7 +522,7 @@ func drawClimbFront(x: Ctx, sx: float, sy: float, dt: float) -> void:
 			if px < -100:
 				px += VW + 200
 			var py = hsh(k * 2) * VH
-			x.fillStyle = rgba(255, 220, 200, 0.12)
+			x.fillStyle = rgba(240, 210, 255, 0.12)
 			x.fillRect(roundf(px), roundf(py), 40 + hsh(k * 3) * 50, 1)
 
 
@@ -525,7 +554,7 @@ func drawYetibox(x: Ctx, X: float, Y: float, tt: float) -> void:
 
 # ================================================================ light and cold
 
-## multiplied over the world: cold blue on the mountain, deep blue-black in the cave, ember-red on the summit
+## multiplied over the world: cold blue on the mountain, deep blue-black in the cave, abyssal violet on the summit
 func climbTint(x: Ctx, D: Dictionary) -> void:
 	var theme: String = M.get("theme")
 	var col: Color
@@ -533,7 +562,7 @@ func climbTint(x: Ctx, D: Dictionary) -> void:
 		"cave":
 			col = css("#98a4cc")
 		"peak":
-			col = css("#ffd2c0")
+			col = css("#e8d0ff")
 		_:
 			var night: float = 1 - D.day
 			col = mixc("#ffffff", "#5a6cb8", night * 0.62) * (css("#dfe8f8") if theme == "snow" else css("#e4eaf6"))
@@ -542,6 +571,9 @@ func climbTint(x: Ctx, D: Dictionary) -> void:
 
 
 func climbOverlay(x: Ctx) -> void:
+	if yetiFlash > 0:
+		x.fillStyle = rgba(255, 255, 255, minf(0.85, yetiFlash * 2.2))
+		x.fillRect(0, 0, VW, VH)
 	if not climbMap():
 		return
 	var sx = cam.x

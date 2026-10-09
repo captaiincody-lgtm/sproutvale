@@ -91,6 +91,7 @@ class Player:
 	var tumbleT := 0.0           # knocked off balance: spinning, then floating down
 	var tumbleDur := 0.0
 	var spin := 0.0
+	var spinY := 20.0            # how far above the feet the body turns when it spins (0 = around the feet)
 	var held = null              # {e, phase, t…} while a tentacle holds you, or the Dreamer chews on you
 	var hurtN := 0               # counts hits that really landed (not dodged, blocked or in god mode)
 
@@ -201,6 +202,7 @@ class Drop:
 	var x0 := 0.0
 	var x1 := 0.0
 	var spin := 0.0
+	var free := false            # dropped in mid-air: lands on whatever platform it falls onto
 
 
 class Part:

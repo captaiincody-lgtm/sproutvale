@@ -121,13 +121,19 @@ func _ready() -> void:
 	add.call(0.8, "shot", "boulders2")
 	add.call(0.5, "act", ["punch", 50])
 	add.call(0.4, "shot", "punch")
-	add.call(0.6, "killboss")
-	add.call(0.6, "shot", "kneel")
-	add.call(1.0, "shot", "slam")
-	add.call(0.8, "shot", "cave_in")
-	add.call(1.9, "shot", "pendant")
-	add.call(1.6, "shot", "portal")
-	add.call(1.7, "shot", "leap")
+	# he dies while you're up in the air: you land first, then the cutscene plays
+	add.call(0.6, "killboss", true)
+	add.call(0.15, "shot", "falling")
+	add.call(2.2, "shot", "dots")
+	add.call(0.1, "tap", KEY_Z)
+	add.call(0.3, "tap", KEY_Z)
+	add.call(0.6, "shot", "rage")
+	add.call(1.25, "shot", "slam")
+	add.call(0.5, "shot", "cave_in")
+	add.call(1.2, "shot", "buried")
+	add.call(1.5, "shot", "pendant")
+	add.call(1.2, "shot", "portal")
+	add.call(1.5, "shot", "leap")
 	add.call(1.8, "shot", "peak")
 	add.call(2.0, "shot", "peak2")
 	add.call(0.1, "walk", 2.0)
@@ -308,6 +314,10 @@ func _process(delta: float) -> void:
 					game.P.held = null
 					game.P.x = clampf(b.x - 120, 40, game.M.w - 40) if b.x > 200 else b.x + 120
 					game.P.y = game.groundAt(game.P.x)
+					if s.size() > 2 and s[2]:
+						game.P.y -= 90
+						game.P.grounded = false
+						game.P.vy = -50
 					game.P.face = 1
 					b.hp = 1
 					game.damageSlime(b, {"dmg": 1.0, "id": "test%d" % shots})

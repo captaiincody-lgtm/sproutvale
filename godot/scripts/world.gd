@@ -102,7 +102,7 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 	if M.get("boss"):
 		P.face = 1   # arenas: you always walk in facing the boss
 	var bk = M.boss if M.get("boss") in ["warlord", "dreamer", "kingYeti"] else "croc"
-	M.pedestal = {"x": roundi(M.w * (0.55 if bk == "croc" else 0.5)), "kind": bk} if M.get("boss") and save.trophies.get(bk) else null
+	M.pedestal = {"x": roundi(M.w * (0.55 if bk == "croc" else 0.5)), "kind": bk} if M.get("boss") and heroBeat(bk) else null
 	abyssOnLoad()
 	if M.get("boss") and not M.pedestal:
 		if M.boss == "warlord":
@@ -153,7 +153,7 @@ func ropeAt():
 
 func portalAt():
 	for p in M.portals:
-		if absf(P.x - p.x) < 16 and absf(P.y - p.get("y", M.floorY)) < 2:
+		if absf(P.x - p.x) < 26 and absf(P.y - p.get("y", M.floorY)) < 16:
 			return p
 	return null
 
@@ -170,11 +170,11 @@ func pedestalAt():
 	var pd = M.get("pedestal")
 	if pd == null or slimes.any(func(e): return e.boss and e.state != "dead"):
 		return null
-	return pd if absf(P.x - pd.x) < 22 and absf(P.y - M.floorY) < 3 else null
+	return pd if absf(P.x - pd.x) < 28 and absf(P.y - M.floorY) < 16 else null
 
 
 func obeliskAt():
-	return obelisk if obelisk != null and not obelisk.used and absf(P.x - obelisk.x) < 18 and absf(P.y - obelisk.y) < 2 else null
+	return obelisk if obelisk != null and not obelisk.used and absf(P.x - obelisk.x) < 28 and absf(P.y - obelisk.y) < 16 else null
 
 
 # ================================================================ the pond

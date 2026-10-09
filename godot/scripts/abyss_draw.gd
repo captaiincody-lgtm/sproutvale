@@ -570,57 +570,35 @@ func abyssTint(x: Ctx) -> void:
 	elif M.get("dark"):
 		# the Black Plateau is black, not faded: a near-neutral multiply keeps the colours that are
 		# left clear and deep instead of washing the whole map out to grey
-		col = css("#2c2740")
+		col = css("#47425e")
 	else:
 		col = css("#a8a8e0").lerp(css("#6c74b4"), (d - 0.35) / 0.35)
 	x.fillStyle = col
 	x.fillRect(0, 0, VW, VH)
 
 
-## drawn over the world: rune and seaweed light in the dark, the gaze's flash, a glow round the hero
+## drawn over the world: rune light in the shallower water, sea dust, the gaze's flash
 func abyssOverlay(x: Ctx) -> void:
 	var sx = cam.x
 	var sy = cam.y
 	var t = realTime
 	if M.get("theme") == "abyss":
 		var dark: bool = M.get("dark", false) or M.get("depth", 0.0) >= 0.7
-		for g in mapGlows(mapId):
-			var X: float = g[0] - sx
-			var Y: float = g[1] - sy
-			if X < -30 or X > VW + 30 or Y < -30 or Y > VH + 30:
-				continue
-			var r: float = g[2] * (1.8 if dark else 1.2)
-			var c = css(g[3])
-			var a = (0.32 if dark else 0.16) * (0.75 + 0.25 * sin(t * 1.7 + g[0] * 0.13))
-			var gr = x.createRadialGradient(X, Y, 0, X, Y, r)
-			gr.addColorStop(0, Color(c, a)); gr.addColorStop(1, Color(c, 0))
-			x.fillStyle = gr
-			x.beginPath(); x.arc(X, Y, r, 0, TAU); x.fill()
-		if dark:
-			# the dark closes in at the edges of the screen, and the hero carries a pool of light
-			var vg = x.createRadialGradient(VW * 0.5, VH * 0.52, VH * 0.34, VW * 0.5, VH * 0.52, VH * 0.95)
-			vg.addColorStop(0, rgba(2, 1, 6, 0)); vg.addColorStop(1, rgba(2, 1, 6, 0.58))
-			x.fillStyle = vg
-			x.fillRect(0, 0, VW, VH)
-			var px = P.x - sx
-			var py = P.y - sy - 22
-			var pg = x.createRadialGradient(px, py, 6, px, py, 86)
-			pg.addColorStop(0, rgba(198, 176, 250, 0.42)); pg.addColorStop(1, rgba(198, 176, 250, 0))
-			x.fillStyle = pg
-			x.beginPath(); x.arc(px, py, 86, 0, TAU); x.fill()
-			# monsters' eyes catch the rune light: a faint red glow so you can see what's coming
-			for e in slimes:
-				if e.state == "dead" or e.bossPart or e.boss:
+		# the dark depths are dark but crystal clear: no haze, no glow round the hero, no tinted blobs.
+		# Only the shallower maps keep their soft rune light.
+		if not dark:
+			for g in mapGlows(mapId):
+				var X: float = g[0] - sx
+				var Y: float = g[1] - sy
+				if X < -30 or X > VW + 30 or Y < -30 or Y > VH + 30:
 					continue
-				var mx = e.x - sx
-				var my = e.y - sy - e.h * 0.55
-				if mx < -60 or mx > VW + 60 or my < -60 or my > VH + 60:
-					continue
-				var mr = maxf(e.w, e.h) * 0.9 + 8
-				var mg = x.createRadialGradient(mx, my, 2, mx, my, mr)
-				mg.addColorStop(0, rgba(255, 70, 120, 0.14)); mg.addColorStop(1, rgba(255, 70, 120, 0))
-				x.fillStyle = mg
-				x.beginPath(); x.arc(mx, my, mr, 0, TAU); x.fill()
+				var r: float = g[2] * 1.2
+				var c = css(g[3])
+				var a = 0.16 * (0.75 + 0.25 * sin(t * 1.7 + g[0] * 0.13))
+				var gr = x.createRadialGradient(X, Y, 0, X, Y, r)
+				gr.addColorStop(0, Color(c, a)); gr.addColorStop(1, Color(c, 0))
+				x.fillStyle = gr
+				x.beginPath(); x.arc(X, Y, r, 0, TAU); x.fill()
 		seaDust(x, sx, sy, dark)
 	if gazeFlash > 0:
 		x.fillStyle = rgba(255, 106, 240, gazeFlash * 0.45)

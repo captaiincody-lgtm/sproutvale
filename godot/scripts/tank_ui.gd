@@ -89,13 +89,20 @@ func workshopCard(x: float, y: float, w: float) -> float:
 			var N: Dictionary = NADES[i]
 			var have = own.has(N.id)
 			var on = nadeType() == N.id
+			# measure the text first so long descriptions and part lists never run into each other
+			var dw = W - 26 - 90
+			var dh = uPara(N.desc, X + 26, 0, dw, 7, MUTED, false)
+			var ph = 0.0
+			if not have:
+				ph = uPara(_partsText(N.parts), X + 26, 0, W - 26, 7, MUTED, false) + 2
+			var rh = maxf(30.0, 15 + dh + 3 + ph)
 			if on:
-				bgBox(1, Rect2(X - 4, yy, W + 8, 30), css("#fff8e0"), NONE, 0, 4)
+				bgBox(1, Rect2(X - 4, yy, W + 8, rh), css("#fff8e0"), NONE, 0, 4)
 			var ic = Assets.tex("tank/nade_%s.png" % N.id)
 			if ic:
 				uci.draw_texture_rect(ic, Rect2(X, yy + 4, 20, 20), false)
 			uText("%d · %s" % [i + 1, N.name], X + 26, yy + 3, 9)
-			uPara(N.desc, X + 26, yy + 15, W - 26 - 90, 7, MUTED)
+			uPara(N.desc, X + 26, yy + 15, dw, 7, MUTED)
 			var br = Rect2(X + W - 86, yy + 5, 86, 18)
 			if have:
 				uButton(br, "Equipped" if on else "Equip", func(): CH().nadeSel = N.id; _changed(); Sfx.ui(), {"disabled": on, "size": 8})
@@ -106,10 +113,9 @@ func workshopCard(x: float, y: float, w: float) -> float:
 				uButton(br, "Build", func(): _buildNade(N), {"disabled": not ok, "bg": MINT, "size": 8})
 				zone(br, Callable(), "Needs " + _partsText(N.parts))
 			if not have:
-				uText(_partsText(N.parts), X + 26, yy + 25, 7, css("#2a6a8a") if hasParts(N.parts) else css("#9a1f35"), UF)
-				yy += 8
-			dashed(X, X + W, yy + 30)
-			yy += 33
+				uPara(_partsText(N.parts), X + 26, yy + 15 + dh + 3, W - 26, 7, css("#2a6a8a") if hasParts(N.parts) else css("#9a1f35"))
+			dashed(X, X + W, yy + rh)
+			yy += rh + 3
 		return yy - Y)
 	# the drone
 	cards.append(func(X, Y, W):

@@ -156,8 +156,20 @@ const TANK_HELPERS = String.raw`
     glowDot(e[0], e[1], big ? 4 : 2.8, TK.red, big ? 0.6 : 0.5);
     tkFine(lx - 0.6, ly - 0.6, ['.rr.', 'rRRr', 'rRRr', '.rr.'], { r: TK.red, R: TK.redL });
   };
+  const FEM = !!LOOK.female;
+  const tkCrop = () => {   // her undercut: clipped sides (the stubble cap) under a longer top swept forward into a short fringe
+    const top = [[-6.6, -6.4], [-7.9, -8.2], [-6.0, -10.4], [-2.0, -11.4], [2.8, -11.3], [6.8, -9.9], [9.2, -7.6], [10.6, -4.9], [8.9, -5.5], [7.9, -4.5], [6.6, -5.8], [4.6, -5.3], [3.0, -6.6], [0.6, -6.5], [-2.0, -7.5], [-4.6, -7.2]];
+    F.poly(top.map(([x, y]) => TT(head(x, y))));
+    const hinv = (x0, y0) => { const [x, y] = unS(x0, y0); let X = x; if (P.mirror) X = 2 * RX - X; const dx = X - piv[0], dy = y - piv[1]; const ux = piv[0] + dx * cr + dy * sr, uy = piv[1] - dx * sr + dy * cr; const [a, b] = rot(ux - HC[0], uy - HC[1], -headAng); return [a / HS, b / HS]; };
+    F.commit((x, y, t) => {
+      const [lx, ly] = hinv(x, y), band = -9.2 + lx * lx * 0.035;
+      if (t !== 1 && Math.abs(ly - band) < 0.7 && lx > -6 && lx < 6) return PAL.hairHi;
+      if (t === 0 && ly > -8 && Math.abs(((lx - ly * 0.6 + 40) % 3.2) - 1.6) < 0.35) return PAL.hairS;   // strand lines sweeping forward
+      return pick(PAL.hair, PAL.hairS, PAL.hairL, t);
+    }, { band: 2, outline: PAL.hairOut });
+  };
   const tkHead = () => {
-    const M = { K: PAL.lash, D: hex(0x2c3a48), E: hex(0x6d8296), '+': hex(0xa6b8c8), B: PAL.brow, m: PAL.mouth, s: PAL.skinS, x: hex(0x8a5a48) };
+    const M = { K: PAL.lash, D: hex(0x2c3a48), E: hex(0x6d8296), '+': hex(0xa6b8c8), B: PAL.brow, m: PAL.mouth, s: PAL.skinS, x: hex(0x8a5a48), g: TK.steelL };
     if (ST < 4) {
       // buzz cut: a short stubble cap hugging the skull, no fringe
       const cap = [];
@@ -166,11 +178,19 @@ const TANK_HELPERS = String.raw`
       F.poly(cap.map(([x, y]) => TT(head(x, y))));
       F.commit((x, y, t) => t === 2 ? PAL.hairL : t === 1 ? PAL.hairS : ((Math.floor(x * 2) + Math.floor(y * 2)) % 2 ? PAL.hair : PAL.hairS), { band: 1, outline: PAL.hairOut });
       const ec = TT(head(-3.4, 2.2)); F.ellipse(ec[0], ec[1], 1.5, 2.1); F.commit((x, y, t) => pick(PAL.skin, PAL.skinS, PAL.skinL, t === 2 ? 0 : 1));
+      if (FEM) {   // her face: lashes on the far eye, finer brows, a set mouth, a steel stud in the ear
+        tkCrop();
+        tkFine(7.3, -1.5, ['.KK', 'KKK', 'DDK', 'EE.', 'E+.', 'K..'], M);
+        tkFine(0.8, -3.9, ['..BBBB....', 'BB...BBBBB'], M); tkFine(7.1, -3.6, ['BBB', '...'], M);
+        tkFine(4.4, 5.6, ['mmmm', '.mm.'], M); tkFine(8.5, 2.6, ['s', 's'], M);
+        { const er = TT(head(-3.4, 4.0)); F.set(Math.floor(er[0]), Math.floor(er[1]), TK.steelL); }
+      } else {
       // stern face: heavy brows, a hard mouth, one ordinary eye on the far side
       tkFine(7.4, -0.9, ['KKK', 'DDK', 'EE.', 'E+.', 'K..'], M);
       tkFine(0.6, -3.7, ['BBB.......', '.BBBBB....', '....BBBBBB'], M); tkFine(7.1, -3.3, ['BBBB', '..BB'], M);
       tkFine(4.2, 5.8, ['mmmmm'], M); tkFine(8.5, 2.6, ['s', 's'], M);
       tkFine(1.2, 6.2, ['.s.s', 's.s.'], M);   // a shadow of stubble on the jaw
+      }
       // the near eye is a metal socket with a glowing red lens
       const so = TT(head(3.3, 0.4)); F.ellipse(so[0], so[1], 1.95, 1.75);
       F.commit((x, y, t) => pick(TK.steel, TK.steelS, TK.steelL, t), { band: 1, outline: TK.out });
@@ -196,7 +216,7 @@ const TANK_HELPERS = String.raw`
     const an0 = TT(head(-5.6, -7)), an1 = TT(head(-8.4, -12.6)); F.capsule(an0[0], an0[1], an1[0], an1[1], 0.45); F.commit(() => TK.dark, { noOutline: true });
     F.set(Math.floor(an1[0]), Math.floor(an1[1]), TK.red);
     tkRedEye(3.6, -0.6, true);
-    if (ST < 5) { tkFine(4.4, 6.2, ['mmmmm'], M); tkFine(8.5, 4.2, ['s'], M); }
+    if (ST < 5) { tkFine(4.4, 6.2, FEM ? ['mmmm', '.mm.'] : ['mmmmm'], M); tkFine(8.5, 4.2, ['s'], M); }
   };
   const tkGunAng = () => P.ba != null ? P.ba : armN.fa + (P.sw != null && P.sa == null ? 0.25 : 0);
   const tkGun = (hand, ang) => {   // a chunky sidearm: grip in the fist, slide and muzzle along the aim
@@ -227,6 +247,7 @@ const TANK_BRANCH = String.raw`
     drawLeg(legF, false); tkLeg(legF, false); drawLeg(legN, true); tkLeg(legN, true);
     drawTorso(); tkTorso();
     drawHead(); tkHead();
+    F.headC = TT(ST >= 4 ? head(0.9, 0.4) : head(0.3, 0.8));   // middle of the head (helmet from stage 4), for the air bubble
     const ga = tkGunAng();
     F.hand = TT(armN.hd); F.muzzle = TT(tkMuzzle(armN.hd, ga));
     if (!P.noWeapon && !P.noGun) tkGun(armN.hd, ga);
@@ -287,10 +308,10 @@ await page.evaluate(([HELP, BRANCH, BACK]) => {
 }, [TANK_HELPERS, TANK_BRANCH, TANK_BACK]);
 
 // the look: set up as Rock (male), then swap in Tank's look and palette
-const lookFor = async (stage) => page.evaluate((stage) => {
+const lookFor = async (stage, g) => page.evaluate(([stage, g]) => {
   const c = save.chars.rock; c.look = Object.assign({ gender: 'm' }, DEFAULT_LOOK.rock.m); ensureLook('rock', c);
   setClass('rock'); buildRock(0, 0); clearTimeout(warmTimer); WARM = [];
-  LOOK = { kind: 'tank', female: false, style: 'buzz', stage };
+  LOOK = { kind: 'tank', female: g === 'f', style: g === 'f' ? 'crop' : 'buzz', stage };
   CHARM = { on: false };
   const tri3 = (h, key, k = 0.28) => { PAL[key] = hex(h); PAL[key + 'S'] = shadeHex(h, -k); PAL[key + 'L'] = shadeHex(h, 0.3); };
   tri3(0xe8b996, 'skin', 0.2); PAL.skinL = shadeHex(0xe8b996, 0.25);
@@ -303,11 +324,15 @@ const lookFor = async (stage) => page.evaluate((stage) => {
   PAL.buckleA = hex(0xc8ccd2); PAL.buckleB = hex(0x3a3f47);
   PAL.hair = hex(0x4b3d35); PAL.hairS = hex(0x33291f); PAL.hairL = hex(0x6e5e54); PAL.hairHi = hex(0x5a4c44); PAL.hairOut = hex(0x16110e);
   PAL.brow = hex(0x2a201b); PAL.lash = hex(0x1a120e); PAL.mouth = hex(0x8a4a3e);
+  if (g === 'f') {   // her crop is a warm dark copper; the mouth a touch rosier
+    PAL.hair = hex(0x6a3b29); PAL.hairS = hex(0x47261a); PAL.hairL = hex(0x8c5638); PAL.hairHi = hex(0xa66a46); PAL.hairOut = hex(0x1c0f0a);
+    PAL.brow = hex(0x3a2016); PAL.mouth = hex(0xa04a4c);
+  }
   if (stage >= 1) { tri3(0x76818e, 'boot', 0.36); }               // the back view picks these up for the boots…
   if (stage >= 2) { tri3(0x76818e, 'greave', 0.36); PAL.legPlate = true; }   // …and the leg plates
   if (stage >= 5) { tri3(0x4c535c, 'shorts', 0.35); tri3(0x76818e, 'tunic', 0.36); tri3(0x4c535c, 'warm', 0.3); tri3(0x2f343b, 'skin', 0.3); }   // under the mecha: no cloth or skin shows
   FCACHE.clear();
-}, stage);
+}, [stage, g]);
 
 const ids = await page.evaluate(() => ANIMS.map(a => a.id).filter(id => !/^[amj]_/.test(id) || id.startsWith('a_') || id === 'j_throw' || id === 'j_push'));
 // poses for Tank: a_* swap the arms so the near hand aims the pistol (with the far hand steadying it)
@@ -325,38 +350,79 @@ const setupPoses = () => page.evaluate((ids) => {
       return q;
     });
   }
+  // ---- Tank's own poses. Limb angles: 0 = down, π/2 = forward, π = up. Lying prone the body is turned by
+  // rot = 1.5, so a world angle w is drawn with the local angle w + 1.5.
+  const B = o => Object.assign({}, BASE_POSE, o);
+  const PR = 1.5, prone = { rot: PR, y: 20.6, x: -3, t: 0, nL: 0.06, nK: 0.25, fL: -0.08, fK: 0.55, eyes: 'fierce' };
+  // prone shot: both hands on the pistol, aimed dead ahead just above the floor; the shot (frame 1) kicks the muzzle up and him back
+  __TP.a_low = [[0, 0, 0], [0.13, -1.2, 0.6], [0.06, -0.6, 0.3], [0.015, -0.1, 0]].map(([kick, dx, hr]) => {
+    const w = Math.PI / 2 - 0.04 + kick, a = w + PR;
+    return B(Object.assign({}, prone, { x: -3 + dx, h: -1.3 - kick * 0.3, nA: a - 0.02, nE: 0.02, ba: a, fA: a - 0.3, fE: 0.6, hair: 0.3 + hr }));
+  });
+  // prone grenade lob with the near arm: cock it up and back, swing it over, let go on frame 2
+  __TP.p_throw = [[3.4, 0.9, 1, -1.3], [2.7, 0.8, 1, -1.22], [1.75, 0.15, 0, -1.2], [1.35, 0.2, 0, -1.28], [1.2, 0.4, 0, -1.33]].map(([w, e, nade, h]) =>
+    B(Object.assign({}, prone, { h, nA: w + PR, nE: e, fA: 2.35, fE: 0.9, noGun: true, grenade: !!nade, hair: 0.3 + (nade ? 0 : 0.4) })));
+  // standing throw, steeply up (~60°): wind down and back, come over the top, release on frame 2
+  const stand = { nL: 0.3, nK: 0.2, fL: -0.34, fK: 0.25, eyes: 'fierce', noGun: true };
+  __TP.j_throwUp = [
+    { nA: -0.7, nE: 1.3, fA: 0.9, fE: 0.6, t: -0.05, h: -0.1, y: 1.2, nK: 0.45, fK: 0.45, grenade: true },
+    { nA: 2.9, nE: 1.3, fA: 0.6, fE: 0.4, t: -0.12, h: -0.2, y: 0.4, grenade: true },
+    { nA: 2.45, nE: 0.15, fA: -0.5, fE: 0.4, t: -0.18, h: -0.28, y: -0.6, hair: 0.6 },
+    { nA: 2.35, nE: 0.1, fA: -0.6, fE: 0.4, t: -0.14, h: -0.22, y: -0.4, hair: 0.4 },
+    { nA: 1.2, nE: 0.6, fA: -0.4, fE: 0.4, t: -0.02, h: -0.05, y: 0.2 },
+  ].map(o => B(Object.assign({}, stand, o)));
+  // mid-air throw, forward and a little up: release on frame 1
+  const air = { nL: 0.8, nK: 1.4, fL: 0.25, fK: 1.3, eyes: 'fierce', noGun: true };
+  __TP.a_airThrow = [
+    { nA: 3.0, nE: 1.4, fA: 1.2, fE: 0.5, t: -0.12, h: -0.1, grenade: true },
+    { nA: 2.0, nE: 0.1, fA: -0.5, fE: 0.5, t: 0.12, h: -0.12, hair: 0.6 },
+    { nA: 1.7, nE: 0.15, fA: -0.6, fE: 0.5, t: 0.14, h: -0.05, hair: 0.4 },
+    { nA: 1.0, nE: 0.5, fA: -0.3, fE: 0.5, t: 0.06 },
+  ].map(o => B(Object.assign({}, air, o)));
+  // aim strips: frame i points the pistol at -60° + 15°·i from facing (negative = up), two-handed grip as in a_shoot
+  const aimPose = (i, legs) => {
+    // aiming up he tips his head back so the pistol clears his face
+    const a = Math.PI / 2 + (60 - 15 * i) * Math.PI / 180, up = Math.max(0, a - Math.PI / 2), dn = Math.max(0, Math.PI / 2 - a);
+    return B(Object.assign({ eyes: 'fierce', t: 0.04 - up * 0.12 + dn * 0.12, h: -up * 0.5 + dn * 0.12, nA: a - 0.02, nE: 0.02, ba: a, fA: a - 0.35, fE: 0.75 }, legs));
+  };
+  __TP.a_aim = Array.from({ length: 9 }, (_, i) => aimPose(i, { nL: 0.32, nK: 0.2, fL: -0.34, fK: 0.25 }));
+  __TP.a_airAim = Array.from({ length: 9 }, (_, i) => aimPose(i, { nL: 0.8, nK: 1.4, fL: 0.25, fK: 1.3 }));
+  window.__TMETA = { p_throw: [18, false], j_throwUp: [18, false], a_airThrow: [20, false], a_aim: [1, false], a_airAim: [1, false] };
 }, ids);
+const EXTRA = ['p_throw', 'j_throwUp', 'a_airThrow', 'a_aim', 'a_airAim'];
+const allIds = ids.concat(EXTRA);
 
 const manifestPath = join(OUT, 'art/hero/hero.json'), headsPath = join(OUT, 'art/hero/heads.json'), pointsPath = join(OUT, 'art/hero/tank_points.json');
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
 const heads = existsSync(headsPath) ? JSON.parse(readFileSync(headsPath, 'utf8')) : {};
 const points = existsSync(pointsPath) ? JSON.parse(readFileSync(pointsPath, 'utf8')) : {};
 const r2 = v => v ? [+v[0].toFixed(2), +v[1].toFixed(2)] : null;
-const sheetCols = ['idle', 'run', 'a_shoot', 'a_shootUp', 'a_air', 'j_throw', 'slash', 'prone', 'swim', 'dash', 'climb'];
+const sheetCols = ['idle', 'run', 'a_shoot', 'a_shootUp', 'a_air', 'j_throw', 'slash', 'prone', 'swim', 'dash', 'climb', 'a_low', 'p_throw', 'j_throwUp', 'a_airThrow', 'a_aim', 'a_airAim'];
 const sheetRows = [];
 
-for (const stage of STAGES) {
-  const look = `tank_m_${stage}`;
-  await lookFor(stage); await setupPoses();
+for (const g of ['m', 'f']) for (const stage of STAGES) {
+  const look = `tank_${g}_${stage}`;
+  await lookFor(stage, g); await setupPoses();
   const info = await page.evaluate(([ids, sheetCols]) => {
     const out = {};
     for (const id of ids) {
-      const A = ANIM_BY_ID[id], poses = __TP[id], frames = [], hd = [], mz = [], hn = [];
+      const A = ANIM_BY_ID[id] ? { fps: ANIM_BY_ID[id].fps, loop: ANIM_BY_ID[id].loop } : { fps: __TMETA[id][0], loop: __TMETA[id][1] };
+      const poses = __TP[id], frames = [], hd = [], mz = [], hn = [];
       for (const p of poses) {
         const Fr = drawRock(Object.assign({}, p, { wind: WIND_V[1] })), c = toCanvas(Fr);
-        frames.push(c); const t = Fr.tail;
-        hd.push(t ? [+t[0].toFixed(1), +(t[1] + 3).toFixed(1)] : null);
+        frames.push(c); const t = Fr.headC || (Fr.tail && [Fr.tail[0], Fr.tail[1] + 3]);   // the climbing back view has no headC
+        hd.push(t ? [+t[0].toFixed(1), +t[1].toFixed(1)] : null);
         mz.push(Fr.muzzle || null); hn.push(Fr.hand || null);
       }
       out[id] = { fps: A.fps || 10, loop: !!A.loop, frames: frames.length, strip: __strip(frames), head: hd, muzzle: mz, hand: hn };
       if (id === 'idle') out[id].card = frames[0].toDataURL('image/png');
-      if (sheetCols.includes(id)) out[id].sheet = frames[Math.min(frames.length - 1, id === 'idle' ? 0 : id.startsWith('a_') ? 1 : Math.floor(frames.length / 2))].toDataURL('image/png');
+      if (sheetCols.includes(id)) out[id].sheet = frames[Math.min(frames.length - 1, id === 'idle' ? 0 : id === 'a_aim' || id === 'a_airAim' ? 2 : id.startsWith('a_') ? 1 : Math.floor(frames.length / 2))].toDataURL('image/png');
     }
     return out;
-  }, [ids, sheetCols]);
+  }, [allIds, sheetCols]);
   const L = { anims: {}, tail: null };
   heads[look] = {}; points[look] = {};
-  for (const id of ids) {
+  for (const id of allIds) {
     const a = info[id];
     png(`art/hero/${look}/${id}_1.png`, a.strip.url);
     L.anims[id] = { fps: a.fps, loop: a.loop, frames: a.frames, variants: [1] };
@@ -364,10 +430,11 @@ for (const stage of STAGES) {
     points[look][id] = { muzzle: a.muzzle.map(r2), hand: a.hand.map(r2) };
   }
   manifest.looks[look] = L;
-  if (stage === 0) png('art/hero/tank_card.png', info.idle.card);
-  if (stage === 5) png('art/hero/tank_card_mecha.png', info.idle.card);
+  const card = g === 'f' ? 'tank_card_f' : 'tank_card';
+  if (stage === 0) png(`art/hero/${card}.png`, info.idle.card);
+  if (stage === 5) png(`art/hero/${card}_mecha.png`, info.idle.card);
   sheetRows.push(sheetCols.map(id => info[id] && info[id].sheet));
-  console.log(look, ids.length, 'animations');
+  console.log(look, allIds.length, 'animations');
 }
 writeFileSync(manifestPath, JSON.stringify(manifest, null, 1) + '\n');
 writeFileSync(headsPath, JSON.stringify(heads) + '\n');

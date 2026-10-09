@@ -354,7 +354,7 @@ const STAT_KEYS := ["Level", "Boss Coins", "EXP", "Max HP", "Attack", "Defense",
 
 func attrName(a: String) -> String:
 	if a == "STR":
-		return PRIMARY[classId][0]
+		return "ATK"   # Attack Power, for every hero (the save still calls it STR)
 	if a == "DEX" and classId == "archer":
 		return "LUK"
 	return a
@@ -370,7 +370,7 @@ func attrDesc(a: String) -> String:
 
 func attrTip(a: String) -> String:
 	var res = CLASSES[classId].resource.to_lower()
-	var pn = PRIMARY[classId][1]
+	var pn = "Attack Power"
 	var why = {"rock": "the force behind every swing", "archer": "steady hands and a sure draw", "mage": "the sharpness of every spell", "summoner": "the bond that makes your companions fight harder", "tank": "the muscle behind every bolt you tighten"}.get(classId, "")
 	return {"STR": "%s: %s. +3 attack per point — the simplest way to hit harder." % [pn, why],
 		"WIL": "Willpower. Speeds up %s recovery and slightly raises its maximum. Each point helps a little less than the last, so skills never become free to spam." % res,
@@ -414,11 +414,12 @@ func _pChar(x: float, y: float, w: float) -> float:
 	var y0 = y
 	y += uCards(x, y, w, 2, [card1, card2])
 	y += 12
-	var owned: Dictionary = c.get("boons", {})
+	var owned: Dictionary = save.get("boons", {})
 	y += uCards(x, y, w, 1, [func(X, Y, W):
-		uText("Boss treasures", X, Y, 11, css("#8a5a08"))
+		var tw = uText("Boss treasures", X, Y, 11, css("#8a5a08"))
+		uPill("ACCOUNT-WIDE · every hero", X + tw + 8, Y + 1, css("#ffe08a"), css("#6a4400"), 7)
 		var yy = Y + 18
-		yy += muted("Rare finds in Crocboxes, Crimsonboxes, Dreamboxes and Yetiboxes (about 1 box in 7). Each one raises a stat for %s for good, and they stack." % C.name, X, yy, W) + 4
+		yy += muted("Rare finds in Crocboxes, Crimsonboxes, Dreamboxes and Yetiboxes (about 1 box in 7). Each one raises a stat for good, for every one of your heroes, and they stack." , X, yy, W) + 4
 		var cw = (W - 10) / 2
 		for i in BOON_ORDER.size():
 			var id: String = BOON_ORDER[i]
@@ -757,7 +758,7 @@ func shopItem(X: float, yy: float, W: float, it: Dictionary, n: int, cost: int, 
 	var bw = 62.0
 	var tw = W - 30 - bw - 6
 	var nw = uText(it.name, X + 28, yy + 5, 9, txtCol)
-	uText(" %d/%d" % [n, it.max], X + 28 + nw, yy + 6, 8, sub, UF)
+	uText((" ×%d" % n) if it.max >= UNLIMITED else (" %d/%d" % [n, it.max]), X + 28 + nw, yy + 6, 8, sub, UF)
 	var dh = uPara(it.desc + ((" · now %d×" % n) if n else ""), X + 28, yy + 18, tw, 8, sub)
 	var h = maxf(30, 20 + dh) + 4
 	var br = Rect2(X + W - bw, yy + h / 2 - 9, bw, 18)
@@ -1541,17 +1542,19 @@ func _wmVolcano(x: Ctx, t: float) -> void:
 	x.fillStyle = "#e8f4ff"
 	x.beginPath(); x.moveTo(250, -74); x.bezierCurveTo(330, -98, 470, -132, 600, -142); x.lineTo(690, -150)
 	x.lineTo(680, -132); x.bezierCurveTo(560, -122, 420, -104, 300, -60); x.closePath(); x.fill()
-	# the volcano cone and its glowing crater
-	x.fillStyle = "#2a1a1a"
+	# the volcano cone (abyssal purple, like the opening cutscene) and its glowing crater
+	x.fillStyle = "#3a1450"
 	x.beginPath(); x.moveTo(700, -40); x.lineTo(790, -150); x.lineTo(850, -150); x.lineTo(940, -40); x.closePath(); x.fill()
-	x.fillStyle = "rgba(255,110,40,%.2f)" % (0.7 + 0.25 * sin(t * 3))
+	x.fillStyle = "#5a2070"
+	x.beginPath(); x.moveTo(850, -150); x.lineTo(940, -40); x.lineTo(900, -40); x.lineTo(842, -146); x.closePath(); x.fill()
+	x.fillStyle = "rgba(255,90,230,%.2f)" % (0.7 + 0.25 * sin(t * 3))
 	x.beginPath(); x.ellipse(820, -150, 32, 7, 0, 0, TAU); x.fill()
 	for i in 3:
 		var k = fmod(t * 0.25 + i / 3.0, 1.0)
-		x.fillStyle = "rgba(90,80,90,%.2f)" % (0.5 * (1 - k))
+		x.fillStyle = "rgba(110,60,130,%.2f)" % (0.5 * (1 - k))
 		x.beginPath(); x.arc(820 + k * 30 + i * 6, -160 - k * 20, 8 + k * 10, 0, TAU); x.fill()
 	for i in 6:
-		x.fillStyle = "#ff6a2a"
+		x.fillStyle = "#ff3ad8"
 		var lx = 800 + i * 7
 		x.fillRect(lx, -146 + hsh(i + 40) * 30, 2, 10 + hsh(i + 41) * 20)
 	# the cave mouth on the snowy slope
@@ -1965,12 +1968,12 @@ const ROCK_CONTROLS := {
 	"combos": [["Z Z Z Z", "Crossguard Rush", "Four-hit chain ending in a spin slash"], ["Z Z · pause · Z", "Pause Breaker", "Wait a beat after the rising slash, then a double whirlwind"],
 		["Z (1–3×) then X", "Rising Aegis", "Shield uppercut that launches slimes high"], ["In the air: Z Z Z", "Sky Rend", "Air slash, rising cut, then a flipping finisher that spikes enemies down"],
 		["In the air: X", "Meteor Drop", "Plunge sword-first; the higher you fall, the bigger the shockwave"], ["X", "Heavy slash", "Big overhead chop on the ground"]],
-	"rows": [["← →", "Move · hold to break into a run, or double-tap to sprint right away"], ["↑ / Space", "Jump · press again in the air for a flash jump"],
-		["↑ ↓", "Climb ropes · ↑ + ← or → (or Space + direction) jumps off · ↑ at a portal to travel"], ["↓ + Space", "Drop through a platform"],
+	"rows": [["← →", "Move · hold to break into a run, or double-tap to sprint right away"], ["Space", "Jump · press again in the air for a flash jump"],
+		["↑ ↓", "Climb ropes · ↑ + ← or → (or Space + direction) jumps off · ↑ at a portal, obelisk or sign to use it"], ["↓ + Space", "Drop through a platform"],
 		["Z", "Attack · keep tapping for the full chain · ↑ + Z for a rising slash (a rising cut in the air)"], ["X", "Heavy slash"],
 		["C", "Dodge (works once in the air) · dodge through an attack for a perfect dodge"], ["↓", "Lie prone · ← → to crawl · Z for a low stab at their feet · while running, slide into prone"],
 		["Shift", "Hold to block · tap right before a hit to parry"], ["A S D F Q W E R", "Skills and buffs you bind in the Skills tab (they cost energy — plain hits refill it)"],
-		["↑/Space ×3 + dir", "Air Leap (Swordsman): a third jump that launches you far in that direction, or high with ↑"], ["H / J", "Health potion / Energy potion (3 charges each, recharging)"],
+		["Space ×3 + dir", "Air Leap (Swordsman): a third jump that launches you far in that direction, or high with ↑"], ["H / J", "Health potion / Energy potion (3 charges each, recharging)"],
 		["Tab", "Open or close this menu"], ["M", "World map"], ["F11", "Fullscreen"]],
 	"note": "Rising slash launches slimes into the air. Jump after them and use air slashes to juggle. Mixing different moves raises your style rank faster than repeating one.",
 }
@@ -1979,7 +1982,7 @@ const ARCHER_CONTROLS := {
 	"combos": [["Z", "Shot", "Fires at the nearest enemy in front of you — fast, light damage"], ["↑ + Z", "Up shot / Bow Launcher", "Shoots upward — or, right next to an enemy, scoops it into the air. Follow-up shots chase that juggled target"],
 		["Z up close", "Bow swing", "Too close to shoot? She swings the bow and shoves them away"], ["In the air: Z Z Z", "Spiral Shot", "Two air shots, then a backflip that fans arrows down at up to 3 enemies · ↑/↓ + Z aims up or down"],
 		["X", "Charged Shot", "A drawn-out heavy arrow that knocks enemies back"], ["In the air: X", "Arrow Dive", "Hop and loose a downward volley (hits up to 2)"], ["↓ then Z", "Prone shot", "Lie flat and fire low along the ground"]],
-	"rows": [["H / J", "Health potion / Focus potion (3 charges each, recharging)"], ["← →", "Move (10% faster than Rock) · double-tap to sprint"], ["↑ / Space", "Jump · she can jump three times"], ["↓", "Lie prone · while running, a long fast slide"],
+	"rows": [["H / J", "Health potion / Focus potion (3 charges each, recharging)"], ["← →", "Move (10% faster than Rock) · double-tap to sprint"], ["Space", "Jump · she can jump three times"], ["↓", "Lie prone · while running, a long fast slide"],
 		["C", "Dodge"], ["Shift", "Guard with the bow"], ["A S D F Q W E R", "Skills — they spend Focus, which landing arrows builds back"], ["Tab / M", "Menu / world map"], ["F11", "Fullscreen"]],
 	"note": "",
 }
@@ -1989,7 +1992,7 @@ const MAGE_CONTROLS := {
 		["X", "Staff spell", "About a second to cast (you stand still), then an area spell hits up to 3 enemies: tornado, crashing wave, clashing earth pillars, eruption, light pillar or vortex"],
 		["Z up close", "Staff thwack", "Knocks an enemy away to make space"], ["↑ + Z up close", "Staff launcher", "Pops it into the air — wand bolts chase it for a juggle"],
 		["1 – 6 or V", "Switch element", "Air, Water, Earth, Fire, then Light (Lv 30) and Dark (Lv 75). V cycles"], ["C + direction", "Blink", "Teleport left, right, up or down (costs a little mana)"]],
-	"rows": [["H / J", "Health potion / Mana potion (3 charges each, recharging)"], ["← →", "Move · double-tap to sprint"], ["↑ / Space", "Jump · double jump"], ["↓", "Lie prone · while running, slide"],
+	"rows": [["H / J", "Health potion / Mana potion (3 charges each, recharging)"], ["← →", "Move · double-tap to sprint"], ["Space", "Jump · double jump"], ["↓", "Lie prone · while running, slide"],
 		["Shift", "Guard with the staff"], ["A S D F Q W E R", "Skills — they spend Mana"], ["Tab / M", "Menu / world map"], ["F11", "Fullscreen"]],
 	"note": "",
 }
@@ -1998,7 +2001,7 @@ const SUMMONER_CONTROLS := {
 	"combos": [["Z", "Command: chomp", "Wave your ring hand and the dragon darts to the nearest enemy you point at, bites, and flies back"], ["↑ / ↓ + Z", "Aimed command", "Straight up or straight down"],
 		["X", "Command: fire breath", "The dragon breathes a cone of fire ahead (later forms scorch everything it touches)"], ["Z up close", "Push", "A two-handed shove that buys space"],
 		["↑ + Z up close", "Grab and throw", "Heave the enemy into the air — commands then chase it for a juggle"], ["1 – 4", "Toggle companions", "Blue Slime (Lv 10), Crocodile (Lv 30), Phoenix (Lv 100), Angel (Lv 150). They fight on their own"]],
-	"rows": [["H / J", "Health potion / Spirit potion (3 charges each, recharging)"], ["← →", "Move · double-tap to sprint"], ["↑ / Space", "Jump · double jump"], ["↓", "Lie prone (commands still work)"],
+	"rows": [["H / J", "Health potion / Spirit potion (3 charges each, recharging)"], ["← →", "Move · double-tap to sprint"], ["Space", "Jump · double jump"], ["↓", "Lie prone (commands still work)"],
 		["C", "Dodge"], ["Shift", "Guard"], ["A S D F Q W E R", "Skills — they spend Spirit"], ["Tab / M", "Menu / world map"], ["F11", "Fullscreen"]],
 	"note": "Your dragon grows with you: a baby until Lv 75, then a Drake about twice your height, and at Lv 200 a full dragon.",
 }
@@ -2007,14 +2010,14 @@ const SUMMONER_CONTROLS := {
 const TANK_CONTROLS := {
 	"title": "Tank's combos",
 	"combos": [["Z Z Z Z", "Pistol chain", "Three shots, then a burst"], ["Z Z X", "Cooked grenade", "A short-fuse grenade with a bigger blast"],
-		["Z Z Z X", "Grenade barrage", "Three grenades at once"], ["X", "Grenade", "Lobbed at the nearest enemy (launcher and missiles later)"],
+		["Z Z Z X", "Grenade barrage", "Three grenades at once"], ["X", "Grenade", "Lobbed at the nearest enemy · ↑ + X lobs it high, onto platforms above"],
 		["↑ + Z", "Shoot up", "Up close it's an uppercut that launches"], ["Z up close", "Pistol whip", "A shove that buys space"],
-		["Z in the air", "Air shots", "Shot, shot, burst · ↑/↓ to aim"], ["X in the air", "Drop a grenade", "Straight down"],
+		["Z in the air", "Air shots", "Shot, shot, burst · ↑/↓ to aim (he aims at the nearest monster)"], ["X in the air", "Air grenade", "Thrown forward · ↑ + X up · ↓ + X straight down"], ["↓ + X", "Prone grenade", "Only Tank can throw lying down"],
 		["1 – 7 / V", "Grenade type", "Frag, shrapnel, cryo, napalm, energy, EMP, cluster (built in the Workshop)"]],
-	"rows": [["H / J", "Health potion / Electricity potion (3 charges each, recharging)"], ["← →", "Move · double-tap to sprint"], ["↑ / Space", "Jump · double jump · hold Space to glide (Rocket Boots) or fly (Mecha Suit)"],
-		["↓", "Lie prone (Z still shoots)"], ["C", "Dodge · C again mid-dodge: double dash (Servo Legs), shoulder slam (Chest Rig)"], ["Shift", "Guard"],
+	"rows": [["H / J", "Health potion / Electricity potion (3 charges each, recharging)"], ["← →", "Move · double-tap to sprint"], ["Space", "Jump · double jump · hold Space to glide (Rocket Boots) or fly (Mecha Suit)"],
+		["↓", "Lie prone (Z shoots straight ahead, X throws)"], ["C", "Dodge · with Servo Legs, two rocket bursts in any direction (the second is a shoulder slam with the Chest Rig)"], ["Shift", "Guard"],
 		["A S D F Q W E R", "Skills — they spend Electricity"], ["Tab / M", "Menu / world map"], ["F11", "Fullscreen"]],
-	"note": "Every exosuit piece you build in the Shop changes how Tank moves and fights. With the helmet, red markers show weak points: hitting one is a super crit.",
+	"note": "The pistol holds a magazine and reloads briefly when it runs dry; pistol upgrades add bullets and cut the reload. Grenades have a cooldown. With the helmet, a red marker shows a weak point about once a minute (bosses too): hitting it is a super crit.",
 }
 
 

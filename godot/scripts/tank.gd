@@ -31,23 +31,31 @@ const DRONES := [
 	{"name": "Lancer Drone", "rate": 0.75, "dmg": 0.75, "rocket": true, "twin": true, "energy": true, "lv": 50, "coins": 20000, "parts": {"scrap": 320, "wire": 160, "circuit": 50, "core": 6}, "desc": "Fires energy bolts that pierce."},
 ]
 const HOUSE_COST := {"lv": 15, "coins": 5000, "mats": {}, "parts": {"scrap": 250, "wire": 120, "circuit": 30, "core": 4}}
-const SPD_BY_ARMOR := [0.0, 0.0, 0.12, 0.12, 0.12, 0.12, 0.22, 0.22, 0.22, 0.3]
+const SPD_BY_ARMOR := [0.0, 0.0, 0.18, 0.18, 0.18, 0.18, 0.3, 0.3, 0.3, 0.38]
 const CHAIN_NEXT := {"t_shoot": "t_shoot2", "t_shoot2": "t_shoot3", "t_shoot3": "t_burst"}
 const NADE_NEXT := {"t_shoot": "t_nade", "t_shoot2": "t_cook", "t_shoot3": "t_barrage", "t_burst": "t_barrage"}
 const MUZZLE := {"fwd": [19, -29], "up": [12, -42], "down": [15, -14], "low": [22, -5]}
 const NADE_G := 620.0
+const NADE_CD := 0.7   # seconds between grenades (about twice a throw), so they can't be spammed
+const MAG := [6, 8, 10, 12, 14, 16, 18, 22]          # rounds per magazine, by pistol tier
+const RELOAD := [0.75, 0.71, 0.67, 0.63, 0.59, 0.55, 0.51, 0.47]   # seconds to reload, by pistol tier
+const WEAK_EVERY := [60.0, 55.0, 50.0]   # a weak point shows up this often: helmet, helmet Mk II, the mecha suit
+const NEW_ANIMS := {"p_throw": [18, 5], "j_throwUp": [18, 5], "a_airThrow": [20, 4], "a_aim": [1, 9], "a_airAim": [1, 9]}
 
 var tshots: Array = []   # Tank's bullets, grenades and missiles (and his drone's and turret's)
 var tfx: Array = []      # his explosions, fire patches, beams and fly-by drones
 var TK := {"q": "", "dashN": 0, "slam": false, "slamV": 0.0, "slamHit": {}, "glide": false, "fly": false,
-	"drone": {"x": 0.0, "y": 0.0, "cd": 1.0, "t": 0.0, "flash": 0.0}, "turrets": [], "bot": null, "weak": {}, "meteor": null}
+	"drone": {"x": 0.0, "y": 0.0, "cd": 1.0, "t": 0.0, "flash": 0.0}, "turrets": [], "bot": null, "weak": {}, "meteor": null,
+	"burstN": 0, "burstT": 0.0, "burstHit": {}, "glided": false, "airNadeN": 0, "nadeCd": 0.0, "mag": -1, "reload": 0.0, "idleT": 0.0,
+	"aim": {"t": 0.0, "i": 4, "air": false}, "weakCd": 8.0, "weakOn": null}
+var _tpts := {}   # tank_points.json: the pistol's muzzle and the throwing hand, per look, anim and frame
 
 
 # ================================================================ data
 
 func initTankData() -> void:
 	CLASSES.tank = {"id": "tank", "name": "Tank", "role": "Mechanic", "initial": "T", "resource": "Electricity", "res": "EL", "unlock": "dreamer",
-		"blurb": "Born from the Dreamer's dream. A build-it-yourself war machine: a pistol, grenades, and an exosuit he builds one piece at a time.",
+		"blurb": "Born from the Dreamer's dream. A build-it-yourself war machine: a pistol, grenades, and an exosuit built one piece at a time.",
 		"armorLabel": "Exosuit", "weaponLabel": "Pistol", "nadeLabel": "Grenades"}
 	JOBS_BY.tank = [
 		{"id": "t_tinkerer", "name": "Tinkerer", "lv": 1, "targets": 1, "color": "#c9d3e6"},
@@ -58,9 +66,12 @@ func initTankData() -> void:
 		{"id": "t_sage", "name": "Mecha Sage", "lv": 150, "targets": 15, "color": "#fff3b0"},
 		{"id": "t_avatar", "name": "Mecha Avatar", "lv": 200, "targets": 18, "color": "#b388ff"},
 	]
-	DEFAULT_LOOK.tank = {"m": {"style": "buzz", "hair": "raven", "eye": "amber"}, "f": {"style": "buzz", "hair": "raven", "eye": "amber"}}
-	PRIMARY.tank = ["STR", "Strength"]
+	DEFAULT_LOOK.tank = {"m": {"style": "buzz", "hair": "raven", "eye": "amber"}, "f": {"style": "buzz", "hair": "raven", "eye": "amber"}}   # Tank's looks are baked per exosuit stage, so these are placeholders
+	PRIMARY.tank = ["ATK", "Attack Power"]
 	GEAR.tank = {"armor": _exoTiers(), "weapon": _gunTiers(), "nade": _nadeTiers()}
+	for k in NEW_ANIMS:
+		if not ANIM_BY_ID.has(k):
+			ANIM_BY_ID[k] = {"fps": NEW_ANIMS[k][0], "frames": NEW_ANIMS[k][1], "loop": false}
 	_tankMoves()
 	_tankSkills()
 	STORY.tank = {"kin": "dream", "line": "The Dreamer falls.", "scenes": [
@@ -98,13 +109,13 @@ func _exoTiers() -> Array:
 	var ability = [
 		"Just a work shirt. Every machine starts somewhere.",
 		"Rocket boots: higher jumps, and hold Space while falling to glide.",
-		"Servo legs: you run faster, and pressing C again mid-dodge does a double dash.",
-		"Chest and arms: the double dash becomes a rocket shoulder slam. Unlocks twin pistols and the grenade launcher.",
-		"Diagnostic helmet: weak points show up on monsters. Hitting one is a super crit, twice a normal crit.",
+		"Servo legs: you run faster and slide faster and twice as far. Your dodge becomes a rocket burst that goes twice as far, and you get two bursts (forward twice, or forward and back). Bursting through monsters hurts them a little.",
+		"Chest and arms: your second rocket burst becomes a shoulder slam. Unlocks twin pistols and the grenade launcher.",
+		"Diagnostic helmet: about every 60 seconds a weak point shows up on a monster or boss nearby. Hitting it is a super crit, twice a normal crit.",
 		"Boots Mk II: even higher jumps and a slower, longer glide.",
-		"Legs Mk II: faster still, and your dashes go farther.",
+		"Legs Mk II: faster still, and your rocket bursts go farther.",
 		"Chest Mk II: the shoulder slam hits half again as hard and sends out a shockwave.",
-		"Helmet Mk II: weak points come back faster and show up on bosses too.",
+		"Helmet Mk II: a weak point shows up about every 55 seconds (every 50 with the full suit).",
 		"The full mecha suit. Hold Space in the air to fly.",
 	]
 	var out = []
@@ -171,7 +182,11 @@ func _tankMoves() -> void:
 		"t_nade": {"anim": "j_throw", "hits": [2], "dmg": 1.5, "kb": 0, "up": 0, "style": 14, "cancel": 4, "nade": "throw"},
 		"t_cook": {"anim": "j_throw", "hits": [1], "dmg": 2.0, "kb": 0, "up": 0, "style": 20, "cancel": 4, "nade": "cook"},
 		"t_barrage": {"anim": "j_throw", "hits": [1, 2, 3], "dmg": 1.1, "kb": 0, "up": 0, "style": 26, "cancel": 5, "nade": "barrage"},
-		"t_airNade": {"anim": "a_airDown", "hits": [1], "dmg": 1.4, "kb": 0, "up": 0, "style": 14, "cancel": 3, "nade": "down", "air": true},
+		"t_airNade": {"anim": "a_airThrow", "hits": [1], "dmg": 1.4, "kb": 0, "up": 0, "style": 14, "cancel": 3, "nade": "air", "air": true},
+		"t_airNadeUp": {"anim": "a_airThrow", "hits": [1], "dmg": 1.4, "kb": 0, "up": 0, "style": 14, "cancel": 3, "nade": "airUp", "air": true},
+		"t_airNadeDown": {"anim": "a_airDown", "hits": [1], "dmg": 1.4, "kb": 0, "up": 0, "style": 14, "cancel": 3, "nade": "down", "air": true},
+		"t_nadeUp": {"anim": "j_throwUp", "hits": [2], "dmg": 1.5, "kb": 0, "up": 0, "style": 14, "cancel": 4, "nade": "up"},
+		"t_proneNade": {"anim": "p_throw", "hits": [2], "dmg": 1.5, "kb": 0, "up": 0, "style": 16, "cancel": 4, "nade": "prone", "prone": true},
 	}
 	MOVES.merge(M2, true)
 
@@ -390,8 +405,13 @@ func tankInput(has: Callable, use: Callable, dirIn: int, _up: bool, down: bool, 
 	var busy = P.state in ["climb", "hurt", "plunge", "knocked", "tumble"] or (P.state == "dash" and P.dashT < 0.14)
 	var attacking = P.state == "attack" and P.move != null and not P.move.get("skill")
 	var air = not P.grounded and not wet
+	var reloading: bool = TK.reload > 0
 	if has.call("atk", 0.22) and not busy:
-		if attacking and CHAIN_NEXT.has(P.moveId) and not air:
+		var whip: bool = P.grounded and not air and P.state != "prone" and closeEnemy(12) != null and not risingIntent
+		var rising: bool = P.grounded and not air and risingIntent and closeEnemy(26) != null
+		if reloading and not (whip or rising):
+			pass   # the magazine is empty: the shot waits in the buffer until the reload finishes
+		elif attacking and CHAIN_NEXT.has(P.moveId) and not air:
 			use.call("atk")
 			TK.q = CHAIN_NEXT[P.moveId]
 		elif attacking and air and P.moveId in ["t_air", "t_air2"]:
@@ -414,28 +434,40 @@ func tankInput(has: Callable, use: Callable, dirIn: int, _up: bool, down: bool, 
 			elif canAct or attacking:
 				use.call("atk")
 				B_clearUp()
-				if risingIntent and closeEnemy(26) != null:
+				if rising:
 					startMove("t_upper")
 				elif risingIntent:
 					startMove("t_up")
-				elif closeEnemy(12) != null:
+				elif whip:
 					startMove("t_whip")
 				else:
 					startMove("t_shoot")
-	if has.call("heavy", 0.2) and not busy:
-		if attacking and NADE_NEXT.has(P.moveId) and not air:
+	# grenades: X throws forward, ↑ + X lobs one high (to the platform above), and he can throw lying down or
+	# in mid-air too (↓ + X in the air drops one straight down). A short cooldown keeps them from being spammed.
+	if has.call("heavy", 0.2) and not busy and TK.nadeCd <= 0:
+		if attacking and NADE_NEXT.has(P.moveId) and not air and not risingIntent:
 			use.call("heavy")
 			TK.q = NADE_NEXT[P.moveId]
 		elif air and P.state != "dash":
 			if not attacking or _cancelable():
 				use.call("heavy")
-				startMove("t_airNade")
-				P.vy = minf(P.vy, -60)
+				if dirIn:
+					P.face = dirIn
+				startMove("t_airNadeUp" if risingIntent else ("t_airNadeDown" if down else "t_airNade"))
+				TK.airNadeN += 1
+				if TK.airNadeN <= 3 and not TK.glided:   # like the others: only the first three hold you up
+					P.vy = minf(P.vy, -60)
+		elif P.state == "prone" and (not attacking or _cancelable()):
+			use.call("heavy")
+			if dirIn:
+				P.face = dirIn
+			startMove("t_proneNade")
 		elif P.grounded and (canAct or (attacking and _cancelable())):
 			use.call("heavy")
 			if dirIn:
 				P.face = dirIn
-			startMove("t_nade")
+			B_clearUp()
+			startMove("t_nadeUp" if risingIntent else "t_nade")
 
 
 func B_clearUp() -> void:
@@ -455,7 +487,7 @@ func _updateAttack(dt: float, aspd: float, dirIn: int, down: bool) -> void:
 		P.vx = damp(P.vx, 0, 9, dt)
 	if mv.get("skill"):
 		skillFrameFX(mv, f)
-	if mv.get("air") and not P.grounded and P.airAtk <= AIR_LIFT_MAX:
+	if mv.get("air") and not P.grounded and P.airAtk <= AIR_LIFT_MAX and not TK.glided and not (mv.get("nade") and TK.airNadeN > 3):
 		P.vy = minf(P.vy, 40)
 	if f != P.lastFrame:
 		P.lastFrame = f
@@ -479,7 +511,7 @@ func _updateAttack(dt: float, aspd: float, dirIn: int, down: bool) -> void:
 				if best != null:
 					damageSlime(best, mv)
 					P.en = minf(PS.enMax, P.en + PS.enHit)
-	if f >= mv.cancel and TK.q != "":
+	if f >= mv.cancel and TK.q != "" and not (MOVES[TK.q].get("nade") and TK.nadeCd > 0) and not (MOVES[TK.q].get("gun") and TK.reload > 0):
 		var nx: String = TK.q
 		TK.q = ""
 		if dirIn:
@@ -505,19 +537,80 @@ func gunRange() -> float:
 
 func muzzleAt(aim: String) -> Vector2:
 	var m: Array = MUZZLE.get(aim, MUZZLE.fwd)
-	var big = 1.1 if lookOf("tank").ends_with("_5") else 1.0
+	var big = 1.1 if lookOf("tank").ends_with("_5") else 1.0   # fallback when the art has no point for this frame
 	return Vector2(P.x + P.face * m[0] * big, P.y + m[1] * big)
+
+
+## a point baked with Tank's art (the pistol's muzzle, or the throwing hand), in the world, or null
+func tankPoint(anim: String, f: int, key: String):
+	if _tpts.is_empty() and FileAccess.file_exists("res://art/hero/tank_points.json"):
+		_tpts = Assets._json("res://art/hero/tank_points.json")
+	var L: Array = _tpts.get(lookOf("tank"), {}).get(anim, {}).get(key, [])
+	if f < 0 or f >= L.size() or L[f] == null:
+		return null
+	return Vector2(P.x + P.face * (float(L[f][0]) - 40.0), P.y + (float(L[f][1]) - 66.0))
+
+
+## the pistol: rounds per magazine and reload time grow with each upgrade
+func magSize() -> int:
+	return MAG[clampi(int(CH().weapon), 0, MAG.size() - 1)]
+
+
+func reloadTime() -> float:
+	return RELOAD[clampi(int(CH().weapon), 0, RELOAD.size() - 1)] * (0.85 if buffOn("overclock") else 1.0)
+
+
+func startReload(quiet := false) -> void:
+	if TK.reload > 0:
+		return
+	TK.reload = reloadTime()
+	if not quiet:
+		floatText(P.x, P.y - 58, "Reloading", "call")
+		Sfx.tone(320, 0.06, "square", 0.04, 200)
+		Sfx.tone(240, 0.08, "square", 0.04, 180, 0.12)
+
+
+## Tank's pose while shooting at a monster: the pistol points at it (a_aim / a_airAim, frame by angle)
+func heroPose():
+	if not isTank() or P.state != "attack" or P.move == null or not P.move.get("gun") or P.move.get("aim", "") != "fwd" or TK.aim.t <= 0:
+		return null
+	return ["a_airAim" if TK.aim.air else "a_aim", TK.aim.i]
+
+
+func animFallback(a: String) -> String:
+	return {"p_throw": "a_low", "j_throwUp": "j_throw", "a_airThrow": "a_airDown", "a_aim": "a_shoot", "a_airAim": "a_air"}.get(a, a)
 
 
 func tankFire(mv: Dictionary, f: int) -> void:
 	if mv.get("nade"):
 		throwNade(mv, f)
 		return
+	if TK.mag < 0:
+		TK.mag = magSize()
+	if TK.reload > 0:
+		return
+	if TK.mag <= 0:
+		startReload()
+		return
 	var c = CH()
 	var W: Dictionary = GEAR.tank.weapon[clampi(int(c.weapon), 0, GEAR.tank.weapon.size() - 1)]
 	var aim: String = mv.get("aim", "fwd")
-	var mz = muzzleAt(aim)
 	var tgt = aimTarget(aim, gunRange())
+	var mz = muzzleAt(aim)
+	var air = not P.grounded
+	if aim == "fwd" and tgt != null:
+		# point the pistol at the monster: one of nine baked aim angles, 60° up to 60° down
+		var dx: float = (tgt.x - P.x) * P.face
+		var dy: float = (tgt.y - tgt.h * 0.5) - (P.y - 30)
+		var ang = clampf(rad_to_deg(atan2(dy, maxf(dx, 4.0))), -60, 60)
+		TK.aim = {"t": 0.4, "i": clampi(roundi((ang + 60) / 15.0), 0, 8), "air": air}
+		var ap = tankPoint("a_airAim" if air else "a_aim", TK.aim.i, "muzzle")
+		if ap != null:
+			mz = ap
+	else:
+		var mp = tankPoint(mv.anim, f, "muzzle")
+		if mp != null:
+			mz = mp
 	var energy = W.get("energy", false) or buffOn("titanProtocol")
 	var shots = 2 if W.get("dual", false) else 1
 	for i in shots:
@@ -531,6 +624,10 @@ func tankFire(mv: Dictionary, f: int) -> void:
 		Sfx.tone(140, 0.07, "sawtooth", 0.04, 60)
 	if mv.gun == "burst" and f == 1 and droneTier() >= 3:
 		droneFire(tgt, true)
+	TK.mag -= 1
+	TK.idleT = 0.0
+	if TK.mag <= 0:
+		startReload()
 
 
 func spawnBullet(x: float, y: float, tgt, aim: String, dmg: float, kind := "bullet", spread := 0.0, own := false, homing := 1.0) -> Dictionary:
@@ -558,37 +655,65 @@ func throwNade(mv: Dictionary, f: int) -> void:
 	var demo = skillRank("demolitions")
 	var dmg: float = mv.dmg * NT.mul * (1 + 0.05 * demo)
 	var R: float = 30.0 * (1 + 0.03 * demo) * (1.35 if mv.nade == "cook" else 1.0)
-	var tgt = aimTarget("fwd", 190)
-	if tgt == null:
-		tgt = nearestFoe(P.x + P.face * 60, P.y - 20, 150)
+	var how: String = mv.nade
+	var lob: bool = how in ["up", "airUp"]   # ↑ + X: high and short, for the platform above
+	var tgt = null
+	if lob:
+		tgt = _lobTarget()
+	elif how != "down":
+		tgt = aimTarget("fwd", 190)
+		if tgt == null:
+			tgt = nearestFoe(P.x + P.face * 60, P.y - 20, 150)
 	var ox = P.x + P.face * 10
-	var oy = P.y - 34
+	var oy = P.y - (8.0 if how == "prone" else 34.0)
+	var hp = tankPoint(mv.anim, f, "hand")
+	if hp != null:
+		ox = hp.x
+		oy = hp.y
 	var mode: String = NT.mode
 	var nt = nadeType()
-	if mv.nade == "down":
+	if how == "down":
 		_nade(ox, P.y - 18, P.face * 40.0, 300.0, dmg, R, nt, 2.0)
 	elif mode == "missile":
 		var n = 3 if NT.get("swarm") else 1
 		for i in n:
-			var m = _nade(ox, oy, P.face * 160.0, -120.0 - i * 60.0, dmg * (0.6 if n > 1 else 1.0), R, nt, 1.6, "missile")
+			var m = _nade(ox, oy, P.face * (60.0 if lob else 160.0), (-330.0 if lob else -120.0) - i * 60.0, dmg * (0.6 if n > 1 else 1.0), R, nt, 1.6, "missile")
 			m.tgt = tgt
 	elif mode == "launcher":
-		_nade(ox, oy + 4, P.face * 380.0, -70.0, dmg, R * 1.1, nt, 1.2, "shell")
+		if lob:
+			_nade(ox, oy, P.face * 120.0, -330.0, dmg, R * 1.1, nt, 1.4, "shell")
+		else:
+			_nade(ox, oy + (0.0 if how == "prone" else 4.0), P.face * 380.0, -30.0 if how == "prone" else -70.0, dmg, R * 1.1, nt, 1.2, "shell")
 	else:
 		var vx: float
 		var vy: float
-		var T = 0.42 if mv.nade == "cook" else 0.55
-		if tgt != null:
-			var dx: float = clampf(tgt.x - ox, -200, 200)
-			var dy: float = (tgt.y - 6) - oy
-			vx = dx / T
-			vy = (dy - 0.5 * NADE_G * T * T) / T
+		if lob:
+			# a steep lob: about 150 high and never much more than 110 across
+			vy = -430.0
+			vx = P.face * 80.0
+			if tgt != null:
+				vx = clampf((tgt.x - ox) / 1.3, -115, 115)
+		elif how == "prone":
+			vx = P.face * 230.0
+			vy = -150.0
+		elif how == "air":
+			vx = P.face * 210.0
+			vy = -150.0
 		else:
-			vx = P.face * 190.0
-			vy = -210.0
-		if mv.nade == "barrage":
-			vx *= 0.75 + f * 0.18
-		_nade(ox, oy, vx, vy, dmg, R, nt, 0.55 if mv.nade == "cook" else 1.0)
+			var T = 0.42 if how == "cook" else 0.55
+			if tgt != null:
+				var dx: float = clampf(tgt.x - ox, -200, 200)
+				var dy: float = (tgt.y - 6) - oy
+				vx = dx / T
+				vy = (dy - 0.5 * NADE_G * T * T) / T
+			else:
+				vx = P.face * 190.0
+				vy = -210.0
+			if how == "barrage":
+				vx *= 0.75 + f * 0.18
+		_nade(ox, oy, vx, vy, dmg, R, nt, (0.55 if how == "cook" else (1.4 if lob else 1.0)))
+	if f == mv.hits[0]:
+		TK.nadeCd = NADE_CD
 	Sfx.whoosh(1.3 if mode == "hand" else 0.9, false)
 	if mode != "hand":
 		Sfx.tone(180, 0.12, "sawtooth", 0.06, 80)
@@ -597,6 +722,23 @@ func throwNade(mv: Dictionary, f: int) -> void:
 		var rk = _nade(D2.x, D2.y, P.face * 120.0, -40.0, dmg * 0.4, R * 0.7, "frag", 1.5, "missile")
 		rk.tgt = tgt
 		rk.small = true
+
+
+## a monster above and ahead (on a platform overhead), for the high lob
+func _lobTarget():
+	var best = null
+	var bd = 1e9
+	for e in slimes:
+		if e.state == "dead" or e.bossEye or e.spawnT > 0:
+			continue
+		var dx: float = (e.x - P.x) * P.face
+		var dy: float = P.y - e.y
+		if dx > -20 and dx < 150 and dy > 10 and dy < 150:
+			var d = absf(dx) + absf(dy) * 0.5
+			if d < bd:
+				bd = d
+				best = e
+	return best
 
 
 func _nade(x: float, y: float, vx: float, vy: float, dmg: float, R: float, nt: String, fuse: float, kind := "nade") -> Dictionary:
@@ -773,7 +915,7 @@ func tankBoom(x: float, y: float, R: float, dmg: float, nt := "frag", small := f
 			if hit.size():
 				P.en = minf(PS.enMax, P.en + 6)
 	if not small:
-		shake = maxf(shake, 5 + R * 0.05)
+		shake = maxf(shake, 1.5 + R * 0.02)   # a little rumble, not a quake
 		hitstop = maxf(hitstop, 0.04)
 		Sfx.slam()
 	Sfx.tone(70 if not small else 110, 0.35 if not small else 0.2, "sawtooth", 0.09 if not small else 0.05, 30)
@@ -788,18 +930,16 @@ func tankBoom(x: float, y: float, R: float, dmg: float, nt := "frag", small := f
 
 func tankDodge(dirIn: int) -> void:
 	var a = armorT()
-	var second = P.state == "dash" and TK.dashN == 1 and P.dashT > 0.05 and a >= 2
-	if not second:
-		if not P.grounded and P.airDash > 0 and a < 9:
+	if a < 2:
+		# work clothes or just the boots: an ordinary dodge (the boots puff a little flame)
+		if not P.grounded and P.airDash > 0:
 			return
 		if P.state == "dash" and P.dashT < 0.22:
 			return
-		TK.dashN = 1
-		TK.slam = false
 		if not P.grounded:
 			P.airDash = 1
 		P.state = "dash"; P.dashT = 0.0; P.face = dirIn if dirIn else P.face
-		P.vx = P.face * 320.0 * (1.1 if a >= 6 else 1.0)
+		P.vx = P.face * 320.0
 		if not P.grounded:
 			P.vy = minf(P.vy, -40)
 		P.iframes = 0.26
@@ -809,26 +949,43 @@ func tankDodge(dirIn: int) -> void:
 		if a >= 1:
 			_thrust(6)
 		return
-	TK.dashN = 2
-	P.dashT = 0.0
-	P.face = dirIn if dirIn else P.face
-	P.iframes = 0.32
+	# Servo Legs: rocket bursts from the boots and legs, twice as far as a dodge, two in a row at most —
+	# forward twice, or forward and back. Anything you blast through takes a light hit. With the Chest &
+	# Arms rig the second burst is a shoulder slam.
+	if TK.burstN >= 2 or (P.state == "dash" and P.dashT < 0.06):
+		return
+	var dir: int = dirIn if dirIn else P.face
+	TK.burstN += 1
+	TK.burstT = 0.0
+	TK.burstHit = {}
+	P.state = "dash"; P.dashT = 0.0; P.face = dir
+	P.vx = dir * 640.0 * (1.1 if a >= 6 else 1.0)
+	if not P.grounded:
+		P.vy = minf(P.vy, -30)
+	P.iframes = 0.3
 	P.dodged.clear()
 	setAnim("dash")
-	if a >= 3:
-		TK.slam = true
+	TK.slam = a >= 3 and TK.burstN == 2
+	if TK.slam:
 		TK.slamHit = {}
-		TK.slamV = 470.0
-		P.vx = P.face * TK.slamV
+		TK.slamV = 560.0
 		Sfx.whoosh(0.7, true)
 		Sfx.tone(90, 0.3, "sawtooth", 0.07, 50)
-		_thrust(14)
 		floatText(P.x, P.y - 58, "Shoulder Slam!", "call")
 	else:
-		P.vx = P.face * 400.0 * (1.12 if a >= 6 else 1.0)
 		Sfx.dodge()
-		_thrust(8)
-	styleAdd(6, "dash2")
+	Sfx.tone(140, 0.18, "sawtooth", 0.05, 60)
+	_thrust(16)
+	_legFlames(8)
+	if TK.burstN == 2:
+		styleAdd(6, "dash2")
+
+
+## rocket flame from the boots and the leg servos
+func _legFlames(n: int) -> void:
+	for i in n:
+		var hy = P.y - (rand(0, 3) if i % 2 == 0 else rand(10, 16))
+		part(P.x - P.face * rand(2, 7), hy, -P.face * rand(60, 160) + P.vx * 0.1, rand(-25, 25), rand(0.12, 0.3), "#ffb03a" if i % 3 else ("#6fd8ff" if armorT() >= 6 else "#fff3b0"), 0, 2)
 
 
 func _thrust(n: int) -> void:
@@ -845,7 +1002,25 @@ func tankMove(dt: float, _dirIn: int, _up: bool, down: bool) -> void:
 		TK.q = ""
 	if P.state != "dash":
 		TK.slam = false
-		TK.dashN = 0 if P.state != "dash" else TK.dashN
+	TK.burstT += dt
+	var wetNow = inWater()
+	if P.grounded or wetNow:
+		TK.glided = false
+		TK.airNadeN = 0
+		if P.state != "dash" and TK.burstT > 0.35:
+			TK.burstN = 0   # both bursts recharge once you're back on your feet
+	# a rocket burst: flames all the way, and a light hit on anything you pass through
+	if P.state == "dash" and TK.burstN > 0 and a >= 2:
+		if randf() < 0.9:
+			_legFlames(2)
+		if not TK.slam and P.dashT < 0.22:
+			var bb = hbox(P.x - 10, P.x + 10, P.y - 34, P.y)
+			for e in slimes:
+				if e.state == "dead" or e.bossEye or e.spawnT > 0 or TK.burstHit.has(e) or not overlap(bb, sBox(e)):
+					continue
+				TK.burstHit[e] = true
+				damageSlime(e, {"dmg": 0.45, "kb": 60, "up": -80, "style": 6, "anim": "t_burst", "both": true})
+				sparks(e.x, e.y - e.h * 0.5, "#ffb03a", 4)
 	# the rocket shoulder slam: carried by the boots, driven by the arms
 	if TK.slam and P.state == "dash":
 		P.vx = P.face * TK.slamV * maxf(0.3, 1 - P.dashT * 1.6)
@@ -858,10 +1033,12 @@ func tankMove(dt: float, _dirIn: int, _up: bool, down: bool) -> void:
 			TK.slamHit[e] = true
 			damageSlime(e, {"dmg": 3.3 if a >= 7 else 2.2, "kb": 340, "up": -220, "style": 24, "anim": "t_slam", "heavy": true})
 			hitstop = maxf(hitstop, 0.08)
-			shake = maxf(shake, 7)
+			shake = maxf(shake, 4)
 			if a >= 7:
 				tankBoom(e.x, e.y - 8, 46, 1.0, "frag", true)
-	var wetNow = inWater()
+	# the servo legs at work: flames from the legs while sprinting or sliding
+	if a >= 2 and P.grounded and (P.state == "slide" or (P.state == "move" and absf(P.vx) > 120)) and randf() < (0.8 if P.state == "slide" else 0.35):
+		_legFlames(1)
 	TK.glide = false
 	TK.fly = false
 	if P.grounded or wetNow or P.state in ["climb", "dead", "knocked", "tumble", "plunge"]:
@@ -873,11 +1050,29 @@ func tankMove(dt: float, _dirIn: int, _up: bool, down: bool) -> void:
 		P.vy = damp(P.vy, -150.0 if not down else 120.0, 5, dt) - GRAV * dt  # cancels the gravity physics adds next
 		if randf() < dt * 30:
 			part(P.x - P.face * 3, P.y + 1, rand(-15, 15), rand(60, 120), rand(0.2, 0.35), "#ffb03a" if randf() < 0.6 else "#6fd8ff", 0, 2)
-	elif a >= 1 and holding and P.vy > 0 and P.state in ["move", "attack"]:
+	elif a >= 1 and holding and P.vy > 0 and P.state == "move":
+		# gliding only while you're not attacking — and once you've glided, attacks stop holding you up
 		TK.glide = true
+		TK.glided = true
 		P.vy = minf(P.vy, 32.0 if a >= 5 else 55.0)
 		if randf() < dt * 22:
 			part(P.x + rand(-3, 3), P.y + 1, rand(-10, 10), rand(40, 90), rand(0.15, 0.3), "#ffb03a" if randf() < 0.6 else "#fff3b0", 0, 1)
+
+
+func airLift() -> bool:
+	if isTank() and TK.glided:
+		P.airAtk += 1
+		return false
+	return super.airLift()
+
+
+## the servo legs: faster, longer slides
+func slideSpeed() -> float:
+	return 1.35 if isTank() and armorT() >= 2 else 1.0
+
+
+func slideLength() -> float:
+	return 1.5 if isTank() and armorT() >= 2 else 1.0   # with the faster start, about twice the distance
 
 
 func hurtPlayer(src, dmg: float) -> void:
@@ -890,18 +1085,19 @@ func hurtPlayer(src, dmg: float) -> void:
 
 # ================================================================ weak points (the Diagnostic Helmet)
 
-func tankWeakHit(e) -> bool:
-	if not isTank():
-		return false
+func weakEvery() -> float:
 	var a = armorT()
-	if a < 4 or (e.boss and a < 8):
+	return WEAK_EVERY[2 if a >= 9 else (1 if a >= 8 else 0)]
+
+
+## the Diagnostic Helmet finds one weak point at a time, on any monster or boss in view, about once a
+## minute (less with each helmet upgrade). Hitting it is a super crit; then the helmet starts scanning again.
+func tankWeakHit(e) -> bool:
+	if not isTank() or armorT() < 4 or e != TK.weakOn:
 		return false
-	var w = TK.weak.get(e)
-	if w == null or w.cd > 0:
-		return false
-	w.cd = 1.6 if a >= 8 else 2.5
-	w.ox = rand(-0.3, 0.3)
-	w.oy = rand(0.35, 0.8)
+	TK.weakOn = null
+	TK.weak.clear()
+	TK.weakCd = weakEvery()
 	floatText(e.x, e.y - e.h - 18, "SUPER CRIT!", "crit")
 	sparks(e.x, e.y - e.h * 0.5, "#ff3a3a", 14)
 	Sfx.tone(1500, 0.08, "square", 0.06, 2200)
@@ -909,20 +1105,36 @@ func tankWeakHit(e) -> bool:
 
 
 func updateWeak(dt: float) -> void:
-	var a = armorT()
-	if a < 4:
+	if armorT() < 4:
 		TK.weak.clear()
+		TK.weakOn = null
 		return
-	for e in TK.weak.keys():
-		if not is_instance_valid(e) or e.state == "dead" or not slimes.has(e):
-			TK.weak.erase(e)
+	var on = TK.weakOn
+	if on != null and (not is_instance_valid(on) or on.state == "dead" or not slimes.has(on)):
+		TK.weakOn = null
+		TK.weak.clear()
+		TK.weakCd = minf(TK.weakCd, 3.0)   # it died before you found the spot: the helmet looks again shortly
+		on = null
+	if on != null:
+		return
+	TK.weakCd -= dt
+	if TK.weakCd > 0:
+		return
+	var best = null
+	var bd = 1e9
 	for e in slimes:
-		if e.state == "dead" or e.bossEye or e.bossPart or (e.boss and a < 8):
+		if e.state == "dead" or e.bossEye or e.bossPart or e.spawnT > 0 or absf(e.x - P.x) > VW * 0.55 or absf(e.y - P.y) > VH * 0.6:
 			continue
-		if not TK.weak.has(e):
-			TK.weak[e] = {"ox": rand(-0.3, 0.3), "oy": rand(0.35, 0.8), "cd": rand(0.2, 1.2)}
-		var w = TK.weak[e]
-		w.cd = maxf(0, w.cd - dt)
+		var d = absf(e.x - P.x) + absf(e.y - P.y) - (400.0 if e.boss else 0.0)   # bosses first
+		if d < bd:
+			bd = d
+			best = e
+	if best == null:
+		return
+	TK.weakOn = best
+	TK.weak = {best: {"ox": rand(-0.25, 0.25), "oy": rand(0.35, 0.75), "cd": 0.0}}
+	floatText(best.x, best.y - best.h - 14, "Weak point!", "call")
+	Sfx.tone(1200, 0.1, "square", 0.04, 1800)
 
 
 # ================================================================ the drone, turrets, the bot
@@ -1055,13 +1267,10 @@ func tankSkillHit(mv: Dictionary, s: Dictionary, list: Array, f: int) -> void:
 			dust(P.x + face * 22, groundAt(P.x + face * 22), 6)
 			Sfx.tone(220, 0.15, "square", 0.05, 440)
 		"strafe":
-			tfx.append({"type": "strafer", "x": P.x - face * 220, "y": P.y - 74, "vx": face * 360.0, "t": 0.0, "life": 1.3, "n": 2, "napalm": false})
-			for k in 3:
-				later(0.25 + k * 0.17, func():
-					for e in _alive(list):
-						var b = spawnBullet(e.x - face * 60, P.y - 74, e, "fwd", dmg, "dbullet", 0, false, 4.0)
-						b.life = 0.5
-					Sfx.tone(rand(1200, 1400), 0.05, "square", 0.04, 500))
+			# a flight of drones sweeps past, raking the ground below them with gunfire
+			tfx.append({"type": "strafer", "x": P.x - face * 240, "y": P.y - 80, "vx": face * 360.0, "t": 0.0, "life": 1.4, "n": 3, "napalm": false,
+				"dmg": dmg, "tick": 0.0, "hit": {}})
+			Sfx.tone(260, 0.5, "sawtooth", 0.04, 520)
 		"napalm":
 			tfx.append({"type": "strafer", "x": P.x - face * 220, "y": P.y - 90, "vx": face * 320.0, "t": 0.0, "life": 1.5, "n": 3, "napalm": true})
 			var k = 0
@@ -1085,8 +1294,43 @@ func tankSkillHit(mv: Dictionary, s: Dictionary, list: Array, f: int) -> void:
 					m.tgt = e
 			else:
 				_lasers(list, dmg)
-			shake = maxf(shake, 6)
+			shake = maxf(shake, 3)
 	hitstop = maxf(hitstop, 0.03)
+
+
+## the strafing run's guns: every few hundredths of a second each drone puts a round into the ground
+## just ahead of it, and anything standing in the line of fire is hit
+func _strafeFire(f: Dictionary, dt: float) -> void:
+	f.tick -= dt
+	if f.tick > 0:
+		return
+	f.tick = 0.045
+	var dir = sgn(f.vx)
+	for i in f.n:
+		var dx: float = f.x - dir * i * 22
+		var dy: float = f.y + i * 9
+		var gx: float = dx + dir * rand(8, 36)
+		var gy: float = _floorBelow(gx, dy)
+		tfx.append({"type": "tracer", "x": dx, "y": dy + 3, "x2": gx, "y2": gy, "t": 0.0, "life": 0.07})
+		part(gx, gy - 1, rand(-30, 30), rand(-90, -30), 0.25, "#ffe9a0" if randf() < 0.5 else "#a89880", 400, 1)
+		for e in slimes:
+			if e.state == "dead" or e.bossEye or e.spawnT > 0 or absf(e.x - gx) > e.w * 0.5 + 8 or e.y < dy or e.y - e.h > gy + 2:
+				continue
+			if float(f.hit.get(e, -1.0)) > f.t:
+				continue
+			f.hit[e] = f.t + 0.12
+			damageSlime(e, {"dmg": f.dmg * 0.3, "kb": 20, "up": -40, "style": 3, "anim": "t_strafe", "both": true})
+	if randf() < 0.5:
+		Sfx.tone(rand(900, 1100), 0.03, "square", 0.025, 500)
+
+
+## the first floor or platform under (x, y)
+func _floorBelow(x: float, y: float) -> float:
+	var best: float = groundAt(x)
+	for q in surfaces:
+		if not q.get("water", false) and x >= q.x0 and x <= q.x1 and q.y >= y and q.y < best:
+			best = q.y
+	return best
 
 
 func _lasers(list: Array, dmg: float) -> void:
@@ -1094,7 +1338,7 @@ func _lasers(list: Array, dmg: float) -> void:
 		tfx.append({"type": "laser", "x": e.x, "y": e.y, "t": 0.0, "life": 0.35})
 		damageSlime(e, {"dmg": dmg, "kb": 30, "up": -60, "style": 8, "anim": "t_laser", "both": true, "heavy": true})
 	World.flash = maxf(World.flash, 0.25)
-	shake = maxf(shake, 4)
+	shake = maxf(shake, 2)
 	Sfx.tone(900, 0.3, "sawtooth", 0.06, 200)
 
 
@@ -1230,6 +1474,20 @@ func updateTank(dt: float) -> void:
 			tshots.clear()
 			tfx.clear()
 		return
+	TK.nadeCd = maxf(0, TK.nadeCd - dt)
+	TK.aim.t = maxf(0, TK.aim.t - dt)
+	if TK.mag < 0 or TK.mag > magSize():
+		TK.mag = magSize()
+	if TK.reload > 0:
+		TK.reload -= dt
+		if TK.reload <= 0:
+			TK.reload = 0.0
+			TK.mag = magSize()
+			Sfx.tone(520, 0.05, "square", 0.05, 760)
+	else:
+		TK.idleT += dt
+		if TK.idleT > 2.5 and TK.mag < magSize() and P.state != "attack":
+			startReload(true)   # topped up quietly while you're not shooting
 	updateTShots(dt)
 	updateWeak(dt)
 	updateDrone(dt)
@@ -1240,6 +1498,8 @@ func updateTank(dt: float) -> void:
 		f.t += dt
 		if f.has("vx"):
 			f.x += f.vx * dt
+		if f.type == "strafer" and not f.napalm and f.t > 0.1:
+			_strafeFire(f, dt)
 		if f.type == "fire":
 			f.tick -= dt
 			if f.tick <= 0:
@@ -1260,6 +1520,8 @@ func tankOnLoad() -> void:
 	TK.turrets.clear()
 	TK.q = ""
 	TK.slam = false
+	TK.weakOn = null
+	TK.burstN = 0
 	TK.drone.x = P.x - P.face * 14
 	TK.drone.y = P.y - 52
 	if TK.bot != null:
