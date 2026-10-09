@@ -470,7 +470,18 @@ func _elemChips() -> void:
 		for i in NADES.size():
 			var q: Dictionary = NADES[i]
 			if own.has(q.id):
-				x += _chip(x, y, "%d%s" % [i + 1, q.icon], q.id == nadeType(), false) + 3
+				# the grenade in hand greys out while it is cooling down
+				x += _chip(x, y, "%d%s" % [i + 1, q.icon], q.id == nadeType() and TK.nadeCd <= 0, q.id == nadeType() and TK.nadeCd > 0) + 3
+		x += 4
+		if TK.reload > 0:
+			x += _chip(x, y, "Reloading", false, true) + 3
+		elif TK.mag >= 0:
+			x += _chip(x, y, "Ammo %d/%d" % [TK.mag, magSize()], TK.mag > 0, TK.mag <= 0) + 3
+		if armorT() >= 4:
+			if TK.weakOn != null:
+				x += _chip(x, y, "Weak point!", true, false) + 3
+			else:
+				x += _chip(x, y, "Weak pt %ds" % ceili(maxf(0, TK.weakCd)), false, true) + 3
 		return
 	if classId == "summoner":
 		x += _chip(x, y, "🐉", true, false) + 3
@@ -554,7 +565,11 @@ func _bossUI() -> void:
 		uPara(I.rec, x + 11, y, tw, 8, css("#ffe08a"))
 
 
+var questBottom := 0.0   # where the quest tracker ends, so the combo grade sits below it
+
+
 func _topRight(indoor: bool) -> void:
+	questBottom = 0.0
 	var D = World
 	var hh = floori(D.t * 24)
 	var mm = floori((D.t * 24 - hh) * 6) * 10
@@ -594,6 +609,7 @@ func _topRight(indoor: bool) -> void:
 			if e.p > 0:
 				uBox(Rect2(pr.position, Vector2(tw * e.p, 3)), MINT, NONE, 0, 2)
 		y += hh2 + 4
+	questBottom = y
 
 
 ## the prototype's minimap, drawn at 168 px wide; returns the y of its bottom edge
@@ -638,7 +654,7 @@ func _styleRank() -> void:
 		return
 	var R: Dictionary = RANKS[Style.rank]
 	var nx = RANKS[Style.rank + 1] if Style.rank + 1 < RANKS.size() else null
-	var y = UH * 0.42
+	var y = minf(maxf(UH * 0.42, questBottom + 10), UH - 150)   # never on top of the quest tracker (or the skill slots)
 	var right = UW - 10
 	var size = int(round(24 * (1 + 0.6 * popAnim / 0.3)))
 	var sw = uW(R.r, size, PX)

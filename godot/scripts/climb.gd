@@ -823,6 +823,7 @@ func updateClimb(dt: float) -> void:
 				part(dx, cy + 3, 0, 40, 1.4, "#bfe4ff", 380, 1, groundAt(dx))
 			var near = clampf(1.0 - absf(dx - P.x) / 260.0, 0.2, 1.0)
 			Sfx.tone(rand(1500, 2600), 0.18, "sine", 0.05 * near, rand(700, 1100), rand(0.3, 0.8))
+	_updateYetiEnd(dt)
 	_updateEscape(dt)
 	# blizzard: you can feel it push at you
 	if M.get("blizzard") and P.state == "move" and not P.grounded:
@@ -840,7 +841,7 @@ func climbWind() -> float:
 func loadMap(id: String, px0 = null, py0 = null) -> void:
 	if id == "climb4":
 		var T: Dictionary = MAPS.climb4
-		T.collapsed = (not not save.trophies.get("kingYeti"))
+		T.collapsed = heroBeat("kingYeti")
 		T.music = "cave" if T.collapsed else "yeti"
 		if T.collapsed:
 			T.floor = RUIN_FLOOR.duplicate(true)
@@ -864,7 +865,7 @@ func mapArt() -> String:
 func climbOnLoad() -> void:
 	if M.get("theme") == "peak":
 		later(0.6, func(): if mapId == "peak": toast("A hot wind roars over the summit. Glamrax's lair is right ahead."))
-	if mapId == "climb4" and save.trophies.get("kingYeti"):
+	if mapId == "climb4" and heroBeat("kingYeti"):
 		openPendantGate(false)
 
 
@@ -913,7 +914,7 @@ func updateCamera(dt: float) -> void:
 
 
 func collapsed() -> bool:
-	return mapId == "climb4" and (not not save.trophies.get("kingYeti"))
+	return mapId == "climb4" and heroBeat("kingYeti")
 
 
 func spawnYeti(fromPedestal := false) -> void:
@@ -1535,13 +1536,18 @@ func abyssHold(dt: float) -> bool:
 			YS.state = "stuck"
 			return false
 		return true
-	# grabbed: three slams into the floor, then flung up into the stalactites on the ceiling
-	var hand = yetiHand(e)
+	# grabbed by the ankle: he swings you by the foot into the floor three times, then flings you
+	# up into the stalactites on the ceiling. P.x/P.y is the foot in his fist; the body turns around it.
+	var flail = sin(H.t * 26.0) * 0.28 + sin(H.t * 41.0) * 0.12
+	var face = float(e.face)
 	match H.phase:
 		"lift":
 			_yAnim(e, "hold", 0)
+			P.spinY = 0.0
 			P.x = lerpf(P.x, e.x + e.face * 30, minf(1, dt * 12))
 			P.y = lerpf(P.y, e.y - 120, minf(1, dt * 10))
+			# upside down, hanging from the ankle and kicking
+			P.spin = lerp_angle(P.spin, PI + flail, minf(1, dt * 14))
 			if H.t > 0.35:
 				H.phase = "slam"; H.t = 0.0
 		"slam":
@@ -1549,16 +1555,20 @@ func abyssHold(dt: float) -> bool:
 			_yAnim(e, "slam", 0 if k < 0.5 else 1)
 			var gx = e.x + e.face * 44
 			P.x = gx
-			P.y = lerpf(e.y - 120, groundAt(gx), easeIn(minf(1, k)))
+			P.y = lerpf(e.y - 120, groundAt(gx) - 5, easeIn(minf(1, k)))
+			# the body whips over the fist and lands flat on the floor, head away from him
+			P.spinY = 0.0
+			P.spin = face * lerpf(PI * 0.9, PI * 0.5, easeIn(minf(1, k))) + flail * (1 - minf(1, k))
 			if k >= 1:
 				H.n += 1
-				P.y = groundAt(gx)
+				P.y = groundAt(gx) - 5
+				P.spin = face * PI * 0.5
 				dust(P.x, P.y, 14)
 				shake = maxf(shake, 8)
 				Sfx.slam()
 				abyssChip({"x": e.x, "lv": e.lv, "atk": e.atk}, 0.6, 0.0, false)
 				if P.state == "dead":
-					P.held = null
+					_releasePlayer()
 					return false
 				H.phase = "slam" if H.n < 3 else "fling"
 				H.t = -0.18   # a beat on the floor between slams
@@ -1566,10 +1576,13 @@ func abyssHold(dt: float) -> bool:
 					H.phase = "up"
 		"up":
 			_yAnim(e, "hold", 0)
+			P.spinY = 0.0
 			if H.t > 0:
 				var k = minf(1, H.t / 0.2)
-				P.y = lerpf(groundAt(P.x), e.y - 120, easeOut(k))
+				P.y = lerpf(groundAt(P.x) - 5, e.y - 120, easeOut(k))
 				P.x = lerpf(P.x, e.x + e.face * 30, k)
+				# hauled back up by the foot, swinging down to hang again
+				P.spin = face * lerpf(PI * 0.5, PI, easeOut(k)) + flail * k
 				if k >= 1:
 					H.phase = "slam"; H.t = 0.0
 		"fling":
@@ -1587,9 +1600,12 @@ func abyssHold(dt: float) -> bool:
 					Sfx.whoosh(1.4, true)
 					Sfx.tone(200, 0.4, "sawtooth", 0.08, 900)
 				var k = minf(1, H.t / 0.32)
-				var top = ceilAt(H.sx) + YT_STAL_LEN + 18   # the point goes through the chest
+				var top = ceilAt(H.sx) + YT_STAL_LEN + 20   # the point goes through the stomach
 				P.x = lerpf(H.x0, H.sx, easeOut(k))
 				P.y = lerpf(H.y0, top, easeOut(k))
+				# tumbling through the air, ending up sideways, belly to the point
+				P.spinY = lerpf(0.0, 20.0, k)
+				P.spin = lerp_angle(P.spin, face * PI * 0.5, minf(1, dt * 18)) + dt * 6 * (1 - k)
 				if k >= 1:
 					H.phase = "stuck"; H.t = 0.0
 					shake = 12
@@ -1601,12 +1617,15 @@ func abyssHold(dt: float) -> bool:
 					for q in 24:
 						part(P.x, P.y - 24, rand(-80, 80), rand(-40, 80), rand(0.4, 0.9), "#d82a3a" if q % 2 else "#ff8a9a", 400, 2)
 					if P.state == "dead":
-						P.held = null
+						_releasePlayer()
 						return false
 		"stuck":
 			_yAnim(e, "roar")
-			var top = ceilAt(H.sx) + YT_STAL_LEN + 18   # the point goes through the chest
+			var top = ceilAt(H.sx) + YT_STAL_LEN + 20   # the point goes through the stomach
 			P.x = H.sx
+			# lying sideways across the point, arms and legs hanging limp
+			P.spinY = 20.0
+			P.spin = face * (PI * 0.5) + sin(H.t * 3.0) * 0.05
 			# hangs there, then slowly slides off the point
 			P.y = top + maxf(0, H.t - 0.6) * 18
 			if randf() < dt * 10:
@@ -1614,6 +1633,8 @@ func abyssHold(dt: float) -> bool:
 			if H.t > 1.3:
 				# falls to the floor; the landing hurts, and it takes a while to get up
 				P.held = null
+				P.spin = 0.0
+				P.spinY = 20.0
 				P.state = "move"
 				abyssChip({"x": e.x, "lv": e.lv, "atk": e.atk}, 1.6, 0.0, false)
 				if P.state != "dead":
@@ -1629,6 +1650,8 @@ func abyssHold(dt: float) -> bool:
 
 func _releasePlayer() -> void:
 	P.held = null
+	P.spin = 0.0
+	P.spinY = 20.0
 	if P.state == "held":
 		P.state = "move"
 	P.iframes = maxf(P.iframes, 0.6)
@@ -1652,23 +1675,11 @@ func yetiFalls(e, firstKill: bool) -> void:
 	Sfx.tone(60, 1.6, "sawtooth", 0.12, 35)
 	Sfx.burst(1.2, "lowpass", 500, 120, 0.35)
 	if firstKill:
+		# a cutscene: you come down to the floor first (wherever you were when he fell), he kneels,
+		# says nothing, then rages and smashes the floor, and the cave comes down
 		P.frozen = true
-		later(1.3, func():
-			# one last furious slam
-			_yAnim(e, "slam", 0)
-			later(0.45, func():
-				_yAnim(e, "slam", 1)
-				shake = 14
-				Sfx.slam(); Sfx.thunder()
-				dust(e.x + e.face * 40, e.y, 30)
-				banner("CAVE-IN!", "The whole cave is coming down")
-				_gatherLoot()
-				for i in 26:
-					dropStal(rand(40, M.w - 40), null, rand(0.0, 2.6), randf() < 0.4)
-				later(1.4, func():
-					_yAnim(e, "fallen")
-					e.dying = false
-					later(0.8, func(): _pendantEscape()))))
+		P.vx = 0
+		yetiEnd = {"phase": "land", "t": 0.0, "e": e}
 	else:
 		later(1.2, func():
 			_yAnim(e, "fallen")
@@ -1680,6 +1691,107 @@ func yetiFalls(e, firstKill: bool) -> void:
 				_dropPendant(e, false)
 			banner("KING YETI FALLS", "Grab the Yetibox · the pedestal can call him back")
 			Sfx.rankUp(9))
+
+
+var yetiEnd := {}   # King Yeti's death cutscene while it plays
+var yetiFlash := 0.0   # the white flash when his last slam splits the floor
+
+
+## the death cutscene's beats that need the frame clock: landing, the rage, the rumble
+func _updateYetiEnd(dt: float) -> void:
+	yetiFlash = maxf(0, yetiFlash - dt)
+	if yetiEnd.is_empty():
+		return
+	var Y: Dictionary = yetiEnd
+	var e = Y.e
+	Y.t += dt
+	P.iframes = maxf(P.iframes, 0.5)
+	P.vx = 0
+	match Y.phase:
+		"land":
+			# come down out of the air (no flying, no gliding): gravity only
+			if not P.grounded:
+				var g = groundAt(P.x)
+				P.vy = minf(P.vy + GRAV * dt, 600)
+				P.y += P.vy * dt
+				P.state = "move"
+				setAnim("fall" if P.vy > 0 else "jump")
+				if P.y >= g:
+					P.y = g
+					P.vy = 0
+					P.grounded = true
+					dust(P.x, P.y, 6)
+					Sfx.land()
+			else:
+				setAnim("idle")
+				P.face = 1 if e.x > P.x else -1
+				if Y.t > 0.8:
+					Y.phase = "speak"
+					Y.t = 0.0
+					_yAnim(e, "kneel")
+					startScene([{"who": "King Yeti", "text": "..."}], func(): _yetiRage(e))
+		"rage":
+			# he gets up shaking with fury
+			if randf() < dt * 30:
+				part(e.x + rand(-30, 30), e.y - rand(30, 100), rand(-60, 60), rand(-120, -20), rand(0.3, 0.6), "#ff5a3a" if randf() < 0.5 else "#ffd0a0", 200, 1)
+			shake = maxf(shake, 2.5)
+			if not Y.has("ex"):
+				Y.ex = e.x
+			e.x = Y.ex + sin(Y.t * 60) * 1.2
+		"collapse":
+			# the roof keeps coming down around you
+			shake = maxf(shake, 3.0)
+			if randf() < dt * 14:
+				var dx = cam.x + rand(0, VW)
+				var cy = ceilAt(dx)
+				if cy > -1e8:
+					part(dx, cy + 4, rand(-20, 20), rand(40, 160), rand(0.8, 1.4), ["#5a6a80", "#8a9ab0", "#c8d8ec"][randi() % 3], 600, 2, groundAt(dx))
+			if randf() < dt * 3:
+				dropStal(cam.x + rand(20, VW - 20), null, 0.0, randf() < 0.3)
+
+
+## "...", then the rage: a roar, one last slam that splits the floor, and the cave implodes
+func _yetiRage(e) -> void:
+	if yetiEnd.is_empty():
+		return
+	yetiEnd.phase = "rage"
+	yetiEnd.t = 0.0
+	_yAnim(e, "roar")
+	floatText(e.x, e.y - 130, "RRRAAAAGH!!", "call")
+	Sfx.tone(70, 1.4, "sawtooth", 0.14, 40)
+	Sfx.burst(1.2, "lowpass", 700, 150, 0.4)
+	later(1.3, func():
+		_yAnim(e, "slam", 0)
+		later(0.4, func():
+			_yAnim(e, "slam", 1)
+			if yetiEnd.has("ex"):
+				e.x = yetiEnd.ex
+			yetiEnd.phase = "collapse"
+			yetiEnd.t = 0.0
+			shake = 16
+			hitstop = 0.15
+			yetiFlash = 0.4
+			Sfx.slam(); Sfx.thunder()
+			Sfx.burst(2.0, "lowpass", 400, 60, 0.5)
+			var fx = e.x + e.face * 40
+			dust(fx, e.y, 40)
+			# the floor splits and the ceiling starts to fall
+			for q in 30:
+				part(fx + rand(-12, 12), e.y - 2, rand(-260, 260), rand(-320, -60), rand(0.5, 1.1), ["#3a4458", "#7a8aa0", "#bfe4ff"][q % 3], 700, 2, groundAt(fx))
+			banner("CAVE-IN!", "The whole cave is coming down")
+			_gatherLoot()
+			for i in 34:
+				dropStal(rand(40, M.w - 40), null, rand(0.0, 3.4), randf() < 0.45)
+			later(1.0, func():
+				# a great chunk of the roof comes down on him
+				dropStal(e.x, null, 0.0, true)
+				later(0.6, func():
+					_yAnim(e, "fallen")
+					e.dying = false
+					shake = maxf(shake, 10)
+					Sfx.slam()
+					dust(e.x, e.y, 24)
+					later(0.9, func(): _pendantEscape())))))
 
 
 ## everything he dropped flies to you (the cave's coming down, there's no time to pick it up)
@@ -1731,10 +1843,14 @@ func _pendantEscape() -> void:
 	# the pendant comes off his neck and into your hand, blazing
 	if not (not not save.get("keyItems", {}).get("yetiPendant")):
 		pickupPendant()
-	escapeGate = {"x": px, "y": groundAt(px), "t": 0.0}
+	# you hold the pendant up; it blazes, and its beam rips open a portal beside you
+	P.face = int(side)
+	escapeGate = {"x": px, "y": groundAt(px), "t": 0.0, "raise": 0.0}
 	Sfx.tone(600, 1.2, "sine", 0.08, 1800)
 	Sfx.burst(1.0, "highpass", 800, 4000, 0.25)
-	floatText(P.x, P.y - 66, "The pendant tears open a portal!", "call")
+	later(1.9, func(): floatText(P.x, P.y - 70, "The pendant tears open a portal!", "call"))
+	for k in 30:
+		part(P.x, P.y - 52, rand(-140, 140), rand(-160, 60), rand(0.5, 1.0), ["#7af0ff", "#ffffff", "#bff4ff"][k % 3], 100, 2)
 	for i in 14:
 		dropStal(rand(40, M.w - 40), null, rand(0.2, 2.6), randf() < 0.4)
 	later(2.8, func():
@@ -1760,6 +1876,7 @@ func _updateEscape(dt: float) -> void:
 	if k >= 1 and fadeTo == null:
 		Sfx.tone(520, 0.4, "sine", 0.12, 1400)
 		escapeGate = {}
+		yetiEnd = {}
 		P.frozen = false
 		fadeTo = {"map": "peak", "x": MAPS.peak.start}
 		later(1.0, func():

@@ -14,7 +14,7 @@ func tankArt(k: String) -> Dictionary:
 
 
 ## one tank sprite, centred on X and standing on Y (or centred on both when `mid`)
-func tankSprite(x: Ctx, k: String, f: int, X: float, Y: float, face := 1, mid := false, sc := 1.0) -> void:
+func tankSprite(x: Ctx, k: String, f: int, X: float, Y: float, face := 1, mid := false, sc := 1.0, outline := false) -> void:
 	var tex = Assets.tex("tank/%s.png" % k)
 	if tex == null:
 		return
@@ -25,7 +25,13 @@ func tankSprite(x: Ctx, k: String, f: int, X: float, Y: float, face := 1, mid :=
 	x.translate(roundf(X), roundf(Y))
 	if face < 0:
 		x.scale(-1, 1)
-	x.drawFrame(tex, int(A.frames), posmod(f, int(A.frames)), -w / 2, -h / 2 if mid else -h, w, h)
+	var fr = posmod(f, int(A.frames))
+	if outline:
+		# Tank's machines get a pale outline so they read against any background
+		var oc = Color(5.0, 8.0, 9.0, 0.85)
+		for o in [Vector2(-1, 0), Vector2(1, 0), Vector2(0, -1), Vector2(0, 1)]:
+			x.drawFrame(tex, int(A.frames), fr, -w / 2 + o.x, (-h / 2 if mid else -h) + o.y, w, h, oc)
+	x.drawFrame(tex, int(A.frames), fr, -w / 2, -h / 2 if mid else -h, w, h)
 	x.restore()
 
 
@@ -70,12 +76,18 @@ func drawTankBack(x: Ctx, sx: float, sy: float) -> void:
 		var fr = int(B2.t * (12 if anim == "attack" else 8))
 		if anim == "attack":
 			fr = clampi(int((0.35 - B2.at) / 0.35 * 4), 0, 3)
-		tankSprite(x, k, fr, B2.x - sx, B2.y - sy + 1, B2.face)
+		tankSprite(x, k, fr, B2.x - sx, B2.y - sy + 1, B2.face, false, 1.0, true)
 
 
 func _drawTurret(x: Ctx, T2: Dictionary, X: float, Y: float) -> void:
 	var a = minf(1, (T2.life - T2.t) / 0.4)
 	x.globalAlpha = a
+	x.save(); x.translate(X, Y); x.scale(1.5, 1.5); x.translate(-X, -Y)
+	# a pale outline and a soft ring on the ground so the Sentry stands out
+	x.fillStyle = rgba(170, 235, 255, 0.18 + 0.08 * sin(realTime * 5))
+	x.beginPath(); x.ellipse(X, Y, 11, 2.5, 0, 0, TAU); x.fill()
+	x.strokeStyle = rgba(200, 245, 255, 0.95); x.lineWidth = 1
+	x.strokeRect(X - 7, Y - 16, 14, 9)
 	x.strokeStyle = "#3a3f4a"; x.lineWidth = 1.5
 	x.beginPath(); x.moveTo(X - 6, Y); x.lineTo(X, Y - 8); x.lineTo(X + 6, Y); x.moveTo(X, Y); x.lineTo(X, Y - 8); x.stroke()
 	x.fillStyle = "#5a6474"; x.fillRect(X - 6, Y - 15, 12, 7)
@@ -85,6 +97,7 @@ func _drawTurret(x: Ctx, T2: Dictionary, X: float, Y: float) -> void:
 	x.fillStyle = "#ff3a3a" if int(realTime * 4) % 2 else "#6a1a1a"; x.fillRect(X - 1, Y - 14, 2, 2)
 	if T2.get("flash", 0.0) > 0:
 		x.fillStyle = "#fff3b0"; x.fillRect(X + (11 if f > 0 else -14), Y - 14, 3, 3)
+	x.restore()
 	x.globalAlpha = 1
 
 
@@ -121,11 +134,14 @@ func drawTankFront(x: Ctx, sx: float, sy: float) -> void:
 		var X = roundf(e.x + w.ox * e.w - sx)
 		var Y = roundf(e.y - e.h * w.oy - sy)
 		var p = 1 + 0.25 * sin(tt * 10)
-		x.strokeStyle = rgba(255, 50, 50, 0.95); x.lineWidth = 1
-		x.beginPath(); x.arc(X, Y, 3.5 * p, 0, TAU); x.stroke()
+		x.fillStyle = rgba(255, 40, 40, 0.18); x.beginPath(); x.arc(X, Y, 9 * p, 0, TAU); x.fill()
+		x.strokeStyle = rgba(255, 255, 255, 0.9); x.lineWidth = 2
+		x.beginPath(); x.arc(X, Y, 5 * p, 0, TAU); x.stroke()
+		x.strokeStyle = rgba(255, 50, 50, 1.0); x.lineWidth = 1
+		x.beginPath(); x.arc(X, Y, 5 * p, 0, TAU); x.stroke()
 		x.fillStyle = "#ff3a3a"
-		x.fillRect(X - 6 * p, Y, 2, 1); x.fillRect(X + 4 * p, Y, 2, 1); x.fillRect(X, Y - 6 * p, 1, 2); x.fillRect(X, Y + 4 * p, 1, 2)
-		x.fillRect(X, Y, 1, 1)
+		x.fillRect(X - 9 * p, Y, 3, 1); x.fillRect(X + 6 * p, Y, 3, 1); x.fillRect(X, Y - 9 * p, 1, 3); x.fillRect(X, Y + 6 * p, 1, 3)
+		x.fillRect(X - 1, Y - 1, 2, 2)
 	# thruster flames while gliding or flying
 	if TK.glide or TK.fly or (TK.slam and P.state == "dash"):
 		var fx0 = P.x - sx
@@ -210,16 +226,23 @@ func drawTankFront(x: Ctx, sx: float, sy: float) -> void:
 				for i in f.n:
 					var X = f.x - sx - sgn(f.vx) * i * 22
 					var Y = f.y - sy + i * 9 + sin(tt * 8 + i) * 2
-					tankSprite(x, "drone_%d" % (2 if f.napalm else 1), int(tt * 16 + i), X, Y, int(sgn(f.vx)), true, 1.1)
+					tankSprite(x, "drone_%d" % (2 if f.napalm else 1), int(tt * 16 + i), X, Y, int(sgn(f.vx)), true, 1.1, true)
+					if int(tt * 30 + i) % 2 == 0:
+						x.fillStyle = "#fff3b0"; x.fillRect(X - 1, Y + 4, 3, 3)
+			"tracer":
+				x.strokeStyle = rgba(255, 225, 120, 1.0 - k * 0.6); x.lineWidth = 1
+				x.beginPath(); x.moveTo(f.x - sx, f.y - sy); x.lineTo(f.x2 - sx, f.y2 - sy); x.stroke()
+				x.fillStyle = rgba(255, 200, 90, 0.9 - k * 0.6)
+				x.beginPath(); x.arc(f.x2 - sx, f.y2 - sy, 2.5, 0, TAU); x.fill()
 	# the drone (and its wingmen under Swarm Protocol)
 	var tier = droneTier()
 	if tier > 0:
 		var D2 = TK.drone
-		tankSprite(x, "drone_%d" % (tier - 1), int(tt * 16), D2.x - sx, D2.y - sy, P.face, true)
+		tankSprite(x, "drone_%d" % (tier - 1), int(tt * 16), D2.x - sx, D2.y - sy, P.face, true, 1.0, true)
 		if buffOn("swarmProtocol"):
 			for i in 2:
 				var a = tt * 2 + i * PI
-				tankSprite(x, "drone_%d" % (tier - 1), int(tt * 16 + i), D2.x - sx + cos(a) * 18, D2.y - sy + sin(a) * 6 - 4, P.face, true, 0.75)
+				tankSprite(x, "drone_%d" % (tier - 1), int(tt * 16 + i), D2.x - sx + cos(a) * 18, D2.y - sy + sin(a) * 6 - 4, P.face, true, 0.75, true)
 		if D2.flash > 0:
 			x.fillStyle = "#fff3b0"; x.fillRect(D2.x - sx + P.face * 8 - 1, D2.y - sy, 3, 2)
 	if buffOn("titanProtocol"):
@@ -245,7 +268,7 @@ func tankCutscene(scenes: Array, done: Callable) -> void:
 
 
 func _tankFrame(x: Ctx, anim: String, f: int, X: float, Y: float, k: float, face := 1, stage := 0) -> void:
-	var look = "tank_m_%d" % stage
+	var look = "tank_%s_%d" % [save.chars.tank.get("look", {}).get("gender", "m"), stage]
 	var A = Assets.hero_anim(look, anim)
 	var tex = Assets.hero_strip(look, anim, 1)
 	if tex == null:
@@ -343,17 +366,23 @@ func _sceneSurface(x: Ctx, t: float) -> void:
 func _sceneShore(x: Ctx, t: float) -> void:
 	var g = x.createLinearGradient(0, 0, 0, SH2); g.addColorStop(0, "#5a6aa8"); g.addColorStop(0.6, "#f0a080"); g.addColorStop(1, "#ffd0a0"); x.fillStyle = g; x.fillRect(0, 0, SW2, SH2)
 	x.fillStyle = "#ffe8b0"; x.beginPath(); x.arc(300, 112, 22, 0, TAU); x.fill()
-	x.fillStyle = "#3a5a8a"; x.fillRect(0, 112, 150, 104)
+	# the sea lies below the beach, its surface level with the waterline; the sand slopes up out of it
+	var wl = 134.0
+	x.fillStyle = "#3a5a8a"; x.fillRect(0, wl, 140, SH2 - wl)
+	x.fillStyle = "#2c4670"; x.fillRect(0, wl + 14, 140, SH2 - wl - 14)
 	for i in 6:
-		x.fillStyle = rgba(255, 255, 255, 0.4); x.fillRect(fposmod(i * 30 + t * 10, 150.0), 118 + i * 9, 14, 1)
-	x.fillStyle = "#e8d098"; x.beginPath(); x.moveTo(100, SH2); x.lineTo(150, 130); x.lineTo(SW2, 130); x.lineTo(SW2, SH2); x.closePath(); x.fill()
+		x.fillStyle = rgba(255, 255, 255, 0.4); x.fillRect(fposmod(i * 23 + t * 10, 130.0), wl + 3 + i * 7, 12, 1)
+	x.fillStyle = "#e8d098"; x.beginPath(); x.moveTo(104, SH2); x.lineTo(126, wl + 2); x.lineTo(150, 131); x.lineTo(SW2, 131); x.lineTo(SW2, SH2); x.closePath(); x.fill()
+	x.fillStyle = rgba(255, 255, 255, 0.7); x.fillRect(118 + sin(t * 1.5) * 4, wl, 16, 1)   # foam where the waves run up the sand
 	x.fillStyle = "#5aa040"; x.fillRect(190, 128, SW2 - 190, 88); x.fillStyle = "#7fd35a"; x.fillRect(190, 128, SW2 - 190, 2)
 	tankSprite(x, "box", 0, 320, 130)
-	var hx = 100 + minf(t * 22, 110)
-	var hy = 130.0 if hx > 140 else 140 - (hx - 100) / 4.0
+	var hx = 92 + minf(t * 22, 118)
+	var hy = 131.0 if hx > 150 else lerpf(150.0, 131.0, clampf((hx - 92) / 58.0, 0, 1))
 	_tankFrame(x, "walk", int(t * 10), hx, hy, 0.95)
-	if hx < 150:
-		x.fillStyle = "#3a5a8a"; x.fillRect(hx - 20, 138, 40, 40)
+	if hx < 128:   # the water in front of him, up to his waist while he wades out (never over the sand)
+		var x0 = hx - 22
+		x.fillStyle = rgba(58, 90, 138, 0.92); x.fillRect(x0, wl, minf(44, 126 - x0), SH2 - wl)
+		x.fillStyle = rgba(255, 255, 255, 0.6); x.fillRect(x0 + 6, wl, 30, 1)
 
 
 ## Glamrax, displeased, watching the wreck in his scrying glass

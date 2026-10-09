@@ -312,6 +312,9 @@ func _process(delta: float) -> void:
 		_music_gain = move_toward(_music_gain, 0.0, delta / FADE_OUT)
 		if _music_gain <= 0.0 or not _music.playing:
 			var s: AudioStreamOggVorbis = load("res://audio/music/%s.ogg" % _pending)
+			if s == null:   # a track that failed to load: stay quiet rather than erroring every frame
+				_pending = ""
+				return
 			s = s.duplicate()
 			s.loop = true
 			_music.stream = s

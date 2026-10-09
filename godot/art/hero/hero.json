@@ -5476,6 +5476,46 @@
      "variants": [
       1
      ]
+    },
+    "p_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throwUp": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_airThrow": {
+     "fps": 20,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_aim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    },
+    "a_airAim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
     }
    },
    "tail": null
@@ -5846,6 +5886,46 @@
      "fps": 18,
      "loop": false,
      "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "p_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throwUp": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_airThrow": {
+     "fps": 20,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_aim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    },
+    "a_airAim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
      "variants": [
       1
      ]
@@ -6222,6 +6302,46 @@
      "variants": [
       1
      ]
+    },
+    "p_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throwUp": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_airThrow": {
+     "fps": 20,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_aim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    },
+    "a_airAim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
     }
    },
    "tail": null
@@ -6592,6 +6712,46 @@
      "fps": 18,
      "loop": false,
      "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "p_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throwUp": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_airThrow": {
+     "fps": 20,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_aim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    },
+    "a_airAim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
      "variants": [
       1
      ]
@@ -6968,6 +7128,46 @@
      "variants": [
       1
      ]
+    },
+    "p_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throwUp": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_airThrow": {
+     "fps": 20,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_aim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    },
+    "a_airAim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
     }
    },
    "tail": null
@@ -7338,6 +7538,2524 @@
      "fps": 18,
      "loop": false,
      "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "p_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throwUp": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_airThrow": {
+     "fps": 20,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_aim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    },
+    "a_airAim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    }
+   },
+   "tail": null
+  },
+  "tank_f_0": {
+   "anims": {
+    "idle": {
+     "fps": 8,
+     "loop": true,
+     "frames": 16,
+     "variants": [
+      1
+     ]
+    },
+    "rest": {
+     "fps": 7,
+     "loop": true,
+     "frames": 16,
+     "variants": [
+      1
+     ]
+    },
+    "walk": {
+     "fps": 13,
+     "loop": true,
+     "frames": 12,
+     "variants": [
+      1
+     ]
+    },
+    "run": {
+     "fps": 16,
+     "loop": true,
+     "frames": 10,
+     "variants": [
+      1
+     ]
+    },
+    "land": {
+     "fps": 14,
+     "loop": false,
+     "frames": 3,
+     "variants": [
+      1
+     ]
+    },
+    "jump": {
+     "fps": 8,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "flip": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "dash": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "block": {
+     "fps": 5,
+     "loop": true,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "slash": {
+     "fps": 16,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "rising": {
+     "fps": 16,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "thrust": {
+     "fps": 15,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "spin": {
+     "fps": 18,
+     "loop": false,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "heavy": {
+     "fps": 14,
+     "loop": false,
+     "frames": 10,
+     "variants": [
+      1
+     ]
+    },
+    "air": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "climb": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "swim": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "aegis": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "air2": {
+     "fps": 16,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "air3": {
+     "fps": 18,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "plunge": {
+     "fps": 12,
+     "loop": true,
+     "frames": 2,
+     "variants": [
+      1
+     ]
+    },
+    "plungeStart": {
+     "fps": 16,
+     "loop": false,
+     "frames": 2,
+     "variants": [
+      1
+     ]
+    },
+    "plungeLand": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "crouch": {
+     "fps": 5,
+     "loop": true,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "slide": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "prone": {
+     "fps": 5,
+     "loop": true,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "crawl": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "proneStab": {
+     "fps": 16,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "cheer": {
+     "fps": 10,
+     "loop": false,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "hurt": {
+     "fps": 10,
+     "loop": false,
+     "frames": 3,
+     "variants": [
+      1
+     ]
+    },
+    "down": {
+     "fps": 8,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "whirl": {
+     "fps": 20,
+     "loop": false,
+     "frames": 13,
+     "variants": [
+      1
+     ]
+    },
+    "a_shoot": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_shootUp": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_shootDown": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_air": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_airUp": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_airDown": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_low": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_rapid": {
+     "fps": 24,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "a_charged": {
+     "fps": 14,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "a_swing": {
+     "fps": 20,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_launch": {
+     "fps": 20,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_spiral": {
+     "fps": 18,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "j_push": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "p_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throwUp": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_airThrow": {
+     "fps": 20,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_aim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    },
+    "a_airAim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    }
+   },
+   "tail": null
+  },
+  "tank_f_1": {
+   "anims": {
+    "idle": {
+     "fps": 8,
+     "loop": true,
+     "frames": 16,
+     "variants": [
+      1
+     ]
+    },
+    "rest": {
+     "fps": 7,
+     "loop": true,
+     "frames": 16,
+     "variants": [
+      1
+     ]
+    },
+    "walk": {
+     "fps": 13,
+     "loop": true,
+     "frames": 12,
+     "variants": [
+      1
+     ]
+    },
+    "run": {
+     "fps": 16,
+     "loop": true,
+     "frames": 10,
+     "variants": [
+      1
+     ]
+    },
+    "land": {
+     "fps": 14,
+     "loop": false,
+     "frames": 3,
+     "variants": [
+      1
+     ]
+    },
+    "jump": {
+     "fps": 8,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "flip": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "dash": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "block": {
+     "fps": 5,
+     "loop": true,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "slash": {
+     "fps": 16,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "rising": {
+     "fps": 16,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "thrust": {
+     "fps": 15,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "spin": {
+     "fps": 18,
+     "loop": false,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "heavy": {
+     "fps": 14,
+     "loop": false,
+     "frames": 10,
+     "variants": [
+      1
+     ]
+    },
+    "air": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "climb": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "swim": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "aegis": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "air2": {
+     "fps": 16,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "air3": {
+     "fps": 18,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "plunge": {
+     "fps": 12,
+     "loop": true,
+     "frames": 2,
+     "variants": [
+      1
+     ]
+    },
+    "plungeStart": {
+     "fps": 16,
+     "loop": false,
+     "frames": 2,
+     "variants": [
+      1
+     ]
+    },
+    "plungeLand": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "crouch": {
+     "fps": 5,
+     "loop": true,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "slide": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "prone": {
+     "fps": 5,
+     "loop": true,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "crawl": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "proneStab": {
+     "fps": 16,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "cheer": {
+     "fps": 10,
+     "loop": false,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "hurt": {
+     "fps": 10,
+     "loop": false,
+     "frames": 3,
+     "variants": [
+      1
+     ]
+    },
+    "down": {
+     "fps": 8,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "whirl": {
+     "fps": 20,
+     "loop": false,
+     "frames": 13,
+     "variants": [
+      1
+     ]
+    },
+    "a_shoot": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_shootUp": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_shootDown": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_air": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_airUp": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_airDown": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_low": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_rapid": {
+     "fps": 24,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "a_charged": {
+     "fps": 14,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "a_swing": {
+     "fps": 20,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_launch": {
+     "fps": 20,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_spiral": {
+     "fps": 18,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "j_push": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "p_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throwUp": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_airThrow": {
+     "fps": 20,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_aim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    },
+    "a_airAim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    }
+   },
+   "tail": null
+  },
+  "tank_f_2": {
+   "anims": {
+    "idle": {
+     "fps": 8,
+     "loop": true,
+     "frames": 16,
+     "variants": [
+      1
+     ]
+    },
+    "rest": {
+     "fps": 7,
+     "loop": true,
+     "frames": 16,
+     "variants": [
+      1
+     ]
+    },
+    "walk": {
+     "fps": 13,
+     "loop": true,
+     "frames": 12,
+     "variants": [
+      1
+     ]
+    },
+    "run": {
+     "fps": 16,
+     "loop": true,
+     "frames": 10,
+     "variants": [
+      1
+     ]
+    },
+    "land": {
+     "fps": 14,
+     "loop": false,
+     "frames": 3,
+     "variants": [
+      1
+     ]
+    },
+    "jump": {
+     "fps": 8,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "flip": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "dash": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "block": {
+     "fps": 5,
+     "loop": true,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "slash": {
+     "fps": 16,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "rising": {
+     "fps": 16,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "thrust": {
+     "fps": 15,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "spin": {
+     "fps": 18,
+     "loop": false,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "heavy": {
+     "fps": 14,
+     "loop": false,
+     "frames": 10,
+     "variants": [
+      1
+     ]
+    },
+    "air": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "climb": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "swim": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "aegis": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "air2": {
+     "fps": 16,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "air3": {
+     "fps": 18,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "plunge": {
+     "fps": 12,
+     "loop": true,
+     "frames": 2,
+     "variants": [
+      1
+     ]
+    },
+    "plungeStart": {
+     "fps": 16,
+     "loop": false,
+     "frames": 2,
+     "variants": [
+      1
+     ]
+    },
+    "plungeLand": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "crouch": {
+     "fps": 5,
+     "loop": true,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "slide": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "prone": {
+     "fps": 5,
+     "loop": true,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "crawl": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "proneStab": {
+     "fps": 16,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "cheer": {
+     "fps": 10,
+     "loop": false,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "hurt": {
+     "fps": 10,
+     "loop": false,
+     "frames": 3,
+     "variants": [
+      1
+     ]
+    },
+    "down": {
+     "fps": 8,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "whirl": {
+     "fps": 20,
+     "loop": false,
+     "frames": 13,
+     "variants": [
+      1
+     ]
+    },
+    "a_shoot": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_shootUp": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_shootDown": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_air": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_airUp": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_airDown": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_low": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_rapid": {
+     "fps": 24,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "a_charged": {
+     "fps": 14,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "a_swing": {
+     "fps": 20,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_launch": {
+     "fps": 20,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_spiral": {
+     "fps": 18,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "j_push": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "p_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throwUp": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_airThrow": {
+     "fps": 20,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_aim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    },
+    "a_airAim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    }
+   },
+   "tail": null
+  },
+  "tank_f_3": {
+   "anims": {
+    "idle": {
+     "fps": 8,
+     "loop": true,
+     "frames": 16,
+     "variants": [
+      1
+     ]
+    },
+    "rest": {
+     "fps": 7,
+     "loop": true,
+     "frames": 16,
+     "variants": [
+      1
+     ]
+    },
+    "walk": {
+     "fps": 13,
+     "loop": true,
+     "frames": 12,
+     "variants": [
+      1
+     ]
+    },
+    "run": {
+     "fps": 16,
+     "loop": true,
+     "frames": 10,
+     "variants": [
+      1
+     ]
+    },
+    "land": {
+     "fps": 14,
+     "loop": false,
+     "frames": 3,
+     "variants": [
+      1
+     ]
+    },
+    "jump": {
+     "fps": 8,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "flip": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "dash": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "block": {
+     "fps": 5,
+     "loop": true,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "slash": {
+     "fps": 16,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "rising": {
+     "fps": 16,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "thrust": {
+     "fps": 15,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "spin": {
+     "fps": 18,
+     "loop": false,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "heavy": {
+     "fps": 14,
+     "loop": false,
+     "frames": 10,
+     "variants": [
+      1
+     ]
+    },
+    "air": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "climb": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "swim": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "aegis": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "air2": {
+     "fps": 16,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "air3": {
+     "fps": 18,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "plunge": {
+     "fps": 12,
+     "loop": true,
+     "frames": 2,
+     "variants": [
+      1
+     ]
+    },
+    "plungeStart": {
+     "fps": 16,
+     "loop": false,
+     "frames": 2,
+     "variants": [
+      1
+     ]
+    },
+    "plungeLand": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "crouch": {
+     "fps": 5,
+     "loop": true,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "slide": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "prone": {
+     "fps": 5,
+     "loop": true,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "crawl": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "proneStab": {
+     "fps": 16,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "cheer": {
+     "fps": 10,
+     "loop": false,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "hurt": {
+     "fps": 10,
+     "loop": false,
+     "frames": 3,
+     "variants": [
+      1
+     ]
+    },
+    "down": {
+     "fps": 8,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "whirl": {
+     "fps": 20,
+     "loop": false,
+     "frames": 13,
+     "variants": [
+      1
+     ]
+    },
+    "a_shoot": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_shootUp": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_shootDown": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_air": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_airUp": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_airDown": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_low": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_rapid": {
+     "fps": 24,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "a_charged": {
+     "fps": 14,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "a_swing": {
+     "fps": 20,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_launch": {
+     "fps": 20,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_spiral": {
+     "fps": 18,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "j_push": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "p_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throwUp": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_airThrow": {
+     "fps": 20,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_aim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    },
+    "a_airAim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    }
+   },
+   "tail": null
+  },
+  "tank_f_4": {
+   "anims": {
+    "idle": {
+     "fps": 8,
+     "loop": true,
+     "frames": 16,
+     "variants": [
+      1
+     ]
+    },
+    "rest": {
+     "fps": 7,
+     "loop": true,
+     "frames": 16,
+     "variants": [
+      1
+     ]
+    },
+    "walk": {
+     "fps": 13,
+     "loop": true,
+     "frames": 12,
+     "variants": [
+      1
+     ]
+    },
+    "run": {
+     "fps": 16,
+     "loop": true,
+     "frames": 10,
+     "variants": [
+      1
+     ]
+    },
+    "land": {
+     "fps": 14,
+     "loop": false,
+     "frames": 3,
+     "variants": [
+      1
+     ]
+    },
+    "jump": {
+     "fps": 8,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "flip": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "dash": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "block": {
+     "fps": 5,
+     "loop": true,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "slash": {
+     "fps": 16,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "rising": {
+     "fps": 16,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "thrust": {
+     "fps": 15,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "spin": {
+     "fps": 18,
+     "loop": false,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "heavy": {
+     "fps": 14,
+     "loop": false,
+     "frames": 10,
+     "variants": [
+      1
+     ]
+    },
+    "air": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "climb": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "swim": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "aegis": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "air2": {
+     "fps": 16,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "air3": {
+     "fps": 18,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "plunge": {
+     "fps": 12,
+     "loop": true,
+     "frames": 2,
+     "variants": [
+      1
+     ]
+    },
+    "plungeStart": {
+     "fps": 16,
+     "loop": false,
+     "frames": 2,
+     "variants": [
+      1
+     ]
+    },
+    "plungeLand": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "crouch": {
+     "fps": 5,
+     "loop": true,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "slide": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "prone": {
+     "fps": 5,
+     "loop": true,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "crawl": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "proneStab": {
+     "fps": 16,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "cheer": {
+     "fps": 10,
+     "loop": false,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "hurt": {
+     "fps": 10,
+     "loop": false,
+     "frames": 3,
+     "variants": [
+      1
+     ]
+    },
+    "down": {
+     "fps": 8,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "whirl": {
+     "fps": 20,
+     "loop": false,
+     "frames": 13,
+     "variants": [
+      1
+     ]
+    },
+    "a_shoot": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_shootUp": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_shootDown": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_air": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_airUp": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_airDown": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_low": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_rapid": {
+     "fps": 24,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "a_charged": {
+     "fps": 14,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "a_swing": {
+     "fps": 20,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_launch": {
+     "fps": 20,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_spiral": {
+     "fps": 18,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "j_push": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "p_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throwUp": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_airThrow": {
+     "fps": 20,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_aim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    },
+    "a_airAim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    }
+   },
+   "tail": null
+  },
+  "tank_f_5": {
+   "anims": {
+    "idle": {
+     "fps": 8,
+     "loop": true,
+     "frames": 16,
+     "variants": [
+      1
+     ]
+    },
+    "rest": {
+     "fps": 7,
+     "loop": true,
+     "frames": 16,
+     "variants": [
+      1
+     ]
+    },
+    "walk": {
+     "fps": 13,
+     "loop": true,
+     "frames": 12,
+     "variants": [
+      1
+     ]
+    },
+    "run": {
+     "fps": 16,
+     "loop": true,
+     "frames": 10,
+     "variants": [
+      1
+     ]
+    },
+    "land": {
+     "fps": 14,
+     "loop": false,
+     "frames": 3,
+     "variants": [
+      1
+     ]
+    },
+    "jump": {
+     "fps": 8,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "flip": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "dash": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "block": {
+     "fps": 5,
+     "loop": true,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "slash": {
+     "fps": 16,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "rising": {
+     "fps": 16,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "thrust": {
+     "fps": 15,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "spin": {
+     "fps": 18,
+     "loop": false,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "heavy": {
+     "fps": 14,
+     "loop": false,
+     "frames": 10,
+     "variants": [
+      1
+     ]
+    },
+    "air": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "climb": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "swim": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "aegis": {
+     "fps": 16,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "air2": {
+     "fps": 16,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "air3": {
+     "fps": 18,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "plunge": {
+     "fps": 12,
+     "loop": true,
+     "frames": 2,
+     "variants": [
+      1
+     ]
+    },
+    "plungeStart": {
+     "fps": 16,
+     "loop": false,
+     "frames": 2,
+     "variants": [
+      1
+     ]
+    },
+    "plungeLand": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "crouch": {
+     "fps": 5,
+     "loop": true,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "slide": {
+     "fps": 14,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "prone": {
+     "fps": 5,
+     "loop": true,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "crawl": {
+     "fps": 9,
+     "loop": true,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "proneStab": {
+     "fps": 16,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "cheer": {
+     "fps": 10,
+     "loop": false,
+     "frames": 8,
+     "variants": [
+      1
+     ]
+    },
+    "hurt": {
+     "fps": 10,
+     "loop": false,
+     "frames": 3,
+     "variants": [
+      1
+     ]
+    },
+    "down": {
+     "fps": 8,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "whirl": {
+     "fps": 20,
+     "loop": false,
+     "frames": 13,
+     "variants": [
+      1
+     ]
+    },
+    "a_shoot": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_shootUp": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_shootDown": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_air": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_airUp": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_airDown": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_low": {
+     "fps": 22,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_rapid": {
+     "fps": 24,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "a_charged": {
+     "fps": 14,
+     "loop": false,
+     "frames": 6,
+     "variants": [
+      1
+     ]
+    },
+    "a_swing": {
+     "fps": 20,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_launch": {
+     "fps": 20,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_spiral": {
+     "fps": 18,
+     "loop": false,
+     "frames": 7,
+     "variants": [
+      1
+     ]
+    },
+    "j_push": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "p_throw": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "j_throwUp": {
+     "fps": 18,
+     "loop": false,
+     "frames": 5,
+     "variants": [
+      1
+     ]
+    },
+    "a_airThrow": {
+     "fps": 20,
+     "loop": false,
+     "frames": 4,
+     "variants": [
+      1
+     ]
+    },
+    "a_aim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
+     "variants": [
+      1
+     ]
+    },
+    "a_airAim": {
+     "fps": 1,
+     "loop": false,
+     "frames": 9,
      "variants": [
       1
      ]

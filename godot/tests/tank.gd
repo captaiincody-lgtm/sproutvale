@@ -46,6 +46,7 @@ func _ready() -> void:
 	add.call(1.2, "shot", "volcano")
 	add.call(0.1, "next")
 	add.call(0.6, "shot", "revenge")
+	add.call(0.1, "endintro")
 	add.call(0.1, "exp", 60000000)
 	add.call(0.1, "warp", "meadow")
 	add.call(2.0, "near")
@@ -75,9 +76,37 @@ func _ready() -> void:
 	add.call(0.5, "near")
 	add.call(0.1, "tap", KEY_X)
 	add.call(0.8, "shot", "napalm")
-	add.call(0.6, "tap", KEY_C)
-	add.call(0.12, "tap", KEY_C)
+	# lying down: shoot straight ahead, then throw a grenade
+	add.call(0.6, "near")
+	add.call(0.1, "hold", KEY_DOWN)
+	add.call(0.35, "tap", KEY_Z)
+	add.call(0.06, "shot", "prone_shot")
+	add.call(1.6, "tap", KEY_X)
+	add.call(0.12, "shot", "prone_nade")
+	add.call(0.1, "unhold", KEY_DOWN)
+	# a high lob, and a grenade thrown forward in the air
+	add.call(1.6, "near")
+	add.call(0.1, "hold", KEY_UP)
+	add.call(0.05, "tap", KEY_X)
+	add.call(0.3, "shot", "nade_up")
+	add.call(0.1, "unhold", KEY_UP)
+	add.call(1.6, "jump")
+	add.call(0.2, "release")
+	add.call(0.05, "tap", KEY_X)
+	add.call(0.12, "shot", "air_nade")
+	# empty the magazine
+	for i in 18:
+		add.call(0.09, "tap", KEY_Z)
+	add.call(0.1, "shot", "reload")
+	# two rocket bursts
+	add.call(1.2, "near")
+	add.call(0.1, "tap", KEY_C)
+	add.call(0.08, "shot", "burst1")
+	add.call(0.1, "tap", KEY_C)
 	add.call(0.1, "shot", "slam")
+	add.call(0.6, "gender", "f")
+	add.call(0.4, "shot", "female")
+	add.call(0.1, "gender", "m")
 	add.call(0.6, "jump")
 	add.call(0.6, "shot", "glide")
 	add.call(0.6, "release")
@@ -145,6 +174,12 @@ func _process(delta: float) -> void:
 				if game.intro != null:
 					game.introNext()
 					game.introNext()
+			"endintro":
+				var n = 0
+				while game.intro != null and n < 30:
+					game.introNext()
+					n += 1
+				print("intro closed: ", game.intro == null)
 			"warp":
 				game.fadeTo = {"map": s[2]}
 			"exp":
@@ -174,6 +209,13 @@ func _process(delta: float) -> void:
 				print("gear ", s[2], " look ", game.heroLook(), " spd ", game.PS.spd)
 			"nade":
 				game.CH().nadeSel = s[2]
+			"hold":
+				key(s[2], true)
+			"unhold":
+				key(s[2], false)
+			"gender":
+				game.CH().look.gender = s[2]
+				game.PS = game.calcStats()
 			"jump":
 				game.P.state = "move"
 				key(KEY_SPACE, true)

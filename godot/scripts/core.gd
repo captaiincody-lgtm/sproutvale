@@ -76,6 +76,7 @@ var ATTRS: Dictionary
 const CHAIN := ["slash", "rising", "thrust", "spin"]
 const AIR_CHAIN := ["air", "air2", "air3"]
 const POT := {"max": 3, "recharge": 25.0}
+const UNLIMITED := 1000000000
 
 # ---------------------------------------------------------------- world state
 var inGame := false
@@ -232,6 +233,12 @@ func init_data() -> void:
 	FURN_ORDER = D.furnOrder
 	CURIOS = D.curios
 	BOSS_SHOP = D.bossShop
+	# the Boss and Abyssal shops have no cap: every boost can be bought again and again (each costs a little more)
+	for it in BOSS_SHOP:
+		it.max = UNLIMITED
+	for kind in ABYSS_SHOP:
+		for it in ABYSS_SHOP[kind]:
+			it.max = UNLIMITED
 	TROPHIES = D.trophies
 	ELEMENTS = D.elements
 	SUMMONS = D.summons
@@ -384,8 +391,8 @@ func newChar() -> Dictionary:
 
 
 func newSave() -> Dictionary:
-	var s = {"coins": 0, "bossCoins": 0, "abyssCoins": 0, "boxes": {}, "parts": {}, "tankHouse": false, "house": {"owned": [], "placed": {}, "curios": [], "shelfItems": []}, "trophies": {}, "mats": {}, "chars": {},
-		"quests": [], "qid": 0, "settings": {"vol": 0.5, "music": 0.5, "sfx": 0.8, "timeSpeed": 1, "weather": "auto", "help": true, "map": "home", "mute": false, "god": false},
+	var s = {"coins": 0, "bossCoins": 0, "abyssCoins": 0, "boxes": {}, "parts": {}, "tankHouse": false, "house": {"owned": [], "placed": {}, "curios": [], "shelfItems": []}, "trophies": {}, "boons": {}, "mats": {}, "chars": {},
+		"quests": [], "qid": 0, "settings": {"vol": 0.5, "music": 0.5, "sfx": 0.8, "shake": 1.0, "timeSpeed": 1, "weather": "auto", "help": true, "map": "home", "mute": false, "god": false},
 		"bestRank": -1, "cards": {}, "bestiary": {}, "main": {"q": 0, "stage": 0, "claimed": false}}
 	for k in SLIME_KEYS:
 		s.mats[k] = 0
@@ -460,7 +467,35 @@ func loadSave() -> Dictionary:
 	for k in ["cards", "bestiary"]:
 		if not (s.get(k) is Dictionary):
 			s[k] = {}
+	_migrateBossRecords(s)
 	return s
+
+
+## older saves kept boss trophies and boss treasures per account and per hero the other way round:
+## trophies become per hero (a boss beaten before kills were counted per hero is credited to every hero
+## that had been played, except Tank, who arrived after them), treasures become account-wide
+func _migrateBossRecords(s: Dictionary) -> void:
+	for kind in s.get("trophies", {}):
+		var anyone = false
+		for k in s.chars:
+			if int(s.chars[k].get("bossKills", {}).get(kind, 0)) > 0:
+				anyone = true
+		if anyone:
+			continue
+		for k in s.chars:
+			var c: Dictionary = s.chars[k]
+			if k != "tank" and int(c.get("level", 1)) > 1:
+				if not (c.get("bossKills") is Dictionary):
+					c.bossKills = {}
+				c.bossKills[kind] = 1
+	if not (s.get("boons") is Dictionary):
+		s.boons = {}
+	for k in s.chars:
+		var c: Dictionary = s.chars[k]
+		if c.get("boons") is Dictionary:
+			for id in c.boons:
+				s.boons[id] = int(s.boons.get(id, 0)) + int(c.boons[id])
+			c.erase("boons")
 
 
 func persist() -> void:
@@ -609,9 +644,9 @@ func calcStats() -> Dictionary:
 			if it.id == id:
 				for f in it.fx:
 					cur[f] = cur.get(f, 0.0) + it.fx[f]
-	var trophyExp: int = save.get("trophies", {}).size() * 10
+	var trophyExp: int = c.get("bossKills", {}).keys().filter(func(k): return int(c.bossKills[k]) > 0).size() * 10   # each hero earns their own trophies
 	var boon = {"hp": 0.0, "atk": 0.0, "def": 0.0, "crit": 0.0}   # treasures from boss boxes
-	var owned: Dictionary = c.get("boons", {})
+	var owned: Dictionary = save.get("boons", {})   # boss treasures are shared by every hero
 	for id in owned:
 		if BOONS.has(id):
 			boon[BOONS[id].stat] += BOONS[id].val * owned[id]
@@ -661,8 +696,14 @@ func calcStats() -> Dictionary:
 	var arrowMul: float = (1 + ARROW_TIERS[c.get("arrows", 0)].dmg) if arch else 1.0
 	return {"hp": roundi(hp * (1 - P.abyssDrain)), "hpFull": roundi(hp), "atk": roundi(atk), "def": roundi(def), "crit": minf(80, crit), "critDmg": critDmg, "spd": spd, "aspd": aspd,
 		"exp": ch.exp + cur.get("exp", 0) + trophyExp + bs.call("notes") * 5, "coin": ch.coin + cur.get("coin", 0), "hpRegen": furn.call("chair"),
-		"enMax": enMax, "enRegen": enRegen * enRegenF * (1 + furn.call("bed")), "enHit": enHit, "arrowMul": arrowMul,
+		"enMax": enMax, "enRegen": enRegen * enRegenF * (1 + furn.call("bed")) / 2.5, "enHit": enHit, "arrowMul": arrowMul,   # regen is 2.5× slower than it was, so the potions matter
 		"hunt": ae.call("hunt") * 0.02 + bs.call("bane") * 0.05, "leech": ae.call("leech") * 0.003}
+
+
+## has the hero you're playing beaten this boss? (every hero has to beat each boss once before its pedestal
+## can call it back; the account-wide trophies only gate the world map and unlock heroes)
+func heroBeat(kind: String) -> bool:
+	return int(CH().get("bossKills", {}).get(kind, 0)) > 0
 
 
 func setClass(id: String) -> void:
@@ -966,7 +1007,12 @@ func updateDrops(dt: float) -> void:
 	var seaTop: float = (sea.surface if sea.surface != null else -1e9) if sea != null else 1e9
 	for i in range(drops.size() - 1, -1, -1):
 		var d: S.Drop = drops[i]
+		if d.t == 0.0 and d.y < d.surfY - 14:   # spawned in the air (a flying monster, a juggled one): it lands where it falls
+			d.free = true
+			d.x0 = 6.0; d.x1 = M.w - 6.0
+			d.surfY = 1e9
 		d.t += dt
+		var py0: float = d.y
 		if d.y > seaTop:   # things sink slowly through the water
 			d.vy = minf(70, d.vy + GRAV * 0.3 * dt)
 			d.vx *= exp(-dt * 2)
@@ -975,6 +1021,15 @@ func updateDrops(dt: float) -> void:
 		d.x += d.vx * dt
 		d.y += d.vy * dt
 		d.x = clampf(d.x, d.x0, d.x1)
+		if d.free and d.vy > 0:
+			for q in surfaces:
+				if not q.get("water", false) and d.x >= q.x0 and d.x <= q.x1 and py0 <= q.y and d.y >= q.y:
+					d.free = false
+					d.surfY = q.y; d.x0 = q.x0 + 3; d.x1 = q.x1 - 3
+					break
+			if d.free and d.y >= groundAt(d.x):
+				d.free = false
+				d.surfY = groundAt(d.x); d.x0 = 6.0; d.x1 = M.w - 6.0
 		if d.y >= d.surfY:
 			d.y = d.surfY
 			if absf(d.vy) > 90:
@@ -1256,10 +1311,17 @@ func exoStage(c: Dictionary) -> int:
 
 
 ## the sprite set ("look") a hero is drawn with
+func heroPose(): return null   # tank.gd
+func slideSpeed() -> float: return 1.0
+func slideLength() -> float: return 1.0
+func animFallback(a: String) -> String: return a
+
+
 func lookOf(cls: String) -> String:
 	var c: Dictionary = save.get("chars", {}).get(cls, {})
 	if cls == "tank":
+		var g: String = c.get("look", {}).get("gender", "m")
 		if classId == "tank" and inGame and buffOn("titanProtocol"):
-			return "tank_m_5"
-		return "tank_m_%d" % exoStage(c)
+			return "tank_%s_5" % g
+		return "tank_%s_%d" % [g, exoStage(c)]
 	return "%s_%s" % [cls, c.get("look", {}).get("gender", "m")]

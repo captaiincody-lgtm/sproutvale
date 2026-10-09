@@ -153,7 +153,7 @@ func _heroCard(id: String, r: Rect2) -> void:
 	y += 17
 	# gender toggle
 	var gw = 52.0
-	for gi in (0 if id == "tank" else 2):
+	for gi in 2:
 		var g = ["m", "f"][gi]
 		var gr = Rect2(r.get_center().x - gw - 2 + gi * (gw + 4), y, gw, 15)
 		var gon = chd.look.get("gender", "m") == g
@@ -260,12 +260,12 @@ func renderOver(ci: CanvasItem) -> void:
 
 func _settingsH() -> float:
 	var S = save.settings
-	return 38 + 4 * 30 + 24 + 30 + (34 if S.get("god") else 0) + 14
+	return 38 + 5 * 30 + 24 + 30 + (34 if S.get("god") else 0) + 14
 
 
 func _settingsBody(x: float, y: float, w: float) -> void:
 	var S: Dictionary = save.settings
-	for row in [["vol", "Master volume", 0.5, "Everything: music and sound effects"], ["music", "Music", 0.5, "The soundtrack"], ["sfx", "Sound effects", 0.8, "Hits, spells, footsteps and the rest"]]:
+	for row in [["vol", "Master volume", 0.5, "Everything: music and sound effects"], ["music", "Music", 0.5, "The soundtrack"], ["sfx", "Sound effects", 0.8, "Hits, spells, footsteps and the rest"], ["shake", "Screen shake", 1.0, "How much the screen shakes on big hits and explosions (0% turns it off)"]]:
 		var k: String = row[0]
 		var v = float(S.get(k, row[2]))
 		uText(row[1], x, y + 8, 10)

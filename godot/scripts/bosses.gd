@@ -315,16 +315,16 @@ func advanceMain(mapId_: String, bossKind := "") -> void:
 
 func killBoss(e) -> void:
 	var kind: String = e.bossKind if e.bossKind != "" else "croc"
-	var firstKill: bool = not save.trophies.get(kind)
+	var firstKill: bool = not heroBeat(kind)   # this hero's first win: the story scenes play, and only then can the pedestal call it back
 	advanceMain("", kind)
 	var c = CH()
 	if not (c.get("bossKills") is Dictionary):
 		c.bossKills = {}
-	c.bossKills[kind] = c.bossKills.get(kind, 0) + 1   # which hero beat which boss, for the account record
+	c.bossKills[kind] = c.bossKills.get(kind, 0) + 1   # which hero beat which boss: trophies are per hero
+	save.trophies[kind] = true   # the account record (opens the world map, unlocks heroes)
 	if firstKill:
-		save.trophies[kind] = true
 		PS = calcStats()
-		later(2.6, func(): toast("🏆 New trophy for your Trophy Hall! (+10% EXP)"))
+		later(2.6, func(): toast("🏆 New trophy for %s's Trophy Hall! (+10%% EXP for %s)" % [CLASSES[classId].name, CLASSES[classId].name]))
 	later(1.5, func(): Sfx.music("trophy"))   # a calm, stately victory theme
 	rollCards(_as(e, {"type": kind, "surf": surfaces[0]}))
 	e.state = "dead"; e.deadT = 0; e.hp = 0
@@ -455,13 +455,13 @@ func boxCount(kind: String) -> int:
 func _rollBox(kind: String, acc: Dictionary) -> void:
 	var B: Dictionary = BOXES.get(kind, BOXES.croc)
 	var c = CH()
-	if not (c.get("boons") is Dictionary):
-		c.boons = {}
+	if not (save.get("boons") is Dictionary):
+		save.boons = {}
 	acc.coins += rint(500, 2500)
 	acc.bc += rint(1, 5)
 	if randf() < BOX_ITEM_RATE:
 		var id: String = B.items[rint(0, B.items.size() - 1)]
-		c.boons[id] = int(c.boons.get(id, 0)) + 1
+		save.boons[id] = int(save.boons.get(id, 0)) + 1   # account-wide: every hero gets it
 		acc.items[id] = int(acc.items.get(id, 0)) + 1
 	var sk: String = B.skill
 	if skillRank(sk) == 0 and not acc.skills.has(sk) and randf() < BOX_SKILL_RATE:
@@ -495,7 +495,7 @@ func openBoxes(kind: String, n := 1) -> void:
 	for id in acc.items:
 		var it: Dictionary = BOONS[id]
 		var cnt: int = acc.items[id]
-		rows.append({"icon": it.icon, "text": "%s%s · %s, for good" % [it.name, (" ×%d" % cnt) if cnt > 1 else "", it.desc], "rare": 1})
+		rows.append({"icon": it.icon, "text": "%s%s · %s, for good, for ALL your heroes" % [it.name, (" ×%d" % cnt) if cnt > 1 else "", it.desc], "rare": 1})
 	for sk in acc.skills:
 		var key: String = acc.skills[sk]
 		rows.append({"icon": SKILL[sk].icon, "text": "NEW SKILL: %s%s" % [SKILL[sk].name, (" (on " + key.to_upper() + ")") if key != "" else " (bind it in Skills)"], "rare": 2})
@@ -1037,12 +1037,10 @@ func obeliskAbyss(o: Dictionary) -> void:
 	if keys.is_empty():
 		obeliskCoins(o)
 		return
-	# the map's main monster (most common spawn) sets the level: +5 above it
-	keys.sort_custom(func(a, b): return sp[a] > sp[b] if sp[a] != sp[b] else SLIME_TYPES[a].lv > SLIME_TYPES[b].lv)
-	var top: Dictionary = SLIME_TYPES[keys[0]]
-	var lv: int = top.lv + 5
-	var T = {"name": "Abyssal Tangle", "lv": lv, "hp": roundi(top.hp * 1.8 + lv * 14), "atk": roundi(top.atk * 1.4 + lv * 1.6), "def": top.def + lv * 0.5,
-		"exp": roundi(top.exp * 4 + lv * 10), "coins": [8 + lv, 16 + lv * 2], "speed": 1.25, "size": 1, "critter": true, "color": 0x3a1850, "matName": null}
+	# always five levels above you, wherever you are: a hard fight (sized to your own attack and health), paid like one
+	var lv: int = int(CH().level) + 5
+	var T = {"name": "Abyssal Tangle", "lv": lv, "hp": roundi(maxf((40 + lv * 30 + lv * lv * 0.15) * 2.0, PS.atk * 16)), "atk": roundi(maxf((6 + lv * 2.6) * 1.6, PS.hpFull * 0.11)), "def": roundi(2 + lv * 1.1),
+		"exp": roundi((9 + lv * 12 + lv * lv * 0.05) * 4), "coins": [8 + lv * 2, 16 + lv * 4], "speed": 1.35, "size": 1, "critter": true, "color": 0x3a1850, "matName": null}
 	var n = rint(10, 20)
 	var near = surfaces.filter(func(s): return not s.water and s.x1 > o.x - 260 and s.x0 < o.x + 260 and s.x1 - s.x0 > 40)
 	for i in n:

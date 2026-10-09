@@ -474,12 +474,13 @@ func updatePlayer(dt: float) -> void:
 	var rNear = ropeAt()
 	var atRopeTop: bool = rNear != null and P.grounded and absf(P.y - rNear.y0) < 2
 	var climbable: bool = rNear != null and not atRopeTop
-	# ↑ is contextual: pedestal > note > obelisk > portal > rope > climb-off > jump (a jump from ↑ waits 60ms in case Z follows for a rising slash)
+	# ↑ is contextual: pedestal > note > obelisk > portal > rope > climb-off (and swims up in water); jumping is Space only
 	if pressed.get("arrowup") and not locked:
-		var pt = portalAt() if P.grounded else null
-		var ob = obeliskAt() if P.grounded else null
-		var nt = noteAt() if P.grounded else null
-		var pd = pedestalAt() if P.grounded else null
+		var nearFloor: bool = P.grounded or (P.vy >= -60 and P.surf == null and absf(P.y - groundAt(P.x)) < 14)
+		var pt = portalAt() if nearFloor else null
+		var ob = obeliskAt() if nearFloor else null
+		var nt = noteAt() if nearFloor else null
+		var pd = pedestalAt() if nearFloor else null
 		if pd != null:
 			summonFromPedestal()
 		elif nt != null:
@@ -494,7 +495,7 @@ func updatePlayer(dt: float) -> void:
 				climbOff(dirIn)
 		elif climbable and P.state in ["move", "dash", "crouch"]:
 			startClimb(rNear, false)
-		else:
+		elif swimming:   # ↑ still swims up; everywhere else only Space jumps, so ↑ near a portal never jumps by mistake
 			B.upJump = now
 	if P.state == "climb" and up and dirIn and (pressed.get("arrowleft") or pressed.get("arrowright")):
 		climbOff(dirIn)
@@ -651,7 +652,7 @@ func updatePlayer(dt: float) -> void:
 	if down and P.grounded and not wet and not atRopeTop and P.state == "move":
 		if absf(P.vx) > 95:
 			P.state = "slide"; P.slideT = 0.0
-			P.vx = P.face * maxf(330 if classId == "archer" else 250, absf(P.vx) + (140 if classId == "archer" else 90))
+			P.vx = P.face * maxf(330 if classId == "archer" else 250, absf(P.vx) + (140 if classId == "archer" else 90)) * slideSpeed()
 			P.hitSet.clear()
 			setAnim("slide")
 			Sfx.slide()
@@ -700,7 +701,7 @@ func updatePlayer(dt: float) -> void:
 					Sfx.step(false, "grass")
 		"slide":
 			P.slideT += dt
-			P.vx *= exp(-dt * (1.6 if classId == "archer" else 2.6))
+			P.vx *= exp(-dt * (1.6 if classId == "archer" else 2.6) / slideLength())
 			if floori(P.slideT * 30) % 2 == 0:
 				part(P.x - P.face * 6, P.y - 1, -P.face * rand(10, 30), rand(-20, -5), 0.3, "#f4f8ff" if World.snowCover > 0.3 else "#efe6cf", 0, 2)
 			var box = hbox(P.x - 10 + P.face * 6, P.x + 10 + P.face * 6, P.y - 14, P.y)
@@ -710,7 +711,7 @@ func updatePlayer(dt: float) -> void:
 						P.hitSet["slide"] = true
 						damageSlime(e, {"dmg": 0.6, "kb": 60, "up": -200, "style": 16, "anim": "slide"})
 						break
-			if P.slideT > (0.62 if classId == "archer" else 0.46) or absf(P.vx) < 60:
+			if P.slideT > (0.62 if classId == "archer" else 0.46) * slideLength() or absf(P.vx) < 60:
 				P.state = "prone" if down else "move"
 				if P.state == "prone":
 					setAnim("prone")
