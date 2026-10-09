@@ -755,3 +755,9 @@ func updateVolcShots(dt: float) -> void:
 func drawVolcanoBack(_x: Ctx, _sx: float, _sy: float) -> void: pass
 func drawVolcanoMid(_x: Ctx, _sx: float, _sy: float) -> void: pass
 func drawVolcanoFront(_x: Ctx, _sx: float, _sy: float) -> void: pass
+# and for the sanctum (glamrax.gd, between here and the drawing)
+func drawSanctumMid(_x: Ctx, _sx: float, _sy: float) -> void: pass
+func drawSanctumFront(_x: Ctx, _sx: float, _sy: float) -> void: pass
+func drawSpecialMob(_x: Ctx, _e, _sx: float, _sy: float) -> bool: return false
+func drawVolcanoStory(_x: Ctx, _t: float, _kind: String) -> void: pass
+func glamraxCutscene(_cls: String, _scenes: Array, _done: Callable) -> void: pass

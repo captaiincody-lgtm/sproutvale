@@ -6,7 +6,8 @@
 // keeping its size and anchor.
 //
 // The two bosses (the Anti-Personnel Mecha Mk II and Glamrax himself) are drawn by the game in code
-// (scripts/volcano_draw.gd, scripts/glamrax_draw.gd), since their bodies move part by part.
+// (scripts/mecha.gd, scripts/glamrax.gd), since their bodies move part by part. The heroes' loved ones
+// in the sanctum's crystals are simple placeholders (KIN, below): art/volcano/kin/<hero>.png.
 /* eslint-disable no-unused-vars */
 'use strict';
 
@@ -597,14 +598,8 @@ function paintMap(id, M) {
       for (let k = 0; k < 7; k++) { const Y = CY + 40 + k * 38; R(x, X - 4, Y, 8, 14, '#3a0c30'); R(x, X - 2, Y + 2, 4, 10, '#d04aff'); glow(X, Y + 7, 10, '#d04aff'); }
       R(x, X - 18, G - 14, 36, 14, '#1e141c'); R(x, X - 18, CY + 4, 36, 10, '#1e141c');
     }
-    // cables from the machine out to the crystals (the crystals themselves are drawn by the game)
-    const sag = (a, b, dip) => { const pts = []; for (let k = 0; k <= 16; k++) { const t = k / 16; pts.push([lerp(a[0], b[0], t), lerp(a[1], b[1], t) + Math.sin(t * Math.PI) * dip]); } return pts; };
-    for (let i = 0; i < 5; i++) {
-      const X = 150 + i * 105, Y = CY + 70 + (i % 2) * 26; spot('pod', [X, Y]);
-      const cab = sag([X + 10, Y + 40], [mx - 40, CY + 120 + i * 26], 40 + i * 6);
-      L(x, cab, '#0a080e', 5); L(x, cab, '#5a1a5a', 2); L(x, cab.slice(4, 12), '#8a2a8a', 0.8);
-      L(x, [[X, CY], [X, Y - 46]], '#0a080e', 3); L(x, [[X - 1, CY], [X - 1, Y - 46]], '#3a2e44', 1);
-    }
+    // the five crystals hang here, low enough to see from the floor (the game draws them, their chains and their cables)
+    for (let i = 0; i < 5; i++) spot('pod', [150 + i * 105, G - 128 + (i % 2) * 20]);
     // two tall helices of Glamrax's DNA on either side of the crystals
     helix(x, 40, CY + 20, G - 20, 9, '#8a1a70', '#5a1048', 0, 2.4);
     helix(x, 620, CY + 20, G - 20, 9, '#8a1a70', '#5a1048', 1, 2.4);
@@ -645,4 +640,65 @@ function paintMap(id, M) {
   return { canvas: crisp(c, 60), glows: glows.map(g => [Math.round(g[0] * 2) / 2, Math.round(g[1] * 2) / 2, g[2], g[3]]), spots };
 }
 
-window.VOLC = { SETS, bakeMobs, ITEMS, paintMap };
+// ================================================================== KIN: the heroes' loved ones, hanging in Glamrax's crystals
+// Simple placeholder figures (48×72, 2× scale, centred), eyes shut, arms raised against the crystal.
+// Swap godot/art/volcano/kin/<hero>.png for your own drawing at the same size.
+function kinFigure(o) {
+  return fin(frame(48, 72, (x) => {
+    const cx = 24, h = o.h || 1;   // h: 1 adult, smaller for children
+    const top = 72 - 66 * h, sk = o.skin || '#ffdcc2';
+    const headR = 7.5 + (1 - h) * 3, hy = top + headR + 1;
+    const sy = hy + headR + 1, by = 70;   // shoulders, feet
+    // legs
+    L(x, [[cx - 3, lerp(sy, by, 0.62)], [cx - 4, by - 2]], o.legs || sk, 3.4);
+    L(x, [[cx + 3, lerp(sy, by, 0.62)], [cx + 4, by - 2]], o.legs || sk, 3.4);
+    R(x, cx - 7, by - 3, 6, 3, o.shoe || '#3b3634'); R(x, cx + 1, by - 3, 6, 3, o.shoe || '#3b3634');
+    // arms raised, pressed against the crystal
+    L(x, [[cx - 5, sy + 2], [cx - 12, sy - 5], [cx - 14, sy - 13]], sk, 3);
+    L(x, [[cx + 5, sy + 2], [cx + 12, sy - 5], [cx + 14, sy - 13]], sk, 3);
+    if (o.sleeves) { L(x, [[cx - 5, sy + 2], [cx - 10, sy - 3]], o.sleeves, 3.4); L(x, [[cx + 5, sy + 2], [cx + 10, sy - 3]], o.sleeves, 3.4); }
+    // body: a dress or a shirt and shorts
+    if (o.dress) P(x, [[cx - 6, sy], [cx + 6, sy], [cx + 10, lerp(sy, by, o.long ? 0.92 : 0.66)], [cx - 10, lerp(sy, by, o.long ? 0.92 : 0.66)]], o.dress);
+    else { P(x, [[cx - 6, sy], [cx + 6, sy], [cx + 7, lerp(sy, by, 0.5)], [cx - 7, lerp(sy, by, 0.5)]], o.shirt); R(x, cx - 7, lerp(sy, by, 0.48), 14, (by - sy) * 0.18, o.shorts || '#3a4a6a'); }
+    if (o.stripes) for (let i = 1; i < 4; i++) R(x, cx - 6, sy + i * (by - sy) * 0.11, 12, 1.5, o.stripes);
+    if (o.apron) P(x, [[cx - 4, sy + 6], [cx + 4, sy + 6], [cx + 6, lerp(sy, by, 0.8)], [cx - 6, lerp(sy, by, 0.8)]], o.apron);
+    if (o.shawl) P(x, [[cx - 8, sy - 1], [cx + 8, sy - 1], [cx + 3, sy + 9], [cx - 3, sy + 9]], o.shawl);
+    // head
+    C(x, cx, hy, headR, sk);
+    o.hair(x, cx, hy, headR);
+    // shut eyes, a worried mouth
+    R(x, cx - 4.5, hy + 0.5, 3, 1, '#2a1a1a'); R(x, cx + 1.5, hy + 0.5, 3, 1, '#2a1a1a');
+    R(x, cx - 1, hy + 4, 2, 1.5, '#7a3a3a');
+    if (o.glasses) { x.strokeStyle = '#6a6a7a'; x.lineWidth = 0.8; x.beginPath(); x.arc(cx - 3, hy + 1, 2.4, 0, TAU); x.moveTo(cx + 5.4, hy + 1); x.arc(cx + 3, hy + 1, 2.4, 0, TAU); x.stroke(); }
+    if (o.wrinkles) { R(x, cx - 6, hy + 3, 1.5, 0.8, '#d8b8a0'); R(x, cx + 4.5, hy + 3, 1.5, 0.8, '#d8b8a0'); }
+  }));
+}
+const KIN = {
+  // Rock's son: spiky brown hair, a tan tunic
+  rock: () => kinFigure({ h: 0.78, shirt: '#d8c89a', shorts: '#6e5444', hair: (x, cx, hy, r) => {
+    S(x, [[cx - r - 1, hy], [cx - r, hy - r], [cx, hy - r - 2], [cx + r, hy - r], [cx + r + 1, hy]], '#6e3c20');
+    for (let i = 0; i < 6; i++) P(x, [[cx - r + i * 3.2, hy - r + 2], [cx - r + 1.5 + i * 3.2 + (i % 2 ? 2 : -2), hy - r - 6], [cx - r + 3 + i * 3.2, hy - r + 2]], '#6e3c20');
+  } }),
+  // Archer's little sister: blonde pigtails, a green dress
+  archer: () => kinFigure({ h: 0.74, dress: '#4f9a5a', hair: (x, cx, hy, r) => {
+    S(x, [[cx - r - 1, hy + 1], [cx - r, hy - r], [cx, hy - r - 1.5], [cx + r, hy - r], [cx + r + 1, hy + 1]], '#e8c060');
+    E(x, cx - r - 3, hy + 4, 3, 6, '#e8c060', 0.3); E(x, cx + r + 3, hy + 4, 3, 6, '#e8c060', -0.3);
+    R(x, cx - r - 3, hy - 2, 3, 2, '#c0392b'); R(x, cx + r, hy - 2, 3, 2, '#c0392b');
+  } }),
+  // Remy's grandmother: silver bun, glasses, a violet shawl over a long dress
+  mage: () => kinFigure({ h: 0.94, dress: '#5a4a7a', long: true, shawl: '#9a6ab8', glasses: true, wrinkles: true, sleeves: '#5a4a7a', hair: (x, cx, hy, r) => {
+    S(x, [[cx - r - 1, hy + 2], [cx - r, hy - r + 1], [cx, hy - r - 1], [cx + r, hy - r + 1], [cx + r + 1, hy + 2]], '#d8d8e0');
+    C(x, cx, hy - r - 3, 4, '#c8c8d4');
+  } }),
+  // Jojo's little brother: a mop of black hair, a red striped shirt
+  summoner: () => kinFigure({ h: 0.7, shirt: '#c83a3a', stripes: '#f0e0d0', shorts: '#2a3a5a', hair: (x, cx, hy, r) => {
+    S(x, [[cx - r - 1.5, hy + 2], [cx - r - 1, hy - r], [cx, hy - r - 2.5], [cx + r + 1, hy - r], [cx + r + 1.5, hy + 2], [cx + r - 2, hy - 2], [cx - r + 2, hy - 2]], '#1a1418');
+  } }),
+  // Tank's mother: auburn hair in a bun, a blue dress and a work apron
+  tank: () => kinFigure({ h: 0.98, dress: '#3a6a9a', long: true, apron: '#e8e0d0', sleeves: '#3a6a9a', hair: (x, cx, hy, r) => {
+    S(x, [[cx - r - 1, hy + 3], [cx - r, hy - r + 1], [cx, hy - r - 1], [cx + r, hy - r + 1], [cx + r + 1, hy + 3]], '#9a4a2a');
+    C(x, cx + r - 1, hy - r + 1, 3.5, '#8a3a1a');
+  } }),
+};
+
+window.VOLC = { SETS, bakeMobs, ITEMS, paintMap, KIN };

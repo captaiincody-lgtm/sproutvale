@@ -22,6 +22,8 @@ func applyVolume() -> void:
 
 
 func heroLocked(id: String) -> bool:
+	if heroCaptured(id):   # Glamrax's crystal holds them
+		return true
 	var u = CLASSES[id].get("unlock")
 	return u != null and u != "" and not save.get("trophies", {}).get(u)
 
@@ -67,6 +69,8 @@ func setGender(id: String, g: String) -> void:
 
 func moveSelection(d: int) -> void:
 	var avail = HERO_ORDER.filter(func(id): return not heroLocked(id))
+	if avail.is_empty():
+		return
 	var i = avail.find(selClass)
 	i = clampi(i + d, 0, avail.size() - 1)
 	if avail[i] != selClass:
@@ -115,6 +119,9 @@ func renderTitle(ci: CanvasItem) -> void:
 
 
 func _heroCard(id: String, r: Rect2) -> void:
+	if id != "???" and heroCaptured(id):
+		_capturedCard(id, r)
+		return
 	if id == "???" or heroLocked(id):
 		var won = tb(save.get("trophies", {}).get("dreamer"))
 		var lines: Array
@@ -169,7 +176,35 @@ func _heroCard(id: String, r: Rect2) -> void:
 	uZones.insert(0, z)
 
 
+## a hero Glamrax took: still there on the card, sealed in his purple crystal
+func _capturedCard(id: String, r: Rect2) -> void:
+	uBox(r, css("#1c1230"), css("#7a3ad0"), 3, 12, 4.0, DARK)
+	var pic = Rect2(r.position.x + 9, r.position.y + 9, r.size.x - 18, 104)
+	heroPic(pic, id, "idle", 0)
+	var c = pic.get_center()
+	var pulse = 0.5 + 0.5 * sin(realTime * 2.2 + HERO_ORDER.find(id))
+	var pts = PackedVector2Array([c + Vector2(0, -56), c + Vector2(30, -26), c + Vector2(26, 40), c + Vector2(0, 54), c + Vector2(-26, 40), c + Vector2(-30, -26)])
+	uci.draw_colored_polygon(pts, Color(0.62, 0.3, 1.0, 0.36 + pulse * 0.12))
+	var edge = pts.duplicate()
+	edge.append(pts[0])
+	uci.draw_polyline(edge, Color(0.85, 0.65, 1.0, 0.9), 2.0, true)
+	uci.draw_line(c + Vector2(-14, -40), c + Vector2(-20, 24), Color(1, 1, 1, 0.45), 2.0, true)
+	uci.draw_line(c + Vector2(0, -56), c + Vector2(0, 54), Color(0.9, 0.75, 1, 0.3), 1.0, true)
+	var y = r.position.y + 118
+	uText(CLASSES[id].name, r.get_center().x, y, 12, css("#e8dcff"), UB, 1)
+	y += 17
+	uPill("💎 Captured", r.get_center().x, y, css("#b07aff"), DARK, 8, 1)
+	y += 17
+	uText("Lv %d" % int(save.captured[id].get("level", 1)), r.get_center().x, y, 8, css("#c8b8e8"), UF, 1)
+	y += 14
+	uPara("Glamrax sealed them in a crystal deep in the volcano. Their power is feeding his machine.", r.position.x + 9, y, r.size.x - 18, 8, css("#c8b8e8"))
+
+
 func toCharSelect() -> void:
+	if heroLocked(selClass):   # the hero who just fell to Glamrax can't be picked any more
+		var avail = HERO_ORDER.filter(func(h): return not heroLocked(h))
+		selClass = avail[0] if avail.size() else "rock"
+		setClass(selClass)
 	Sfx.music("sel_" + selClass)
 	inGame = false
 	menuOpen = false

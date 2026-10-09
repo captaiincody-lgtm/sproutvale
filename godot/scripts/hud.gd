@@ -1,4 +1,4 @@
-extends "res://scripts/volcano_draw.gd"
+extends "res://scripts/glamrax_draw.gd"
 ## Sproutvale, part 9: the HUD, and the small immediate-mode toolkit it and the menus draw with.
 ## The prototype built these out of HTML and CSS. Here every box, label and button is drawn each
 ## frame in screen pixels (768×432), and anything clickable registers a "zone" for the mouse.
@@ -254,6 +254,12 @@ func updateHud(rdt: float) -> void:
 
 func renderHud(ci: CanvasItem) -> void:
 	uBegin(ci, "hud")
+	if cinematic():   # Glamrax's meeting: letterbox bars and the dialogue, nothing else
+		uci.draw_rect(Rect2(0, 0, UW, 46), Color.BLACK)
+		uci.draw_rect(Rect2(0, UH - 46, UW, 46), Color.BLACK)
+		if scene != null:
+			_dialog()
+		return
 	var indoor = tb(M.get("indoor", false))
 	_bottomBar()
 	if not indoor:
@@ -521,7 +527,7 @@ func _statusChips(indoor: bool) -> void:
 func _bossUI() -> void:
 	var b = null
 	for e in slimes:
-		if e.boss and e.state != "dead":
+		if e.boss and e.state != "dead" and e.state != "intro":   # Glamrax's bar waits until he stands to fight
 			b = e
 			break
 	if b != null:

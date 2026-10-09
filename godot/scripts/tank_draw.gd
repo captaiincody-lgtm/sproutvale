@@ -287,6 +287,7 @@ func drawTankScene(x: Ctx, t: float, kind: String) -> void:
 		"t_surface": _sceneSurface(x, t)
 		"t_shore": _sceneShore(x, t)
 		"t_glamrax": _sceneGlamrax(x, t)
+		_: drawVolcanoStory(x, t, kind)
 
 
 ## the Dreamer sinks through the black water, its eye going dark, and one small red light wakes inside it

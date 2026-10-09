@@ -12,6 +12,7 @@ var shots := 0
 var steps: Array = []
 var busy := false
 var keepAlive := true
+var gQuiet := false
 
 
 func _ready() -> void:
@@ -100,6 +101,73 @@ func _ready() -> void:
 		add.call(0.6, "shot", "cells_far")
 		add.call(0.1, "warp", "volcano4")
 		add.call(2.2, "shot", "sanctum")
+	if part == "glamrax":
+		add.call(0.1, "warp", "volcano4")
+		add.call(1.5, "shot", "g_pan1")
+		add.call(2.5, "shot", "g_pan2")
+		add.call(0.1, "waitbeat", "stop")
+		add.call(0.3, "shot", "g_stop")
+		add.call(0.1, "waitbeat", "talk")
+		add.call(0.6, "shot", "g_talk")
+		for i in 4:
+			add.call(0.3, "tap", KEY_Z)
+		add.call(0.1, "waitbeat", "rise")
+		add.call(1.2, "shot", "g_rise")
+		add.call(0.1, "waitbeat", "kin")
+		add.call(1.4, "shot", "g_kin")
+		add.call(0.1, "waitbeat", "hero")
+		add.call(0.6, "shot", "g_frown")
+		add.call(1.0, "shot", "g_reply")
+		for i in 4:
+			add.call(0.3, "tap", KEY_Z)
+		add.call(0.1, "waitbeat", "")
+		add.call(0.6, "shot", "g_fight")
+		add.call(0.1, "gquiet", true)
+		for sp in ["chain", "fire", "meteor", "wave", "tornado", "firenado", "ice", "pillars", "sky"]:
+			add.call(1.6, "gcast", sp)
+			add.call(0.5, "shot", "s_%s_a" % sp)
+			add.call(0.5, "shot", "s_%s_b" % sp)
+		add.call(1.2, "gcast", "orb")
+		add.call(0.4, "shot", "orb")
+		add.call(0.1, "reflect", 0)
+		add.call(0.3, "shot", "orb_back")
+		add.call(0.6, "shot", "orb_swatted")
+		add.call(0.1, "reflect", 9)
+		add.call(0.6, "shot", "orb_through")
+		add.call(0.6, "shot", "stunned")
+		add.call(0.1, "god", true)
+		add.call(3.0, "bosshp", 0.74)
+		add.call(0.1, "gquiet", false)
+		add.call(1.2, "shot", "summon")
+		add.call(1.6, "shot", "demon")
+		add.call(1.0, "shot", "demon2")
+		add.call(0.1, "clear")
+		add.call(0.1, "bosshp", 0.49)
+		add.call(1.4, "shot", "shield")
+		add.call(0.1, "bosshp", 0.24)
+		add.call(0.8, "shot", "shed")
+		add.call(1.6, "shot", "shed2")
+		add.call(1.2, "shot", "brawl")
+		add.call(0.6, "shot", "brawl2")
+		add.call(0.1, "bosshp", 0.09)
+		add.call(0.8, "shot", "horns")
+		add.call(1.6, "shot", "horns2")
+		add.call(0.5, "shot", "brawl3")
+		add.call(0.5, "shot", "brawl4")
+		add.call(0.1, "killboss")
+		add.call(0.6, "shot", "fallen")
+		add.call(2.4, "shot", "lying")
+		add.call(1.6, "shot", "end1")
+		add.call(0.1, "tap", KEY_ENTER)
+		add.call(0.3, "tap", KEY_ENTER)
+		add.call(1.0, "shot", "end2")
+		add.call(3.0, "shot", "end2_fade")
+		add.call(2.4, "shot", "laugh1")
+		add.call(1.5, "shot", "laugh2")
+		add.call(0.1, "waitintro")
+		add.call(1.0, "shot", "select")
+		add.call(0.1, "tap", KEY_RIGHT)
+		add.call(0.5, "shot", "select2")
 	if part == "slam":
 		add.call(0.1, "warp", "volcano2")
 		add.call(1.6, "go", 200)
@@ -206,6 +274,10 @@ func _process(delta: float) -> void:
 	t += delta
 	if keepAlive and game.P != null and game.P.state != "dead" and game.PS is Dictionary and game.PS.has("hp"):
 		game.P.hp = maxf(game.P.hp, game.PS.hp * 0.6)
+	if gQuiet:
+		var gb = _boss()
+		if gb != null and gb.get("bossKind") == "glamrax":
+			gb.data.cd = 99.0
 	while not busy and steps.size() and steps[0][0] <= t:
 		var s: Array = steps.pop_front()
 		match s[1]:
@@ -220,7 +292,7 @@ func _process(delta: float) -> void:
 				var code = s[2]
 				get_tree().create_timer(0.05).timeout.connect(func(): key(code, false))
 			"skip":
-				if game.intro != null:
+				if game.intro != null and not str(game.intro.get("scenes", [{}])[0].get("kind", "")).begins_with("g_"):
 					game.introSkip()
 			"warp":
 				game.fadeTo = {"map": s[2]}
@@ -295,6 +367,38 @@ func _process(delta: float) -> void:
 					e.t = 0
 					e.hitDone = false
 					print("mobact ", s[2])
+			"waitbeat", "waitintro":
+				var orig: float = s[3] if s.size() > 3 else s[0]
+				var waiting = game.GX.get("beat", "") != s[2] if s[1] == "waitbeat" else game.intro != null
+				if waiting and t - orig < 60:
+					if s[1] == "waitbeat" and game.scene != null:
+						game.pressed["z"] = true   # keep a dialogue moving
+					steps.push_front([t + 0.1, s[1], s[2], orig])
+					break
+				for q in steps:   # everything after waits as long as this did
+					q[0] += t - orig
+				print("%s %s after %.1fs" % [s[1], s[2], t - orig])
+				if s[1] == "waitintro":
+					print("captured: ", game.save.get("captured"), " sel ", game.selClass)
+			"god":
+				game.save.settings.god = s[2]
+			"gquiet":
+				gQuiet = s[2]
+			"gcast":
+				var e = _boss()
+				if e != null:
+					game.P.held = null
+					game.P.iframes = 0
+					game.P.state = "move"
+					e.data.spell = ""
+					game._gxCast(e, s[2])
+					print("cast ", s[2], " spells ", game.gSpells.size())
+			"reflect":
+				for q in game.slimes:
+					if q.get("bossPart") and q.data.get("kind") == "orb":
+						q.data.n = s[2]
+						game.damagePart(q, {})
+						print("reflected, to=", q.data.to)
 			"keep":
 				keepAlive = s[2]
 				print("hp before: %d / %d" % [game.P.hp, game.PS.hp])

@@ -23,7 +23,7 @@ const GODOT = resolve(process.argv[2] || 'godot');
 const OUT = join(GODOT, 'art', 'volcano');
 const data = JSON.parse(readFileSync(join(GODOT, 'data', 'volcano.json'), 'utf8'));
 // VOLCANO_ONLY=mobs,items,maps bakes just those parts (handy while drawing)
-const ONLY = (process.env.VOLCANO_ONLY || 'mobs,items,maps').split(',');
+const ONLY = (process.env.VOLCANO_ONLY || 'mobs,items,kin,maps').split(',');
 
 const write = (rel, buf) => { const p = join(OUT, rel); mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, buf); };
 const png = (rel, dataUrl) => write(rel, Buffer.from(dataUrl.split(',')[1], 'base64'));
@@ -78,6 +78,13 @@ if (ONLY.includes('items')) {
   const items = await page.evaluate(() => { const out = {}; for (const [k, c] of Object.entries(VOLC.ITEMS)) out[k] = __url(c); return out; });
   for (const [k, u] of Object.entries(items)) png(`items/${k}.png`, u);
   console.log('items:', Object.keys(items).length);
+}
+
+// ---- the heroes' loved ones (placeholders: swap in your own drawings at the same size)
+if (ONLY.includes('kin')) {
+  const kin = await page.evaluate(() => { const out = {}; for (const [k, f] of Object.entries(VOLC.KIN)) out[k] = __url(f()); return out; });
+  for (const [k, u] of Object.entries(kin)) png(`kin/${k}.png`, u);
+  console.log('kin:', Object.keys(kin).join(' '));
 }
 
 // ---- maps: the painted rooms plus their glows and the spots where the game draws moving things

@@ -1,4 +1,4 @@
-extends "res://scripts/mecha.gd"
+extends "res://scripts/glamrax.gd"
 ## Sproutvale, part 7: drawing the world, in the same order as the prototype's render().
 ## Everything is in world units on a 384×216 view; the layers it draws into are scaled 2×.
 ## `x` is a Canvas2D stand-in (ctx.gd), so the drawing code reads like the original.
@@ -82,7 +82,10 @@ func tailOn() -> bool:
 func renderWorld(ci: CanvasItem, dt: float) -> void:
 	_rdt = dt
 	var x = ctx
-	x.begin(ci)
+	if camZoom != 1.0:   # Glamrax's cutscene leans in on a crystal or a face
+		x.begin(ci, Transform2D(0, Vector2(camZoom, camZoom), 0, camZoomAt * (1 - camZoom)))
+	else:
+		x.begin(ci)
 	var D = dayInfo()
 	var shk: float = shake * float(save.settings.get("shake", 1.0))   # the Screen shake setting scales it, 0–100%
 	var sx = roundf(cam.x + (rand(-shk, shk) if shk > 0.2 else 0.0))
@@ -202,7 +205,7 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 			x.fillRect(roundf(X + cos(a) * r * 0.6), roundf(Y - 16 + sin(a) * r), 2, 2)
 		x.fillStyle = rgba(184, 138, 255, 0.35) if sealed else rgba(160, 230, 255, 0.35)
 		x.fillRect(X - 4, Y - 26, 8, 20)
-		if absf(P.x - p.x) < 40:
+		if absf(P.x - p.x) < 40 and not cinematic():
 			var hw = x.measureText("↑ " + p.label).width / 2 + 4
 			textOutline(x, "↑ " + p.label, roundf(clampf(X, hw, VW - hw)), roundf(Y - 34), "#ffffff")
 	# drops

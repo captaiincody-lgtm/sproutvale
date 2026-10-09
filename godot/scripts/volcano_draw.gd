@@ -324,6 +324,8 @@ func _climbKey(e) -> Array:
 
 
 func drawAbyssMob(x: Ctx, e, sx: float, sy: float) -> void:
+	if drawSpecialMob(x, e, sx, sy):
+		return
 	super.drawAbyssMob(x, e, sx, sy)
 	if not (e.type in VOLCANO_MOBS) or e.state == "dead":
 		return
@@ -402,6 +404,7 @@ func drawVolcanoFront(x: Ctx, sx: float, sy: float) -> void:
 					x.fillStyle = "#ffffff" if i % 2 else "#7af0ff"
 					x.fillRect(roundf(X + cos(a) * r), roundf(Y + sin(a) * r * 0.6), 2, 2)
 	drawMk2Front(x, sx, sy)
+	drawSanctumFront(x, sx, sy)
 
 
 # ================================================================ light
@@ -456,6 +459,3 @@ func climbOverlay(x: Ctx) -> void:
 		else:
 			x.fillStyle = "#3a1010"; x.fillRect(X - 3, Y - 1, 6, 3)
 
-
-# forward declaration: the sanctum's pods and piano (glamrax_draw.gd)
-func drawSanctumMid(_x: Ctx, _sx: float, _sy: float) -> void: pass
