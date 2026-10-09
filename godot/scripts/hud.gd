@@ -1,4 +1,4 @@
-extends "res://scripts/glamrax_draw.gd"
+extends "res://scripts/finale_draw.gd"
 ## Sproutvale, part 9: the HUD, and the small immediate-mode toolkit it and the menus draw with.
 ## The prototype built these out of HTML and CSS. Here every box, label and button is drawn each
 ## frame in screen pixels (768×432), and anything clickable registers a "zone" for the mouse.
@@ -254,6 +254,9 @@ func updateHud(rdt: float) -> void:
 
 func renderHud(ci: CanvasItem) -> void:
 	uBegin(ci, "hud")
+	if GM.get("on", false):   # playing Glamrax: his own bar, his spells, and who's still standing
+		_gmHud()
+		return
 	if cinematic():   # Glamrax's meeting: letterbox bars and the dialogue, nothing else
 		uci.draw_rect(Rect2(0, 0, UW, 46), Color.BLACK)
 		uci.draw_rect(Rect2(0, UH - 46, UW, 46), Color.BLACK)
@@ -280,6 +283,57 @@ func renderHud(ci: CanvasItem) -> void:
 		_dialog()
 	if loot != null:
 		_lootPanel()
+	if vignette > 0:
+		_vignette(vignette)
+
+
+func _gmHud() -> void:
+	var bar = Rect2(0, UH - 54, UW, 54)
+	uGrad(bar, css("#2a0e3a"), css("#22082e"), css("#160420"), 0.5)
+	uci.draw_rect(Rect2(0, UH - 54, UW, 2), css("#7a2a9a"))
+	uBox(Rect2(8, UH - 47, 70, 20), css("#1a0624"), css("#ff4ad8"), 2, 6)
+	uText("LV 200", 43, UH - 42, 8, css("#ff8ae8"), PX, 1)
+	_meter(Rect2(84, UH - 47, UW * 0.36, 18), P.hp / PS.hp, ["#ff8ae8", "#c83ab0", "#7a1a70"], "HP", "%d / %d" % [ceili(maxf(0, P.hp)), PS.hp])
+	var tags = []
+	if GM.get("shieldT", 0.0) > 0:
+		tags.append("Mana Shield %ds" % ceili(GM.shieldT))
+	if GM.get("hornsT", 0.0) > 0:
+		tags.append("Unleashed %ds" % ceili(GM.hornsT))
+	uText(" · ".join(tags), 84, UH - 24, 9, css("#bff4ff"), UF)
+	# the spells: one box each, the cooldown draining from the top
+	var n = GM_KEYS.size()
+	var bw = 30.0
+	var x0 = UW - 10 - n * (bw + 4)
+	for i in n:
+		var k: String = GM_KEYS[i]
+		var K2: Dictionary = GM_KIT[k]
+		var r = Rect2(x0 + i * (bw + 4), UH - 48, bw, 30)
+		var col = css(K2.col)
+		uBox(r, Color(col.darkened(0.7), 0.95), col, 2, 5)
+		var cd: float = GM.cds.get(k, 0.0)
+		if cd > 0:
+			var frac = clampf(cd / K2.cd, 0, 1)
+			uci.draw_rect(Rect2(r.position.x + 2, r.position.y + 2, r.size.x - 4, (r.size.y - 4) * frac), Color(0, 0, 0, 0.6))
+			uText(str(ceili(cd)) if cd >= 1 else "", r.get_center().x, r.position.y + 9, 9, Color.WHITE, UB, 1)
+		uText(k.to_upper(), r.position.x + 4, r.position.y + 2, 8, Color.WHITE, PX)
+		uZones.append({"r": Rect2(r.position + uOff, r.size), "cb": Callable(), "tip": "%s (%s) · %s · %ss" % [K2.name, k.to_upper(), K2.tip, str(K2.cd)]})
+	uText("Arrows move · Space floats up · Down drops · Esc leaves", UW - 10, UH - 13, 8, css("#c8a8e0"), UF, 2)
+	# the heroes, top left
+	var y = 8.0
+	for f in fighters:
+		if f.team != "foe":
+			continue
+		var r = Rect2(8, y, 150, 16)
+		uBox(r, Color(0.06, 0.02, 0.1, 0.8), css("#5a2a6a"), 1, 4)
+		uText("%s · Lv %d" % [f.name, f.lv], 13, y + 3, 8, Color.WHITE if f.state != "down" else css("#8a7a96"), UB)
+		var k2 = clampf(f.hp / f.maxHp, 0, 1)
+		uci.draw_rect(Rect2(90, y + 5, 62, 6), css("#1a0410"))
+		uci.draw_rect(Rect2(90, y + 5, 62 * k2, 6), css("#ff4a5a"))
+		y += 19
+	_toasts()
+	_flashText(bannerMsg, 2.6, UH * 0.24, true)
+	if scene != null:
+		_dialog()
 	if vignette > 0:
 		_vignette(vignette)
 

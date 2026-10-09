@@ -461,11 +461,14 @@ func _updateGSpells(dt: float) -> void:
 	if gSpells.is_empty():
 		return
 	var pb = pBox()
-	var alive = P.state != "dead"
+	var alive0 = P.state != "dead"
 	for i in range(gSpells.size() - 1, -1, -1):
+		if i >= gSpells.size():
+			continue
 		var s: Dictionary = gSpells[i]
 		s.t += dt
 		var gone = false
+		var alive = alive0 and not s.get("mine", false)   # spells cast by a playable Glamrax hit the heroes instead (showdown.gd)
 		match s.kind:
 			"bolt":
 				if s.t >= s.warn and not s.hit:
@@ -497,8 +500,8 @@ func _updateGSpells(dt: float) -> void:
 			"meteor":
 				if s.t >= s.warn and not s.get("hit", false):
 					s.hit = true
-					_boom(s.x, s.gy - 6, 32, s.src, 1.5)
-					gSpells.append({"kind": "flames", "x": s.x, "y": s.gy, "t": 0.0, "tick": 0.0, "src": s.src})
+					_boom(s.x, s.gy - 6, 32, s.src if alive0 and not s.get("mine", false) else null, 1.5)
+					gSpells.append({"kind": "flames", "x": s.x, "y": s.gy, "t": 0.0, "tick": 0.0, "src": s.src, "mine": s.get("mine", false)})
 				gone = s.t > s.warn + 0.05
 			"flames":
 				if alive and P.grounded and absf(P.y - s.y) < 3 and absf(P.x - s.x) < 20 and Burn.t <= 0:
@@ -516,7 +519,7 @@ func _updateGSpells(dt: float) -> void:
 					part(s.x + rand(-6, 6), M.floorY - rand(0, s.h), s.dir * rand(40, 140), -rand(40, 160), 0.5, "#9ad8ff" if randf() < 0.5 else "#ffffff", 400, 1)
 				gone = s.x < -40 or s.x > M.w + 40
 			"tornado":
-				s.x = move_toward(s.x, P.x, (70.0 if not s.fire else 60.0) * dt)
+				s.x = move_toward(s.x, s.get("tx", P.x), (70.0 if not s.fire else 60.0) * dt)
 				s.tick -= dt
 				var dx = P.x - s.x
 				if alive and P.held == null and P.y > M.floorY - 150:
@@ -572,8 +575,15 @@ func _updateGSpells(dt: float) -> void:
 				gone = s.t > 1.8
 			"swat":
 				gone = s.t > 0.25
+		if s.get("mine", false):
+			gone = mineSpell(s, dt) or gone
 		if gone:
 			gSpells.remove_at(i)
+
+
+## a playable Glamrax's spell: hit the heroes (showdown.gd); true when it's spent
+func mineSpell(_s: Dictionary, _dt: float) -> bool:
+	return false
 
 
 func frontBusy() -> bool:

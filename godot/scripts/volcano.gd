@@ -761,3 +761,6 @@ func drawSanctumFront(_x: Ctx, _sx: float, _sy: float) -> void: pass
 func drawSpecialMob(_x: Ctx, _e, _sx: float, _sy: float) -> bool: return false
 func drawVolcanoStory(_x: Ctx, _t: float, _kind: String) -> void: pass
 func glamraxCutscene(_cls: String, _scenes: Array, _done: Callable) -> void: pass
+func introBusy() -> bool: return false
+func pickedClass() -> String: return "rock"
+func laughNow() -> void: pass

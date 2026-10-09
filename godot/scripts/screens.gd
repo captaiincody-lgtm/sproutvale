@@ -12,6 +12,7 @@ var dragSlider := ""
 var _sliders := {}        # setting key → Rect2 on screen, for dragging
 var _lastCardClick := {"id": "", "t": -9.0}
 var _introDone := false
+var selGlamrax := false   # the Glamrax card is picked (once every hero is in his crystal)
 
 
 func applyVolume() -> void:
@@ -38,8 +39,29 @@ func jobFor(cls: String, lv: int) -> Dictionary:
 
 # ================================================================ character select
 
+func pickedClass() -> String:
+	return selClass if CLASSES.has(selClass) else "rock"
+
+
+func heroCards() -> Array:
+	return HERO_ORDER + ["glamrax"] if glamraxUnlocked() else HERO_ORDER
+
+
 func pickHero(id: String) -> void:
 	var now = realTime
+	if id == "glamrax":
+		if selGlamrax and _lastCardClick.id == id and now - _lastCardClick.t < 0.4:
+			startGame()
+			return
+		_lastCardClick = {"id": id, "t": now}
+		if not selGlamrax:
+			selGlamrax = true
+			Sfx.ui()
+			Sfx.music("piano")
+		return
+	if heroCaptured(id):
+		return
+	selGlamrax = false
 	if _lastCardClick.id == id and now - _lastCardClick.t < 0.4:
 		selClass = id
 		startGame()
@@ -71,6 +93,7 @@ func moveSelection(d: int) -> void:
 	var avail = HERO_ORDER.filter(func(id): return not heroLocked(id))
 	if avail.is_empty():
 		return
+	selGlamrax = false
 	var i = avail.find(selClass)
 	i = clampi(i + d, 0, avail.size() - 1)
 	if avail[i] != selClass:
@@ -89,7 +112,9 @@ func renderTitle(ci: CanvasItem) -> void:
 	uText("Sproutvale", UW / 2, 22, 24, Color.WHITE, PX, 1)
 	uText("Choose your hero", UW / 2, 55, 10, GOLD, PX, 1, DARK, 2)
 	# the cards: four heroes and the still-hidden fifth, in a sideways slider
-	var cards = HERO_ORDER
+	var cards = heroCards()
+	if capturedAll():
+		selGlamrax = true
 	carousel = clampi(carousel, 0, cards.size() - SHOWN)
 	var cw = 150.0
 	var gap = 10.0
@@ -107,7 +132,9 @@ func renderTitle(ci: CanvasItem) -> void:
 		uButton(Rect2(x0 + total + 8, navY, 28, 40), "›", func(): carousel += 1; Sfx.ui(), {"bg": css("#3a4a8a"), "fg": Color.WHITE, "border": DARK, "size": 18, "shadow": 3.0, "rad": 8})
 	# Play, Accomplishments, Settings
 	var by = y0 + ch + 14
-	var b1 = "Play as %s" % CLASSES[selClass].name
+	var b1 = "Play as %s" % ("Glamrax" if selGlamrax else CLASSES[selClass].name)
+	if capturedAll() and save.get("showdownWon", false):
+		b1 = "Break the crystal"   # the finale, waiting for you
 	var w1 = uW(b1, 11) + 34
 	var w2 = uW("🏆 Accomplishments", 10) + 28
 	var w3 = uW("⚙ Settings", 10) + 28
@@ -119,6 +146,9 @@ func renderTitle(ci: CanvasItem) -> void:
 
 
 func _heroCard(id: String, r: Rect2) -> void:
+	if id == "glamrax":
+		_glamraxCard(r)
+		return
 	if id != "???" and heroCaptured(id):
 		_capturedCard(id, r)
 		return
@@ -146,7 +176,7 @@ func _heroCard(id: String, r: Rect2) -> void:
 		return
 	var C: Dictionary = CLASSES[id]
 	var chd: Dictionary = save.chars[id]
-	var on = selClass == id
+	var on = selClass == id and not selGlamrax
 	var J = jobFor(id, chd.level)
 	if on:
 		uGlow(r, GOLD, 4, 12)
@@ -176,6 +206,32 @@ func _heroCard(id: String, r: Rect2) -> void:
 	uZones.insert(0, z)
 
 
+## the hidden sixth card: Glamrax himself, once every hero is in his crystal
+func _glamraxCard(r: Rect2) -> void:
+	var on = selGlamrax
+	if on:
+		uGlow(r, css("#ff4ad8"), 4, 12)
+	uBox(r, css("#1a0624"), css("#ff4ad8") if on else css("#7a2a9a"), 3, 12, 4.0, DARK)
+	var pic = Rect2(r.position.x + 9, r.position.y + 9, r.size.x - 18, 104)
+	uBox(pic, css("#2a0a30"), DARK, 2, 8)
+	var bob = absf(sin(realTime * PI / 1.2)) * 2.5 if on else 0.0
+	withCtx(Vector2(pic.get_center().x, pic.end.y - 8 - bob), 1.25, func(x): _drawGlamrax(x, 0, 0, 1, {"anim": "float", "form": "robe"}, realTime, false))
+	var y = r.position.y + 118
+	uText("Glamrax", r.get_center().x, y, 12, css("#ffb8f0"), UB, 1)
+	y += 17
+	uPill("Level 200", r.get_center().x, y, css("#ff4ad8"), DARK, 8, 1)
+	y += 17
+	uText("Wizard · Every spell", r.get_center().x, y, 8, css("#c8a8e0"), UF, 1)
+	y += 13
+	var line = "The heroes are coming for their loved ones. Let them come."
+	if save.get("finaleDone", false):
+		line = "Beaten for good. You can still hold the sanctum against them, for old times' sake."
+	elif save.get("showdownWon", false):
+		line = "The heroes are in his crystals. Their power is his. But one crystal is cracking..."
+	uPara(line, r.position.x + 9, y, r.size.x - 18, 8, css("#e8d0f0"))
+	uZones.insert(0, {"r": Rect2(r.position + uOff, r.size), "cb": func(): pickHero("glamrax"), "tip": ""})
+
+
 ## a hero Glamrax took: still there on the card, sealed in his purple crystal
 func _capturedCard(id: String, r: Rect2) -> void:
 	uBox(r, css("#1c1230"), css("#7a3ad0"), 3, 12, 4.0, DARK)
@@ -201,6 +257,11 @@ func _capturedCard(id: String, r: Rect2) -> void:
 
 
 func toCharSelect() -> void:
+	if heroAfter != "":   # the end: back to the hero who broke out of the crystal
+		selGlamrax = false
+		selClass = heroAfter
+		heroAfter = ""
+		setClass(selClass)
 	if heroLocked(selClass):   # the hero who just fell to Glamrax can't be picked any more
 		var avail = HERO_ORDER.filter(func(h): return not heroLocked(h))
 		selClass = avail[0] if avail.size() else "rock"
@@ -219,6 +280,9 @@ func toCharSelect() -> void:
 
 func startGame() -> void:
 	if inGame or intro != null:
+		return
+	if selGlamrax or capturedAll():
+		startShowdown()
 		return
 	if heroLocked(selClass):
 		selClass = "rock"

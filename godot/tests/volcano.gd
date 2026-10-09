@@ -13,6 +13,8 @@ var steps: Array = []
 var busy := false
 var keepAlive := true
 var gQuiet := false
+var gBot := false
+var botT := 0.0
 
 
 func _ready() -> void:
@@ -168,6 +170,75 @@ func _ready() -> void:
 		add.call(1.0, "shot", "select")
 		add.call(0.1, "tap", KEY_RIGHT)
 		add.call(0.5, "shot", "select2")
+	if part == "showdown":
+		add.call(0.1, "capall", 120)
+		add.call(0.6, "shot", "sel_glamrax")
+		add.call(0.1, "showdown")
+		for i in 5:
+			add.call(1.6, "shot", "story%d" % i)
+			add.call(0.1, "tap", KEY_ENTER)
+			add.call(0.15, "tap", KEY_ENTER)
+		add.call(0.1, "waitintro")
+		add.call(1.5, "shot", "sd_enter")
+		add.call(2.5, "shot", "sd_enter2")
+		add.call(2.0, "shot", "sd_barks")
+		add.call(0.1, "waitphase", "fight")
+		add.call(0.5, "shot", "sd_fight")
+		add.call(2.0, "shot", "sd_fight2")
+		add.call(1.5, "shot", "sd_fight3")
+		for k in ([] if OS.get_environment("VOLC_FAST") != "" else ["z", "x", "a", "s", "d", "f", "q", "w", "e", "r", "c"]):
+			add.call(0.3, "gmkey", k)
+			add.call(0.35, "shot", "gm_%s" % k)
+			add.call(0.5, "shot", "gm_%s2" % k)
+		add.call(0.1, "gmbot", true)
+		for i in 12:
+			add.call(5.0, "shot", "bot%d" % i)
+		add.call(0.1, "waitphase", "none")
+		add.call(1.0, "shot", "after")
+	if part == "finale":
+		add.call(0.1, "capall", 120)
+		add.call(0.1, "wonshow")
+		add.call(0.6, "shot", "fsel")
+		add.call(0.1, "showdown")
+		for i in 12:
+			add.call(1.8, "shot", "f%02d" % i)
+			add.call(0.1, "tap", KEY_ENTER)
+			add.call(0.15, "tap", KEY_ENTER)
+		add.call(1.6, "shot", "choose")
+		add.call(0.1, "tap", KEY_RIGHT)
+		add.call(0.3, "shot", "choose2")
+		add.call(0.1, "tap", KEY_ENTER)
+		add.call(0.2, "shot", "shatter")
+		add.call(0.5, "shot", "shatter2")
+		add.call(0.1, "waitintro")
+		add.call(0.2, "shot", "fall")
+		add.call(0.1, "waitfin", "fight")
+		add.call(0.6, "shot", "fin_fight")
+		add.call(0.1, "god", true)
+		for i in 4:
+			add.call(1.0, "bosshp", [0.84, 0.69, 0.54, 0.39][i])
+			add.call(1.2, "shot", "ally%d" % i)
+		add.call(2.5, "shot", "allies")
+		add.call(2.5, "shot", "allies2")
+		add.call(2.5, "shot", "allies3")
+		add.call(0.1, "killboss")
+		add.call(3.4, "shot", "fin_fallen")
+		for i in 6:
+			add.call(1.8, "shot", "fend%d" % i)
+			add.call(0.1, "tap", KEY_ENTER)
+			add.call(0.15, "tap", KEY_ENTER)
+		add.call(0.1, "waitintro")
+		add.call(1.0, "shot", "fin_select")
+	if part == "rematch":
+		add.call(0.1, "finaledone")
+		add.call(0.1, "warp", "volcano4")
+		add.call(1.5, "shot", "pedestal")
+		add.call(0.1, "summon")
+		add.call(0.1, "waitbeat", "")
+		add.call(1.0, "shot", "rematch")
+		add.call(0.1, "killboss")
+		add.call(1.0, "shot", "realkill")
+		add.call(0.1, "dieboss")
 	if part == "slam":
 		add.call(0.1, "warp", "volcano2")
 		add.call(1.6, "go", 200)
@@ -278,6 +349,23 @@ func _process(delta: float) -> void:
 		var gb = _boss()
 		if gb != null and gb.get("bossKind") == "glamrax":
 			gb.data.cd = 99.0
+	if gBot and game.GM.get("phase", "") == "fight":
+		botT += delta
+		var foes = game._liveFoes()
+		if foes.size():
+			var n = game._nearestFoe(game.P.x, 0)
+			var dx = n.x - game.P.x
+			game.P.face = int(signf(dx)) if dx != 0 else 1
+			for k in ["r", "e", "w", "q", "a", "f", "s", "d", "x", "z"]:
+				if game.GM.cds[k] <= 0:
+					game.pressed[k] = true
+					break
+			if absf(dx) < 60 and game.GM.cds["c"] <= 0:
+				game.P.face = -game.P.face
+				game.pressed["c"] = true
+		if botT > 3.0:
+			botT = 0.0
+			print("bot: P.hp=%d " % game.P.hp, game.fighters.map(func(f): return "%s %d %s" % [f.cls, f.hp, f.state]))
 	while not busy and steps.size() and steps[0][0] <= t:
 		var s: Array = steps.pop_front()
 		match s[1]:
@@ -380,6 +468,52 @@ func _process(delta: float) -> void:
 				print("%s %s after %.1fs" % [s[1], s[2], t - orig])
 				if s[1] == "waitintro":
 					print("captured: ", game.save.get("captured"), " sel ", game.selClass)
+			"capall":
+				game.save.captured = {}
+				for c in ["rock", "archer", "mage", "summoner", "tank"]:
+					game.save.chars[c].level = s[2] + ["rock", "archer", "mage", "summoner", "tank"].find(c) * 3
+					game.save.captured[c] = {"level": game.save.chars[c].level, "t": 0}
+				game.inGame = false
+				game.toCharSelect()
+				print("captured all; unlocked=", game.glamraxUnlocked())
+			"finaledone":
+				game.save.finaleDone = true
+				game.save.showdownWon = true
+				for c in ["rock", "archer", "mage", "summoner", "tank"]:
+					game.save.chars[c].bossKills = {"glamrax": 1}
+			"dieboss":
+				var e = game._glamrax()
+				print("rematch: glamrax ", "gone" if e == null else e.state, " captured=", game.save.get("captured"), " kills=", game.CH().bossKills)
+			"wonshow":
+				game.save.showdownWon = true
+			"waitfin":
+				if game.FIN.get("stage", "") != s[2] and t - (s[3] if s.size() > 3 else s[0]) < 30:
+					if game.scene != null:
+						game.pressed["z"] = true
+					steps.push_front([t + 0.2, s[1], s[2], s[3] if s.size() > 3 else s[0]])
+					break
+				var o3: float = s[3] if s.size() > 3 else s[0]
+				for q in steps:
+					q[0] += t - o3
+				print("finale stage %s after %.1fs; FIN=%s" % [game.FIN.get("stage", ""), t - o3, game.FIN])
+			"showdown":
+				game.startGame()
+				print("showdown start: intro=", game.intro != null, " GM=", game.GM)
+			"waitphase":
+				var ph = game.GM.get("phase", "none")
+				if ph != s[2] and t - (s[3] if s.size() > 3 else s[0]) < 240:
+					steps.push_front([t + 0.2, s[1], s[2], s[3] if s.size() > 3 else s[0]])
+					break
+				var orig2: float = s[3] if s.size() > 3 else s[0]
+				for q in steps:
+					q[0] += t - orig2
+				print("phase %s after %.1fs; P.hp=%d fighters=%s" % [ph, t - orig2, game.P.hp, game.fighters.map(func(f): return "%s %d/%d %s" % [f.cls, f.hp, f.maxHp, f.state])])
+			"gmkey":
+				game.pressed[s[2]] = true
+				print("gm key ", s[2])
+			"gmbot":
+				gBot = s[2]
+				keepAlive = not s[2]   # the bot's fight is the balance check: no safety net
 			"god":
 				game.save.settings.god = s[2]
 			"gquiet":

@@ -1,4 +1,4 @@
-extends "res://scripts/glamrax.gd"
+extends "res://scripts/finale.gd"
 ## Sproutvale, part 7: drawing the world, in the same order as the prototype's render().
 ## Everything is in world units on a 384×216 view; the layers it draws into are scaled 2×.
 ## `x` is a Canvas2D stand-in (ctx.gd), so the drawing code reads like the original.

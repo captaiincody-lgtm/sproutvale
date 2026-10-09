@@ -3,8 +3,8 @@ extends "res://scripts/screens.gd"
 ## and mouse clicks into the prototype's input, and runs the frame loop (the prototype's frame()).
 ##
 ## The game is one node whose script is split across files that extend each other:
-##   core → world → player → mobs → skills → bosses → abyss → tank → climb → volcano → mecha → glamrax → render → abyss_draw
-##   → intro → tank_draw → climb_draw → volcano_draw → glamrax_draw → hud → ui → tank_ui → screens → game
+##   core → world → player → mobs → skills → bosses → abyss → tank → climb → volcano → mecha → glamrax → showdown → finale → render → abyss_draw
+##   → intro → tank_draw → climb_draw → volcano_draw → glamrax_draw → showdown_draw → finale_draw → hud → ui → tank_ui → screens → game
 ## Units: the world is measured in "world pixels" exactly like the HTML prototype (a 384×216 view),
 ## painted at 2× into a 768×432 pixel-art buffer. The HUD and menus are drawn on top at the
 ## window's own resolution so their text stays sharp.
@@ -113,6 +113,7 @@ func _keyName(e: InputEventKey) -> String:
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
 		mouse = event.position
+		ptr = mouse / 2.0   # the story screens are drawn at half scale
 		if dragSlider != "":
 			setSlider(dragSlider, mouse.x)
 		return
@@ -139,6 +140,8 @@ func _input(event: InputEvent) -> void:
 
 func _click(pos: Vector2) -> void:
 	if intro != null:
+		if crystalClick(pos / 2.0):
+			return
 		if introBtns.get("next", Rect2()).has_point(pos):
 			introNext()
 		elif introBtns.get("skip", Rect2()).has_point(pos):
@@ -166,7 +169,9 @@ func _onKey(e: InputEventKey) -> void:
 		return
 	if intro != null:
 		if not e.echo:
-			if k == "enter" or k == " ":
+			if k == "arrowleft" or k == "arrowright":
+				crystalStep(1 if k == "arrowright" else -1)
+			elif k == "enter" or k == " ":
 				introNext()
 			elif k == "escape":
 				introSkip()
@@ -174,6 +179,10 @@ func _onKey(e: InputEventKey) -> void:
 	if overlay != "":
 		if k == "escape" and not e.echo:
 			closeOverlay()
+		return
+	if GM.get("on", false) and k in ["tab", "i", "m", "escape"]:   # playing Glamrax: no menu; Esc leaves the showdown
+		if k == "escape" and not e.echo:
+			_gmLeave()
 		return
 	if k == "tab" or k == "i":
 		if inGame and not e.echo:

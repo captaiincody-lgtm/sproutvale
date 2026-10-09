@@ -35,9 +35,16 @@ func drawSanctumMid(x: Ctx, sx: float, sy: float) -> void:
 			var u = fmod(t * 0.35 + k / 3.0 + i * 0.13, 1.0)
 			var q = a.lerp(c, u).lerp(c.lerp(b, u), u)
 			x.fillStyle = rgba(255, 90, 230, 0.9); x.fillRect(q.x - 1, q.y - 1, 2, 2)
-		_crystal(x, X, Y, GX_PODS[i], t + i)
+		var who = podWho(i)
+		if who != "":
+			_crystal(x, X, Y, who, t + i)
 	for p in S.get("piano", []):
 		_piano(x, p[0] - sx, p[1] - sy)
+
+
+## who hangs in crystal i: a loved one (by hero id), "hero:<id>" for the hero, "" for a broken crystal
+func podWho(i: int) -> String:
+	return GX_PODS[i]
 
 
 ## a big hexagonal crystal with somebody inside it
@@ -51,8 +58,10 @@ func _crystal(x: Ctx, X: float, Y: float, who: String, t: float, scale := 1.0) -
 	x.fillStyle = g; x.beginPath(); x.arc(X, Y, 46 * scale, 0, TAU); x.fill()
 	x.fillStyle = rgba(40, 10, 60, 0.55)
 	x.beginPath(); x.moveTo(X, Y - h - 10 * scale); x.lineTo(X + w, Y - h + 6 * scale); x.lineTo(X + w, Y + h - 6 * scale); x.lineTo(X, Y + h + 10 * scale); x.lineTo(X - w, Y + h - 6 * scale); x.lineTo(X - w, Y - h + 6 * scale); x.closePath(); x.fill()
-	var tex = Assets.tex("kin/%s.png" % who)
-	if tex != null:
+	var tex = Assets.tex("kin/%s.png" % who) if not who.begins_with("hero:") else null
+	if who.begins_with("hero:"):
+		heroPic2(x, who.substr(5), X, Y + 20 * scale + sin(t * 1.6) * 0.8, 0.62 * scale)
+	elif tex != null:
 		x.globalAlpha = 0.9
 		x.drawImage(tex, X - 12 * scale, Y - 18 * scale + sin(t * 1.6) * 0.8, 24 * scale, 36 * scale)
 		x.globalAlpha = 1
