@@ -432,7 +432,7 @@ func _pChar(x: float, y: float, w: float) -> float:
 			var nw = uText(it.name, cx + 20, cy + 1, 9, Color(INK, a))
 			uText(("  ×%d" % n) if n else "", cx + 20 + nw, cy + 2, 8, css("#2a8a55"), UB)
 			var srcs = []
-			for bk in [["croc", "Crocbox"], ["warlord", "Crimsonbox"], ["dreamer", "Dreambox"], ["kingYeti", "Yetibox"]]:
+			for bk in [["croc", "Crocbox"], ["warlord", "Crimsonbox"], ["dreamer", "Dreambox"], ["kingYeti", "Yetibox"]] + MORE_BOSSES.keys().filter(func(k): return BOXES.has(k)).map(func(k): return [k, BOXES[k].name]):
 				if BOXES[bk[0]].items.has(id):
 					srcs.append(bk[1])
 			var src = " & ".join(srcs)
@@ -463,7 +463,7 @@ func _pInv(x: float, y: float, w: float) -> float:
 				cards += 1
 	var y0 = y
 	y += currencyBag(x, y, w, "🃏 %d Monster cards" % cards)
-	var boxKinds = ["croc", "warlord", "dreamer", "kingYeti"].filter(func(k): return boxCount(k) > 0)
+	var boxKinds = (["croc", "warlord", "dreamer", "kingYeti"] + MORE_BOSSES.keys().filter(func(k): return BOXES.has(k))).filter(func(k): return boxCount(k) > 0)
 	if not boxKinds.is_empty():
 		y += uCards(x, y, w, 1, [func(X, Y, W):
 			var yy = Y + h3("Boss boxes", X, Y)
@@ -471,7 +471,7 @@ func _pInv(x: float, y: float, w: float) -> float:
 			for k in boxKinds:
 				var BX: Dictionary = BOXES[k]
 				var n = boxCount(k)
-				var col = css("#1f6f9a") if k == "kingYeti" else css("#6a2a9a") if k == "dreamer" else (css("#9a1f35") if k == "warlord" else css("#2a7a3a"))
+				var col = css(MORE_BOSSES[k].ui) if MORE_BOSSES.has(k) else css("#1f6f9a") if k == "kingYeti" else css("#6a2a9a") if k == "dreamer" else (css("#9a1f35") if k == "warlord" else css("#2a7a3a"))
 				uText("📦 %s ×%d" % [BX.name, n], X + 2, yy + 3, 10, col, UB)
 				uText("from %s" % BX.boss, X + 2, yy + 18, 8, MUTED, UF)
 				var bx = X + W
@@ -1348,6 +1348,8 @@ func wmOpen(id: String) -> bool:
 		return tb(save.get("trophies", {}).get("dreamer"))
 	if id == "peak":
 		return tb(save.get("trophies", {}).get("kingYeti"))
+	if id.begins_with("volcano"):   # inside Glamrax's volcano: past the Mk II, the cell block and the sanctum
+		return tb(save.get("trophies", {}).get("mk2" if id in ["volcano3", "volcano4"] else "kingYeti"))
 	return true
 
 
@@ -1502,7 +1504,7 @@ func drawWorldMap(x: Ctx, t: float) -> void:
 		var m: Dictionary = MAPS[id]
 		var hov = wmHover == id
 		x.fillStyle = "#1a1030"; x.beginPath(); x.arc(n.x, n.y, 17 if hov else 14, 0, TAU); x.fill()
-		x.fillStyle = "#a82a30" if m.get("boss") else ("#ffc83d" if hov else ("#d8c8ff" if id.begins_with("abyss") else ("#d8f0ff" if id.begins_with("climb") or id == "peak" else "#ffffff")))
+		x.fillStyle = "#a82a30" if m.get("boss") else ("#ffc83d" if hov else ("#d8c8ff" if id.begins_with("abyss") else ("#d8f0ff" if id.begins_with("climb") or id == "peak" else ("#f0c8ff" if id.begins_with("volcano") else "#ffffff"))))
 		x.beginPath(); x.arc(n.x, n.y, 14 if hov else 11, 0, TAU); x.fill()
 		x.fillStyle = "#ffe08a" if m.get("boss") else "#27335c"
 		x.font = '12px "Press Start 2P", monospace'; x.textAlign = "center"; x.textBaseline = "middle"
@@ -1620,10 +1622,12 @@ func _wmTip(r: Rect2, s: float, o: Vector2) -> void:
 # ================================================================ Bestiary
 
 func bigEntry(k: String) -> bool:
-	return k == "croc" or k == "warlord" or k == "dreamer" or k == "kingYeti"
+	return k == "croc" or k == "warlord" or k == "dreamer" or k == "kingYeti" or MORE_BOSSES.has(k)
 
 
 func bossTOf(k: String) -> Dictionary:
+	if MORE_BOSSES.has(k):
+		return MORE_BOSSES[k].T
 	return BOSS_T if k == "croc" else (WARLORD_T if k == "warlord" else (DREAMER_T if k == "dreamer" else (YETI_T if k == "kingYeti" else SLIME_TYPES[k])))
 
 
@@ -1648,7 +1652,7 @@ func bestFrames(k: String, mode: String, shiny: bool) -> Array:
 		else:
 			add.call("warlord_ss", "idle", [0, 1])
 		return seq
-	if k == "dreamer" or k == "kingYeti":   # a portrait rather than strips: one frame calm, eighteen glaring
+	if k == "dreamer" or k == "kingYeti" or MORE_BOSSES.has(k):   # a portrait rather than strips: one frame calm, eighteen glaring
 		for i in (18 if mode == "attack" else 1):
 			seq.append(["", "", 0])
 		return seq
@@ -1714,6 +1718,9 @@ func _bestPic(k: String, r: Rect2, known: bool, shinyView: bool, shinyKnown: boo
 		return
 	if k == "kingYeti":
 		_bestYeti(r, known, st.mode == "attack")
+		return
+	if MORE_BOSSES.has(k):
+		_bestMore(k, r, known, st.mode == "attack")
 		return
 	var fr = seq[posmod(f, seq.size())]
 	if k in CLIMB_MOBS:
@@ -1783,12 +1790,15 @@ func _bestAbyss(k: String, r: Rect2, fr: Array, known: bool) -> void:
 
 ## which strips the bestiary plays when you click a climb monster
 const CLIMB_BEST_ATTACK := {"boulder": ["float", "launch", "roll"], "lizard": ["whip", "leap"], "golem": ["wind", "smash"],
-	"warlock": ["cast", "blink"], "yeti": ["swipe", "leap", "slam"], "sword": ["fly", "fly"]}
+	"warlock": ["cast", "blink"], "yeti": ["swipe", "leap", "slam"], "sword": ["fly", "fly"],
+	# inside the volcano
+	"sentinel": ["idle", "charge", "slam", "slam"], "secgolem": ["fire", "fire", "wind", "punch"], "sentgolem": ["fire", "laser", "dash", "punch"],
+	"dog": ["pounce", "pin", "pin"], "ferro": ["hop", "spark", "hot", "hot"]}
 
 
 ## a climb monster's picture: cold sky over grey rock (the cave ones in the dark), the whole frame fitted in
 func _bestClimb(k: String, r: Rect2, fr: Array, known: bool) -> void:
-	var cave = k in ["yeti", "sword"]
+	var cave = k in ["yeti", "sword"] or k in VOLCANO_MOBS   # (the volcano's monsters: dark too)
 	var snow = k in ["golem", "warlock"]
 	uBox(r, css("#1a2230"), INK, 2, 7)
 	uGrad(Rect2(r.position + Vector2(2, 2), r.size - Vector2(4, 4)), css("#1e2a3a") if cave else (css("#c8d8ea") if snow else css("#9fb4c8")),
@@ -1834,6 +1844,16 @@ func _bestYeti(r: Rect2, known: bool, roar: bool) -> void:
 	if roar and known and nf == 1:
 		dst = dst.grow(sin(realTime * 40) * 1.5)
 	uci.draw_texture_rect_region(tex, dst, Rect2(fw * fi, 0, fw, fh))
+
+
+## a boss drawn in code (the Mk II, Glamrax): its portrait, glaring when you click it; a shadow until you've beaten it
+func _bestMore(k: String, r: Rect2, known: bool, angry: bool) -> void:
+	uBox(r, css("#140a14"), INK, 2, 7)
+	uGrad(Rect2(r.position + Vector2(2, 2), r.size - Vector2(4, 4)), css("#3a1a30"), css("#1c0c1c"), css("#08040a"), 0.5)
+	var inner = r.grow(-3)
+	withCtx(inner.position, 1.0, func(c): drawBossPortrait(c, k, 0, 0, inner.size.x, inner.size.y, angry and known))
+	if not known:
+		uBox(inner, Color(0.02, 0.01, 0.03, 0.93), NONE, 0, 5)
 
 
 ## The Dreamer's picture: its portrait over the abyss (it glares when you click it)
@@ -1898,6 +1918,8 @@ func _bestCard(k: String) -> Callable:
 			where = [MAPS.abyss5]
 		elif k == "kingYeti":
 			where = [MAPS.climb4]
+		elif MORE_BOSSES.has(k):
+			where = [MAPS[MORE_BOSSES[k].map]]
 		else:
 			for id in MAPS:
 				if MAPS[id].get("spawn", {}).has(k):

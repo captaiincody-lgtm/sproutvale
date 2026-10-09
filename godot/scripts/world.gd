@@ -62,7 +62,7 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 	surfaces = surfacesOf(M)
 	tufts.clear()
 	for s in surfaces:
-		if s.water or M.get("indoor") or M.get("floor") or M.get("theme") in ["bubble", "cave", "peak"] or (M.get("tree") and not s.floor):
+		if s.water or M.get("indoor") or M.get("floor") or M.get("theme") in ["bubble", "cave", "peak", "volcano"] or (M.get("tree") and not s.floor):
 			continue
 		var x: float = s.x0 + 3
 		while x < s.x1 - 3:
@@ -101,7 +101,7 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 	scene = null
 	if M.get("boss"):
 		P.face = 1   # arenas: you always walk in facing the boss
-	var bk = M.boss if M.get("boss") in ["warlord", "dreamer", "kingYeti"] else "croc"
+	var bk = M.boss if M.get("boss") in ["warlord", "dreamer", "kingYeti"] or MORE_BOSSES.has(M.get("boss", "")) else "croc"
 	M.pedestal = {"x": roundi(M.w * (0.55 if bk == "croc" else 0.5)), "kind": bk} if M.get("boss") and heroBeat(bk) else null
 	abyssOnLoad()
 	if M.get("boss") and not M.pedestal:
@@ -111,6 +111,8 @@ func loadMap(id: String, px0 = null, py0 = null) -> void:
 			spawnDreamer()
 		elif M.boss == "kingYeti":
 			spawnYeti()
+		elif spawnBossKind(M.boss):
+			pass
 		else:
 			spawnBoss()
 	if inGame and not M.get("boss"):
@@ -316,7 +318,7 @@ func updateWorld(dt: float) -> void:
 	World.ambT -= dt
 	if World.ambT <= 0:
 		World.ambT = 0.3
-		var outdoors: bool = inGame and not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble", "climb", "snow", "cave", "peak"])
+		var outdoors: bool = inGame and not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble", "climb", "snow", "cave", "peak", "volcano"])
 		var cw = climbWind() if inGame else -1.0
 		if cw >= 0:
 			Sfx.ambience(0.0, cw)

@@ -114,6 +114,8 @@ func updateSlimes(dt: float) -> void:
 				updateDreamer(e, dt)
 			elif e.bossKind == "kingYeti":
 				updateYeti(e, dt)
+			elif updateBossKind(e, dt):
+				pass
 			else:
 				updateBoss(e, dt)
 			if e.state == "dead" and e.deadT > 2.4 and scene == null:
@@ -352,6 +354,8 @@ func damageSlime(e, mv: Dictionary, _from = null) -> void:
 		dmg *= 1.25 + skillRank("enrage") * 0.02
 	if (e.boss or e.elite) and PS.get("hunt"):
 		dmg *= 1 + PS.hunt
+	if e.boss:
+		dmg *= bossDmgMul(e, mv)   # (Glamrax's mana shield)
 	if PS.get("leech") and P.hp > 0:
 		P.hp = minf(PS.hp, P.hp + PS.hp * PS.leech)
 	dmg = maxf(1, roundf(dmg))

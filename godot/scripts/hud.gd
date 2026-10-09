@@ -1,4 +1,4 @@
-extends "res://scripts/climb_draw.gd"
+extends "res://scripts/finale_draw.gd"
 ## Sproutvale, part 9: the HUD, and the small immediate-mode toolkit it and the menus draw with.
 ## The prototype built these out of HTML and CSS. Here every box, label and button is drawn each
 ## frame in screen pixels (768×432), and anything clickable registers a "zone" for the mouse.
@@ -254,6 +254,15 @@ func updateHud(rdt: float) -> void:
 
 func renderHud(ci: CanvasItem) -> void:
 	uBegin(ci, "hud")
+	if GM.get("on", false):   # playing Glamrax: his own bar, his spells, and who's still standing
+		_gmHud()
+		return
+	if cinematic():   # Glamrax's meeting: letterbox bars and the dialogue, nothing else
+		uci.draw_rect(Rect2(0, 0, UW, 46), Color.BLACK)
+		uci.draw_rect(Rect2(0, UH - 46, UW, 46), Color.BLACK)
+		if scene != null:
+			_dialog()
+		return
 	var indoor = tb(M.get("indoor", false))
 	_bottomBar()
 	if not indoor:
@@ -274,6 +283,57 @@ func renderHud(ci: CanvasItem) -> void:
 		_dialog()
 	if loot != null:
 		_lootPanel()
+	if vignette > 0:
+		_vignette(vignette)
+
+
+func _gmHud() -> void:
+	var bar = Rect2(0, UH - 54, UW, 54)
+	uGrad(bar, css("#2a0e3a"), css("#22082e"), css("#160420"), 0.5)
+	uci.draw_rect(Rect2(0, UH - 54, UW, 2), css("#7a2a9a"))
+	uBox(Rect2(8, UH - 47, 70, 20), css("#1a0624"), css("#ff4ad8"), 2, 6)
+	uText("LV 200", 43, UH - 42, 8, css("#ff8ae8"), PX, 1)
+	_meter(Rect2(84, UH - 47, UW * 0.36, 18), P.hp / PS.hp, ["#ff8ae8", "#c83ab0", "#7a1a70"], "HP", "%d / %d" % [ceili(maxf(0, P.hp)), PS.hp])
+	var tags = []
+	if GM.get("shieldT", 0.0) > 0:
+		tags.append("Mana Shield %ds" % ceili(GM.shieldT))
+	if GM.get("hornsT", 0.0) > 0:
+		tags.append("Unleashed %ds" % ceili(GM.hornsT))
+	uText(" · ".join(tags), 84, UH - 24, 9, css("#bff4ff"), UF)
+	# the spells: one box each, the cooldown draining from the top
+	var n = GM_KEYS.size()
+	var bw = 30.0
+	var x0 = UW - 10 - n * (bw + 4)
+	for i in n:
+		var k: String = GM_KEYS[i]
+		var K2: Dictionary = GM_KIT[k]
+		var r = Rect2(x0 + i * (bw + 4), UH - 48, bw, 30)
+		var col = css(K2.col)
+		uBox(r, Color(col.darkened(0.7), 0.95), col, 2, 5)
+		var cd: float = GM.cds.get(k, 0.0)
+		if cd > 0:
+			var frac = clampf(cd / K2.cd, 0, 1)
+			uci.draw_rect(Rect2(r.position.x + 2, r.position.y + 2, r.size.x - 4, (r.size.y - 4) * frac), Color(0, 0, 0, 0.6))
+			uText(str(ceili(cd)) if cd >= 1 else "", r.get_center().x, r.position.y + 9, 9, Color.WHITE, UB, 1)
+		uText(k.to_upper(), r.position.x + 4, r.position.y + 2, 8, Color.WHITE, PX)
+		uZones.append({"r": Rect2(r.position + uOff, r.size), "cb": Callable(), "tip": "%s (%s) · %s · %ss" % [K2.name, k.to_upper(), K2.tip, str(K2.cd)]})
+	uText("Arrows move · Space floats up · Down drops · Esc leaves", UW - 10, UH - 13, 8, css("#c8a8e0"), UF, 2)
+	# the heroes, top left
+	var y = 8.0
+	for f in fighters:
+		if f.team != "foe":
+			continue
+		var r = Rect2(8, y, 150, 16)
+		uBox(r, Color(0.06, 0.02, 0.1, 0.8), css("#5a2a6a"), 1, 4)
+		uText("%s · Lv %d" % [f.name, f.lv], 13, y + 3, 8, Color.WHITE if f.state != "down" else css("#8a7a96"), UB)
+		var k2 = clampf(f.hp / f.maxHp, 0, 1)
+		uci.draw_rect(Rect2(90, y + 5, 62, 6), css("#1a0410"))
+		uci.draw_rect(Rect2(90, y + 5, 62 * k2, 6), css("#ff4a5a"))
+		y += 19
+	_toasts()
+	_flashText(bannerMsg, 2.6, UH * 0.24, true)
+	if scene != null:
+		_dialog()
 	if vignette > 0:
 		_vignette(vignette)
 
@@ -508,6 +568,7 @@ func _statusChips(indoor: bool) -> void:
 		chips.append("🦑 Inked %ds" % ceili(P.blindT))
 	if P.confuseT > 0:
 		chips.append("💫 Confused %ds" % ceili(P.confuseT))
+	chips += statusExtra()   # burning, shocked… (volcano.gd)
 	var x = 8.0
 	var y = UH - 36 - 17 - (0 if indoor or not (classId in ["mage", "summoner", "tank"]) else 21)
 	for s in chips:
@@ -520,7 +581,7 @@ func _statusChips(indoor: bool) -> void:
 func _bossUI() -> void:
 	var b = null
 	for e in slimes:
-		if e.boss and e.state != "dead":
+		if e.boss and e.state != "dead" and e.state != "intro":   # Glamrax's bar waits until he stands to fight
 			b = e
 			break
 	if b != null:
@@ -540,7 +601,7 @@ func _bossUI() -> void:
 	var sign = M.get("bossSign")
 	if sign != null and absf(P.x - sign) < 70 and absf(P.y - groundAt(P.x)) < (60.0 if M.get("sea") != null else 4.0):
 		var th = M.get("theme")
-		var I: Dictionary = BOSS_INFO.warlord if th == "crimson" else (BOSS_INFO.dreamer if th == "abyss" else (BOSS_INFO.kingYeti if th == "cave" else BOSS_INFO.croc))
+		var I: Dictionary = MORE_BOSSES[M.signBoss].info if MORE_BOSSES.has(M.get("signBoss", "")) else BOSS_INFO.warlord if th == "crimson" else (BOSS_INFO.dreamer if th == "abyss" else (BOSS_INFO.kingYeti if th == "cave" else BOSS_INFO.croc))
 		var w = minf(UW * 0.7, 336.0)
 		var x = UW / 2 - w / 2
 		var tw = w - 22
@@ -575,7 +636,7 @@ func _topRight(indoor: bool) -> void:
 	var mm = floori((D.t * 24 - hh) * 6) * 10
 	var wx: String = WEATHERS[D.weather]
 	if climbMap():   # the climb has its own weather, whatever it's doing down below
-		wx = {"climb": "Cold", "snow": "Blizzard", "cave": "Underground", "peak": "Hot wind"}.get(M.get("theme"), wx)
+		wx = {"climb": "Cold", "snow": "Blizzard", "cave": "Underground", "peak": "Hot wind", "volcano": "Inside the volcano"}.get(M.get("theme"), wx)
 	var clock = "%02d:%02d · %s" % [hh, mm, wx]
 	var nm: String = M.get("name", "")
 	var w = maxf(uW(nm, 11), uW(clock, 8, UF)) + 18
@@ -794,18 +855,20 @@ func _lootPanel() -> void:
 	var w = 340.0
 	var h = 140.0 + n * 22
 	var r = Rect2(UW / 2 - w / 2, UH / 2 - h / 2, w, h)
-	var edge = css("#ff5d73") if red else (css("#c25cff") if dream else (css("#7af0ff") if icy else css("#e8b830")))
+	var mb: Array = MORE_BOSSES.get(L.kind, {}).get("loot", [])   # [edge, panel, body, shine, band]
+	var hm = not mb.is_empty()
+	var edge = css(mb[0]) if hm else css("#ff5d73") if red else (css("#c25cff") if dream else (css("#7af0ff") if icy else css("#e8b830")))
 	uGlow(r, Color(edge, 0.45), 14, 12)
-	uBox(r, css("#1c0a10") if red else (css("#120820") if dream else (css("#08182a") if icy else css("#10200e"))), edge, 3, 12)
+	uBox(r, css(mb[1]) if hm else css("#1c0a10") if red else (css("#120820") if dream else (css("#08182a") if icy else css("#10200e"))), edge, 3, 12)
 	uText(String(L.name).to_upper(), UW / 2, r.position.y + 12, 12, edge, PX, 1, Color.BLACK, 2)
 	# the box itself
 	var bx = UW / 2
 	var by = r.position.y + 100
 	var open = t > 0.8
 	var jig = 0.0 if open else sin(t * 60) * (t / 0.8) * 3
-	var body = css("#8a1a24") if red else (css("#2a1040") if dream else (css("#3a6a8a") if icy else css("#3f7a2c")))
-	var shine = css("#b8303c") if red else (css("#4a2068") if dream else (css("#9ad8f0") if icy else css("#5fa83e")))
-	var band = css("#2a1418") if red else (css("#120618") if dream else (css("#e8f6ff") if icy else css("#e8b830")))
+	var body = css(mb[2]) if hm else css("#8a1a24") if red else (css("#2a1040") if dream else (css("#3a6a8a") if icy else css("#3f7a2c")))
+	var shine = css(mb[3]) if hm else css("#b8303c") if red else (css("#4a2068") if dream else (css("#9ad8f0") if icy else css("#5fa83e")))
+	var band = css(mb[4]) if hm else css("#2a1418") if red else (css("#120618") if dream else (css("#e8f6ff") if icy else css("#e8b830")))
 	if open:
 		uGlow(Rect2(bx - 26, by - 46, 52, 30), Color(edge, 0.5 + 0.3 * sin(realTime * 6)), 10, 12)
 		for i in 6:

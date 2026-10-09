@@ -105,7 +105,7 @@ func usePotion(k: String) -> void:
 # ---------------- storms: a rare lightning strike leaves you Shocked (faster everything for a minute)
 
 func updateLightning(dt: float) -> void:
-	if M.get("indoor") or M.get("theme") in ["crimson", "abyss", "bubble", "climb", "snow", "cave", "peak"] or World.storm < 0.5 or P.state == "dead" or not P.grounded:
+	if M.get("indoor") or M.get("theme") in ["crimson", "abyss", "bubble", "climb", "snow", "cave", "peak", "volcano"] or World.storm < 0.5 or P.state == "dead" or not P.grounded:
 		return
 	P.boltCd -= dt
 	if P.boltCd > 0:
@@ -168,7 +168,7 @@ func hurtPlayer(src, dmg: float) -> void:
 			killPlayer()
 		return
 	var dr = (1 - (0.1 + skillRank("guardian") * 0.01)) if buffOn("guardian") else 1.0
-	var ecrit = false if src.get("noCrit") else randf() < (0.2 if src.get("boss") else 0.12)
+	var ecrit = true if src.get("crit") else (false if src.get("noCrit") else randf() < (0.2 if src.get("boss") else 0.12))   # crit: every hit lands critical (the volcano's Security Sentinels)
 	var d = maxi(1, roundi(dmg * dr * (1.5 if ecrit else 1.0) * defMul(src.get("lv")) * rand(0.9, 1.1)))
 	if buffOn("manaShield") and P.en > 0:
 		var pt = minf(P.en, roundi(d * (0.25 + skillRank("manaShield") * 0.02)))
@@ -977,7 +977,7 @@ func updatePlayer(dt: float) -> void:
 		if P.bleed != null:
 			P.bleed.t = 0
 	# wetness: rises in rain (unless swimming/indoors), drains slowly once it stops
-	var raining: bool = World.rain > 0.3 and not M.get("boss") and not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble", "climb", "snow", "cave", "peak"])
+	var raining: bool = World.rain > 0.3 and not M.get("boss") and not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble", "climb", "snow", "cave", "peak", "volcano"])
 	P.wet = clampf(P.wet + (1.0 if inWater() else (dt * 0.5 if raining else -dt / 25)), 0, 1)
 	if P.wet > 0.15 and randf() < dt * 14 * P.wet and not (M.get("sea") != null and inWater()):
 		var noTip = P.state == "climb" or P.anim == "swim"
@@ -1122,7 +1122,7 @@ func plungeImpact() -> void:
 
 ## landing: snow puffs in snow, a puddle splash in the rain
 func landFx(k: float) -> void:
-	if M.get("theme") in ["abyss", "bubble", "climb", "cave", "peak"]:
+	if M.get("theme") in ["abyss", "bubble", "climb", "cave", "peak", "volcano"]:
 		return
 	if M.get("theme") == "snow":
 		for i in int(10 + k * 10):

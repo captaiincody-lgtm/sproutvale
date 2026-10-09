@@ -1,4 +1,4 @@
-extends "res://scripts/climb.gd"
+extends "res://scripts/finale.gd"
 ## Sproutvale, part 7: drawing the world, in the same order as the prototype's render().
 ## Everything is in world units on a 384×216 view; the layers it draws into are scaled 2×.
 ## `x` is a Canvas2D stand-in (ctx.gd), so the drawing code reads like the original.
@@ -82,14 +82,17 @@ func tailOn() -> bool:
 func renderWorld(ci: CanvasItem, dt: float) -> void:
 	_rdt = dt
 	var x = ctx
-	x.begin(ci)
+	if camZoom != 1.0:   # Glamrax's cutscene leans in on a crystal or a face
+		x.begin(ci, Transform2D(0, Vector2(camZoom, camZoom), 0, camZoomAt * (1 - camZoom)))
+	else:
+		x.begin(ci)
 	var D = dayInfo()
 	var shk: float = shake * float(save.settings.get("shake", 1.0))   # the Screen shake setting scales it, 0–100%
 	var sx = roundf(cam.x + (rand(-shk, shk) if shk > 0.2 else 0.0))
 	var sy = roundf(cam.y + (rand(-shk, shk) if shk > 0.2 else 0.0))
 	var theme: String = M.get("theme", "meadow")
 	var crimson = theme == "crimson"
-	var climb = theme in ["climb", "snow", "cave", "peak"]
+	var climb = climbMap()   # the climb, the summit, and the volcano inside it
 	var noSky = crimson or theme == "abyss" or theme == "bubble" or climb
 	if theme == "abyss" or theme == "bubble":
 		drawAbyssBack(x, sx, sy, dt)
@@ -202,7 +205,7 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 			x.fillRect(roundf(X + cos(a) * r * 0.6), roundf(Y - 16 + sin(a) * r), 2, 2)
 		x.fillStyle = rgba(184, 138, 255, 0.35) if sealed else rgba(160, 230, 255, 0.35)
 		x.fillRect(X - 4, Y - 26, 8, 20)
-		if absf(P.x - p.x) < 40:
+		if absf(P.x - p.x) < 40 and not cinematic():
 			var hw = x.measureText("↑ " + p.label).width / 2 + 4
 			textOutline(x, "↑ " + p.label, roundf(clampf(X, hw, VW - hw)), roundf(Y - 34), "#ffffff")
 	# drops
@@ -248,7 +251,7 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 		drawWater(x, M.pond, sx, sy, tt)
 	if theme == "abyss" or theme == "bubble":
 		drawAbyssFront(x, sx, sy, dt)
-	if climb or not YS.is_empty() or not pBlade.is_empty() or climbShots.size() or stalFalls.size():
+	if climb or not YS.is_empty() or not pBlade.is_empty() or climbShots.size() or stalFalls.size() or frontBusy():
 		drawClimbFront(x, sx, sy, dt)
 	# tall grass in front of everyone, for depth
 	for g in tufts:
@@ -345,7 +348,7 @@ func renderOverlay(ci: CanvasItem) -> void:
 	if not M.is_empty():
 		var D = dayInfo()
 		var night: float = 1 - D.day
-		var outdoors: bool = not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble", "cave", "peak"])
+		var outdoors: bool = not M.get("indoor") and not (M.get("theme") in ["crimson", "abyss", "bubble", "cave", "peak", "volcano"])
 		if outdoors and night > 0.3:
 			var lx = roundf(P.x - cam.x)
 			var ly = roundf(P.y - cam.y - 20)
@@ -390,7 +393,8 @@ func drawMob(x: Ctx, e, sx: float, sy: float) -> void:
 		return
 	var X = roundf(e.x - sx)
 	var Y = roundf(e.y - sy) + (10.0 if T.get("fly") else 0.0)   # flyers' sprites centre on their body
-	if X < -30 or X > VW + 30:
+	var cull = 30.0 + (e.w * 0.5 + 40.0 if e.boss else 0.0)   # (the big bosses reach well past their middle)
+	if X < -cull or X > VW + cull:
 		return
 	if e.boss:
 		drawBoss(x, e, X, Y)
@@ -500,6 +504,8 @@ func drawBoss(x: Ctx, e, X: float, Y: float) -> void:
 		return
 	if e.bossKind == "kingYeti":
 		drawYeti(x, e, X, Y)
+		return
+	if drawBossKind(x, e, X, Y):
 		return
 	var k = "quad"
 	var f = 0
@@ -888,6 +894,8 @@ func cardArt(x: Ctx, type: String, gold: bool, shiny: bool, small: bool, X: floa
 		var t = Assets.tex("boss/yeti_portrait.png")
 		if t != null:
 			x.drawImageRegion(t, 30, 0, 160, 170, 1 if small else 2, 1 if small else 4, w - (2 if small else 4), h - (3 if small else 16))
+	elif MORE_BOSSES.has(type):
+		drawBossPortrait(x, type, 1 if small else 2, 1 if small else 4, w - (2 if small else 4), h - (3 if small else 16), false)
 	elif type in ABYSS_MOBS or type in CLIMB_MOBS:
 		# the Abyss sets: the whole first frame, fitted into the card keeping its shape
 		var setName = type + "_shiny" if shiny else type
@@ -1305,14 +1313,14 @@ func drawPedestal(x: Ctx, sx: float, sy: float) -> void:
 	x.fillStyle = "#6a6474"; x.fillRect(X - 11, Y - 21, 22, 21)
 	x.fillStyle = "#8a8494"; x.fillRect(X - 11, Y - 21, 22, 3)
 	x.fillStyle = "#4a4454"; x.fillRect(X - 14, Y - 4, 28, 4)
-	var col = {"warlord": Color8(255, 58, 74), "dreamer": Color8(194, 92, 255), "kingYeti": Color8(122, 240, 255)}.get(pd.kind, Color8(143, 255, 106))
+	var col = css(MORE_BOSSES[pd.kind].col) if MORE_BOSSES.has(pd.kind) else {"warlord": Color8(255, 58, 74), "dreamer": Color8(194, 92, 255), "kingYeti": Color8(122, 240, 255)}.get(pd.kind, Color8(143, 255, 106))
 	if not busy:
 		x.fillStyle = Color(col, 0.5 + 0.3 * sin(t * 3)); x.beginPath(); x.arc(X, Y - 30 + sin(t * 2) * 2, 5, 0, TAU); x.fill()
 		x.fillStyle = Color(col, 0.18); x.beginPath(); x.arc(X, Y - 30, 12, 0, TAU); x.fill()
 	if not busy and absf(P.x - pd.x) < 22:
 		x.font = FONT
 		x.textAlign = "center"
-		textOutline(x, "↑ Summon %s again" % {"warlord": "the Crimson Warlord", "dreamer": "The Dreamer", "kingYeti": "King Yeti"}.get(pd.kind, "Doc Croc"), X, Y - 46, "#ffffff")
+		textOutline(x, "↑ Summon %s again" % (MORE_BOSSES[pd.kind].short if MORE_BOSSES.has(pd.kind) else {"warlord": "the Crimson Warlord", "dreamer": "The Dreamer", "kingYeti": "King Yeti"}.get(pd.kind, "Doc Croc")), X, Y - 46, "#ffffff")
 
 
 func drawVials(x: Ctx, sx: float, sy: float) -> void:
@@ -1372,6 +1380,8 @@ func drawBossSkills(x: Ctx, sx: float, sy: float) -> void:
 func drawBossBox(x: Ctx, kind: String, X: float, Y: float, tt: float) -> void:
 	if kind == "kingYeti":
 		drawYetibox(x, X, Y, tt)
+		return
+	if drawBossBoxKind(x, kind, X, Y, tt):
 		return
 	if kind == "dreamer":
 		var g2 = 0.5 + 0.5 * sin(tt * 3)
@@ -1644,7 +1654,9 @@ func drawTrophyStand(x: Ctx, sx: float, sy: float) -> void:
 		x.fillStyle = "#241410"; x.fillRect(X - 8, Y - 22, 16, 16)
 		x.fillStyle = "#e8dcc0"; x.fillRect(X - 7, Y - 21, 14, 14)
 		x.fillStyle = "#c8b898"; x.fillRect(X - 7, Y - 21, 14, 2)
-		if got and tr.id == "kingYeti":
+		if got and drawTrophyKind(x, tr.id, X, Y):
+			pass
+		elif got and tr.id == "kingYeti":
 			# a golden yeti head wearing an icy pendant
 			x.fillStyle = "#ffd35a"; x.fillRect(X - 6, Y - 34, 12, 11); x.fillRect(X - 7, Y - 31, 14, 6)
 			x.fillStyle = "#c89418"; x.fillRect(X - 4, Y - 29, 8, 3)
@@ -1700,6 +1712,8 @@ func drawTrophies(x: Ctx, sx: float, sy: float) -> void:
 			nm = "Dreamer"
 		elif k == "kingYeti":
 			nm = "King"
+		elif MORE_BOSSES.has(k):
+			nm = MORE_BOSSES[k].short
 		else:
 			var parts_: PackedStringArray = SLIME_TYPES[k].name.split(" ")
 			nm = parts_[-1]
@@ -1707,7 +1721,7 @@ func drawTrophies(x: Ctx, sx: float, sy: float) -> void:
 				nm = parts_[0]
 		x.font = F5
 		textOutline(x, nm, X0 + 10, 30 - sy, "#ffe08a")
-		var use: Array = slots.slice(0, 2) if k in ["croc", "warlord", "dreamer", "kingYeti"] else slots
+		var use: Array = slots.slice(0, 2) if k in ["croc", "warlord", "dreamer", "kingYeti"] or MORE_BOSSES.has(k) else slots
 		totalSlots += use.size()
 		for row in use.size():
 			var key: String = use[row][0]

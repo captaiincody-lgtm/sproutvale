@@ -283,6 +283,16 @@ func music(id: String) -> void:
 	_music_target = 0.0
 
 
+## silence the music: fast cuts it dead (the sanctum's piano stopping mid-phrase), otherwise it fades out
+func music_stop(fast := false) -> void:
+	_music_id = ""
+	_pending = ""
+	_music_target = 0.0
+	if fast:
+		_music_gain = 0.0
+		_music.stop()
+
+
 func music_id() -> String:
 	return _music_id
 
