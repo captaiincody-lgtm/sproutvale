@@ -9,6 +9,7 @@ extends Node2D
 
 const S := preload("res://scripts/state.gd")
 const Ctx := preload("res://scripts/ctx.gd")
+const TREE := preload("res://scripts/attr_tree.gd")
 
 const VW := 384
 const VH := 216
@@ -395,7 +396,7 @@ func update_timers(rdt: float) -> void:
 # ================================================================ save
 
 func newChar() -> Dictionary:
-	return {"level": 1, "exp": 0, "ap": 0, "sp": 0, "attrs": {"STR": 1, "WIL": 1, "VIT": 1, "AGI": 1, "DEX": 1}, "skills": {}, "asc": {}, "binds": {}, "introSeen": false,
+	return {"level": 1, "exp": 0, "tp": 0, "tree": {}, "sp": 0, "attrs": {"STR": 1, "WIL": 1, "VIT": 1, "AGI": 1, "DEX": 1}, "skills": {}, "asc": {}, "binds": {}, "introSeen": false,
 		"charm": -1, "armor": 0, "weapon": 0, "arrows": 0, "staff": 0, "kills": 0, "nade": 0, "drone": 0, "nades": ["frag"], "nadeSel": "frag"}
 
 
@@ -467,7 +468,10 @@ func loadSave() -> Dictionary:
 	s.settings.merge(d.get("settings", {}), true)
 	for k in CLASSES:
 		var c = newChar()
-		c.merge(d.get("chars", {}).get(k, {}), true)
+		var raw: Dictionary = d.get("chars", {}).get(k, {})
+		c.merge(raw, true)
+		if not raw.is_empty() and not raw.has("tree"):
+			_refundAttrs(c)
 		var a: Dictionary = newChar().attrs
 		a.merge(c.attrs, true)
 		c.attrs = a
@@ -478,6 +482,18 @@ func loadSave() -> Dictionary:
 			s[k] = {}
 	_migrateBossRecords(s)
 	return s
+
+
+## Attribute points used to be spent straight on the five attributes (3 a level). They now go into the
+## Attribute Tree (1 a level, each node worth about three of the old points), so an older hero gets
+## back one tree point for every level they've gained and their attributes start again from 1.
+func _refundAttrs(c: Dictionary) -> void:
+	c.tree = {}
+	c.tp = maxi(0, int(c.get("level", 1)) - 1)
+	c.attrs = newChar().attrs
+	c.erase("ap")
+	if c.tp > 0:
+		c.treeNote = true
 
 
 ## older saves kept boss trophies and boss treasures per account and per hero the other way round:
@@ -642,6 +658,62 @@ static func sv(s: Dictionary, key: String, r: int):
 	return a
 
 
+## the Attribute Tree's say in a hit on monster `e`: is it a certain crit (Phantom), and how much
+## harder it lands (Cruelty, Opening Blow, Berserker, Armor Breaker, Deathblow)
+func treeCrit() -> bool:
+	if P.sureCrit > 0:
+		P.sureCrit -= 1
+		return true
+	return false
+
+
+func treeDefMul(e) -> float:
+	return 100.0 / (100.0 + e.def * 4 * (1 - PS.get("pierce", 0.0))) / (100.0 / (100.0 + e.def * 4))
+
+
+func treeHitMul(e, crit: bool) -> float:
+	var m = treeDefMul(e)
+	if PS.get("execute", 0.0) > 0 and e.hp < e.maxHp * 0.3:
+		m *= 1 + PS.execute
+	if PS.get("first", 0.0) > 0 and e.hp >= e.maxHp:
+		m *= 1 + PS.first
+	if PS.get("berserk", 0.0) > 0 and PS.hp > 0:
+		m *= 1 + PS.berserk * clampf((1 - P.hp / PS.hp) / 0.7, 0, 1)
+	if crit and e.boss and PS.get("bossCrit", 0.0) > 0:
+		m *= 1 + PS.bossCrit
+	return m
+
+
+## after a hit lands: Lucky Star's energy, Executioner's finishing blow; returns the damage to deal
+func treeAfterHit(e, crit: bool, dmg: float) -> float:
+	if crit and PS.get("critEn", 0.0) > 0 and gameTime - P.critEnT > 0.25:
+		P.critEnT = gameTime
+		P.en = minf(PS.enMax, P.en + PS.critEn)
+	if PS.get("executioner") and not e.boss and not e.elite and e.hp - dmg > 0 and e.hp - dmg < e.maxHp * 0.12:
+		floatText(e.x, e.y - e.h - 18, "Executed!", "call")
+		return e.hp
+	return dmg
+
+
+## leech, with Vampire tripling it on crits
+func treeLeech(crit: bool) -> void:
+	if PS.get("leech") and P.hp > 0:
+		P.hp = minf(PS.hp, P.hp + PS.hp * PS.leech * (3 if crit and PS.get("vampire") else 1))
+
+
+## Second Breath and Battle Hunger: a defeated monster gives a little back
+func treeOnKill() -> void:
+	if PS.get("killEn", 0.0) > 0:
+		P.en = minf(PS.enMax, P.en + PS.killEn)
+	if PS.get("killHeal", 0.0) > 0 and P.hp > 0:
+		P.hp = minf(PS.hp, P.hp + PS.hp * PS.killHeal)
+
+
+## a skill's energy cost, after the Attribute Tree's Clarity and Spellweaver
+func skillCost(s: Dictionary, dflt := 0) -> int:
+	return roundi(float(s.get("cost", dflt)) * (1 - PS.get("enCost", 0.0)))
+
+
 func charmBonus(c: Dictionary) -> Dictionary:
 	return CHARM_TIERS[c.charm] if c.charm >= 0 else {"atk": 0, "crit": 0, "exp": 0, "coin": 0}
 
@@ -658,7 +730,9 @@ func calcStats() -> Dictionary:
 	var mage = classId == "mage"
 	var stf: Dictionary = G.staff[c.get("staff", 0)] if mage else {"atk": 0, "def": 0}
 	var extra: int = R.call("avatarBody") * 5 + R.call("avatarSight") * 5 + R.call("avatarMind") * 5 + R.call("avatarBond") * 5 + R.call("avatarEngine") * 5
-	var a = {"STR": c.attrs.STR + extra, "VIT": c.attrs.VIT + extra, "AGI": c.attrs.AGI + extra, "DEX": c.attrs.DEX + extra}
+	var T: Dictionary = TREE.totals(c.get("tree", {}))   # the Attribute Tree
+	var tv = func(k): return T.get(k, 0.0)
+	var a = {"STR": c.attrs.STR + extra + tv.call("STR"), "VIT": c.attrs.VIT + extra + tv.call("VIT"), "AGI": c.attrs.AGI + extra + tv.call("AGI"), "DEX": c.attrs.DEX + extra + tv.call("DEX")}
 	var AB: Dictionary = c.get("abyss", {"pot": {}, "eng": {}})
 	var ap = func(k): return AB.pot.get(k, 0)
 	var ae = func(k): return AB.eng.get(k, 0)
@@ -690,11 +764,12 @@ func calcStats() -> Dictionary:
 	var crit: float = 5 + a.DEX * 0.7 + ch.crit + ap.call("crit") * 0.5 + boon.crit + ae.call("crate") * 0.5 + cur.get("crit", 0) + R.call("wisdom") + R.call("tactics") \
 		+ ((8 + R.call("radiance")) if buffOn("radiance") else 0) + R.call("tranquilHeart") + R.call("eagleEye") + R.call("serenity") \
 		+ ((8 + R.call("keenEye")) if buffOn("keenEye") else 0) + (12 if buffOn("deadeye") else 0) + ((5 + R.call("rage") * 0.5) if buffOn("rage") else 0) + (10 if buffOn("enrage") else 0)
-	var critDmg: float = 1.5 + a.DEX * 0.012 + R.call("comboMastery") * 0.03 + R.call("eagleEye") * 0.04 + ae.call("cdmg") * 0.01 + bs.call("lens") * 0.04 + R.call("spellMastery") * 0.04
+	crit += tv.call("crit")
+	var critDmg: float = 1.5 + tv.call("critDmg") / 100.0 + a.DEX * 0.012 + R.call("comboMastery") * 0.03 + R.call("eagleEye") * 0.04 + ae.call("cdmg") * 0.01 + bs.call("lens") * 0.04 + R.call("spellMastery") * 0.04
 	var ff: int = R.call("fleetFoot")
-	var spd: float = furn.call("rug") + (1 if buffOn("shocked") else 0) + (1 + minf(0.5, a.AGI * 0.008) + R.call("swiftEdge") * 0.02) * ((1 + ((0.1 + (ff - 1) * 0.015) if ff else 0.1)) if arch else 1.0) \
+	var spd: float = tv.call("spd") / 100.0 + furn.call("rug") + (1 if buffOn("shocked") else 0) + (1 + minf(0.5, a.AGI * 0.008) + R.call("swiftEdge") * 0.02) * ((1 + ((0.1 + (ff - 1) * 0.015) if ff else 0.1)) if arch else 1.0) \
 		+ ((0.1 + R.call("haste") * 0.01) if buffOn("haste") else 0) + ((0.15 + R.call("windWalk") * 0.01) if buffOn("windWalk") else 0)
-	var aspd: float = ae.call("aspd") * 0.01 + cur.get("aspd", 0) + ((0.15 + R.call("timeWarp") * 0.01) if buffOn("timeWarp") else 0) + R.call("skyBond") * 0.03 + (1 if buffOn("shocked") else 0) \
+	var aspd: float = tv.call("aspd") / 100.0 + ae.call("aspd") * 0.01 + cur.get("aspd", 0) + ((0.15 + R.call("timeWarp") * 0.01) if buffOn("timeWarp") else 0) + R.call("skyBond") * 0.03 + (1 if buffOn("shocked") else 0) \
 		+ 1 + minf(0.45, a.AGI * 0.007) + R.call("swiftEdge") * 0.03 + R.call("bowMastery") * 0.02 + R.call("quickdraw") * 0.03 + ((0.08 + R.call("haste") * 0.01) if buffOn("haste") else 0)
 	var atkMul: float = 1 + R.call("basics") * 0.03 + R.call("avatarBody") * 0.02 + R.call("bowMastery") * 0.03 + R.call("steadyAim") * 0.04 + R.call("avatarSight") * 0.02
 	if buffOn("radiantQuiver"):
@@ -711,13 +786,13 @@ func calcStats() -> Dictionary:
 		atkMul += 0.2 + R.call("saintsAura") * 0.02
 	if buffOn("transcendence"):
 		atkMul += 0.6 + R.call("transcendence") * 0.03
-	atk *= atkMul + cur.get("atkPct", 0)
-	hp *= 1 + R.call("ironBody") * 0.04 + cur.get("hpPct", 0)
-	def *= 1 + furn.call("table") + R.call("ironBody") * 0.04 + R.call("shieldMastery") * 0.03 + (0.3 if buffOn("transcendence") else 0.0)
+	atk *= atkMul + cur.get("atkPct", 0) + tv.call("atkPct") / 100.0
+	hp *= 1 + R.call("ironBody") * 0.04 + cur.get("hpPct", 0) + tv.call("hpPct") / 100.0
+	def *= 1 + tv.call("defPct") / 100.0 + furn.call("table") + R.call("ironBody") * 0.04 + R.call("shieldMastery") * 0.03 + (0.3 if buffOn("transcendence") else 0.0)
 	# Energy: Willpower raises recovery on a curve that flattens out (≈2.3× base at most), so skills
 	# stay a burst resource at every level instead of becoming spammable.
-	var W: float = c.attrs.WIL + extra
-	var enMax = roundi(100 + minf(60, W * 0.6) + ap.call("en") * 4)
+	var W: float = c.attrs.WIL + extra + tv.call("WIL")
+	var enMax = roundi(100 + minf(60, W * 0.6) + ap.call("en") * 4 + tv.call("enMax"))
 	var enRegen = 6 * (1 + 1.3 * (1 - exp(-W / 55)))
 	var enHit: float = (3 + minf(2, W * 0.02)) * ((1.6 * (1 + R.call("quickdraw") * 0.05)) if arch else (0.5 if mage else 1.0))   # Focus builds from arrows; Mana mostly regenerates
 	var enRegenF: float = (0.6 * (2 if buffOn("radiantQuiver") else 1)) if arch else ((1.25 * (1 + R.call("manaFlow") * 0.06) * (2 if buffOn("overflow") else 1)) if mage else 1.0)
@@ -728,10 +803,16 @@ func calcStats() -> Dictionary:
 	if classId == "summoner":
 		atk *= 0.95; hp *= 1.05; def *= 1 + ((0.2 + R.call("sanctuary") * 0.02) if buffOn("sanctuary") else 0.0)
 	var arrowMul: float = (1 + ARROW_TIERS[c.get("arrows", 0)].dmg) if arch else 1.0
-	return {"hp": roundi(hp * (1 - P.abyssDrain)), "hpFull": roundi(hp), "atk": roundi(atk), "def": roundi(def), "crit": minf(80, crit), "critDmg": critDmg, "spd": spd, "aspd": aspd,
-		"exp": ch.exp + cur.get("exp", 0) + trophyExp + bs.call("notes") * 5, "coin": ch.coin + cur.get("coin", 0), "hpRegen": furn.call("chair"),
-		"enMax": enMax, "enRegen": enRegen * enRegenF * (1 + furn.call("bed")) / 2.5, "enHit": enHit, "arrowMul": arrowMul,   # regen is 2.5× slower than it was, so the potions matter
-		"hunt": ae.call("hunt") * 0.02 + bs.call("bane") * 0.05, "leech": ae.call("leech") * 0.003}
+	var o = {"hp": roundi(hp * (1 - P.abyssDrain)), "hpFull": roundi(hp), "atk": roundi(atk), "def": roundi(def), "crit": minf(80, crit), "critDmg": critDmg, "spd": spd, "aspd": aspd,
+		"exp": ch.exp + cur.get("exp", 0) + trophyExp + bs.call("notes") * 5 + tv.call("exp"), "coin": ch.coin + cur.get("coin", 0) + tv.call("coin"), "hpRegen": furn.call("chair") + tv.call("regen") / 100.0,
+		"enMax": enMax, "enRegen": enRegen * enRegenF * (1 + furn.call("bed")) * (1 + tv.call("enRegen") / 100.0) / 2.5, "enHit": enHit, "arrowMul": arrowMul,   # regen is 2.5× slower than it was, so the potions matter
+		"hunt": ae.call("hunt") * 0.02 + bs.call("bane") * 0.05 + tv.call("hunt") / 100.0, "leech": ae.call("leech") * 0.003 + tv.call("leech") / 100.0}
+	# the rest of the Attribute Tree: percentages become fractions, energy and dodge stay as they are
+	for k in TREE.PS_KEYS:
+		var v: float = tv.call(k)
+		o[k] = v if k in ["dodge", "critEn", "dodgeEn", "killEn"] or TREE.FLAGS.has(k) else v / 100.0
+	o.eshield = roundi(hp * tv.call("eshield") / 100.0)
+	return o
 
 
 ## has the hero you're playing beaten this boss? (every hero has to beat each boss once before its pedestal
@@ -790,7 +871,7 @@ func styleAdd(base: float, id: String) -> void:
 	Style.last.append(id)
 	if Style.last.size() > 6:
 		Style.last.pop_front()
-	Style.pts = minf(RANK_CAP, Style.pts + base * mult * (1 + skillRank("comboMastery") * 0.06))
+	Style.pts = minf(RANK_CAP, Style.pts + base * mult * (1 + skillRank("comboMastery") * 0.06 + PS.get("styleGain", 0.0)))
 	var r = rankOf(Style.pts)
 	if r > Style.rank:
 		Style.popped = 1.0
@@ -851,7 +932,7 @@ func gainExp(n: float) -> void:
 		var oldJob = jobIndex(c.level)
 		c.exp -= expNeed(c.level)
 		c.level += 1
-		c.ap += 3
+		c.tp = int(c.get("tp", 0)) + 1
 		c.sp += 3
 		PS = calcStats()
 		P.hp = PS.hp
@@ -860,7 +941,7 @@ func gainExp(n: float) -> void:
 			later(1.4, func():
 				banner("ASCENDENCY", "Past level %d your skill points can push your skills beyond their limits." % ASCEND_LV)
 				Sfx.rankUp(9))
-		banner("LEVEL UP!", "Level %d · 3 attribute points and 3 skill points" % c.level)
+		banner("LEVEL UP!", "Level %d · 1 attribute point and 3 skill points" % c.level)
 		if jobIndex(c.level) > oldJob:
 			var J = jobOf(c.level)
 			later(1.4, func():

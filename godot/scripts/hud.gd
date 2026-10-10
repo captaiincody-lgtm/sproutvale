@@ -374,6 +374,12 @@ func _bottomBar() -> void:
 		uci.draw_rect(Rect2(inner.end.x - cut, inner.position.y, 1, inner.size.y), css("#c25cff"))
 		var mr = Rect2(x, UH - 23, unit, 16)
 		uText("%d / %d" % [ceili(P.hp), PS.hp], mr.get_center().x, mr.get_center().y - 6, 9, Color.WHITE, UB, 1, EDGE)
+	if P.shield > 0.5 and PS.get("eshield", 0) > 0:
+		# the Attribute Tree's energy shield: a bright band along the top of the health bar
+		var sr = Rect2(x, UH - 23, unit, 16).grow(-2)
+		var sw = sr.size.x * clampf(P.shield / PS.eshield, 0, 1)
+		uci.draw_rect(Rect2(sr.position, Vector2(sw, 4)), Color(css("#7ff6ff"), 0.95))
+		uci.draw_rect(Rect2(sr.position + Vector2(0, 4), Vector2(sw, 1)), Color(css("#2fb3d6"), 0.9))
 	_abyssMeter(x, unit)
 	x += unit + 6
 	var sx = sin(enShake * 40) * 3 if enShake > 0.1 else 0.0
@@ -389,7 +395,7 @@ func _bottomBar() -> void:
 	uText(fmt(save.coins), x + 15, UH - 22, 11, Color.WHITE, UB)
 	var mb = Rect2(UW - menuW - 8, UH - 24, menuW, 18)
 	uButton(mb, "Menu · Tab", func(): toggleMenu(true), {"bg": GOLD, "border": EDGE, "size": 9})
-	if c.ap > 0 or c.sp > 0:
+	if int(c.get("tp", 0)) > 0 or c.sp > 0:
 		uci.draw_circle(Vector2(mb.end.x - 3, mb.position.y + 2), 4, PINK)
 
 

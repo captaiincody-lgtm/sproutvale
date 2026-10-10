@@ -4,7 +4,7 @@ extends "res://scripts/hud.gd"
 ## Cards are drawn content first; their backgrounds go into two canvas items that sit behind it,
 ## so a card can be sized to whatever it ended up holding.
 
-const TABS := [["char", "Character"], ["inv", "Inventory"], ["shop", "Shop"], ["skills", "Skills"], ["quests", "Quests"],
+const TABS := [["char", "Character"], ["tree", "Attributes"], ["inv", "Inventory"], ["shop", "Shop"], ["skills", "Skills"], ["quests", "Quests"],
 	["map", "World Map"], ["bestiary", "Bestiary"], ["controls", "Controls"], ["world", "World"]]
 const PAD := 8.0
 const CARD := {"fill": Color.WHITE, "border": INK}
@@ -292,8 +292,8 @@ func renderMenu(ci: CanvasItem) -> void:
 
 
 func _tabBadge(id: String, c: Dictionary) -> String:
-	if id == "char" and c.ap:
-		return str(c.ap)
+	if id == "tree" and int(c.get("tp", 0)) > 0:
+		return str(c.tp)
 	if id == "quests" and save.quests.any(func(q): return q.done):
 		return "!"
 	if id == "shop":
@@ -338,6 +338,7 @@ func renderPanel(ci: CanvasItem) -> void:
 	var h = 0.0
 	match curTab:
 		"char": h = _pChar(x, y, w)
+		"tree": h = _pTree(x, y, w)
 		"inv": h = _pInv(x, y, w)
 		"shop": h = _pShop(x, y, w)
 		"skills": h = _pSkills(x, y, w)
@@ -380,6 +381,9 @@ func attrTip(a: String) -> String:
 		"DEX": ("Luck" if classId == "archer" else "Dexterity") + ". +0.7% critical rate and a bit more critical damage per point."}.get(a, "")
 
 
+func _pTree(_x: float, _y: float, _w: float) -> float: return 0.0   # tree_ui.gd
+
+
 func _pChar(x: float, y: float, w: float) -> float:
 	var c = CH()
 	var s = PS
@@ -394,23 +398,29 @@ func _pChar(x: float, y: float, w: float) -> float:
 		var tw = uText(C.name, X, Y, 11)
 		jobPill(J, X + tw + 8, Y)
 		var yy = Y + 18
-		yy += muted("%s · 3 attribute points and 3 skill points per level%s" % [C.role, (" · becomes a **%s** at Lv %d" % [nextJ.name, nextJ.lv]) if nextJ else ""], X, yy, W) + 4
+		yy += muted("%s · 1 attribute point (for the Attribute Tree) and 3 skill points per level%s" % [C.role, (" · becomes a **%s** at Lv %d" % [nextJ.name, nextJ.lv]) if nextJ else ""], X, yy, W) + 4
 		for i in STAT_KEYS.size():
 			yy += statRow(X, yy, W, STAT_KEYS[i], vals[i], STAT_TIPS.get(STAT_KEYS[i], ""))
 		return yy - Y
 	var card2 = func(X, Y, W):
+		var tp = int(c.get("tp", 0))
 		uText("Attributes", X, Y, 11)
-		uPill("%d to spend" % c.ap, X + W, Y + 1, GOLD, INK, 8, 2)
-		var yy = Y + 22
+		if tp > 0:
+			uPill("%d to spend" % tp, X + W, Y + 1, GOLD, INK, 8, 2)
+		var yy = Y + 20
+		yy += muted("Grown in the **Attribute Tree**: one point every level.", X, yy, W) + 4
+		var T = TREE.totals(c.get("tree", {}))
 		for a in ATTRS:
-			var r = Rect2(X, yy, W, 20)
 			uText(attrName(a), X, yy + 3, 10)
 			uText(attrDesc(a), X + 40, yy + 4, 8, MUTED, UF)
-			uText(str(c.attrs[a]), X + W - 70, yy + 3, 10, INK, UB, 2)
-			uButton(Rect2(X + W - 64, yy + 1, 28, 17), "+1", func(): _addAttr(a, 1), {"disabled": c.ap < 1, "size": 8})
-			uButton(Rect2(X + W - 32, yy + 1, 30, 17), "+5", func(): _addAttr(a, 5), {"disabled": c.ap < 5, "size": 8})
-			zone(Rect2(X, yy, W - 68, 20), Callable(), attrTip(a))
-			yy += 24
+			var bonus = int(T.get(a, 0))
+			uText(str(int(c.attrs[a]) + bonus), X + W - 4, yy + 3, 10, INK, UB, 2)
+			if bonus:
+				uText("+%d tree" % bonus, X + W - 34, yy + 4, 7, css("#2a8a55"), UB, 2)
+			zone(Rect2(X, yy, W, 20), Callable(), attrTip(a))
+			yy += 21
+		uButton(Rect2(X, yy + 2, W, 20), "🌳 Open the Attribute Tree", func(): openTab("tree"), {"bg": GOLD if tp > 0 else MINT, "size": 9})
+		yy += 24
 		return yy - Y
 	var y0 = y
 	y += uCards(x, y, w, 2, [card1, card2])
@@ -441,16 +451,6 @@ func _pChar(x: float, y: float, w: float) -> float:
 		yy += ceili(BOON_ORDER.size() / 2.0) * 22
 		return yy - Y], [{"fill": css("#fff6e3"), "border": css("#c89418")}])
 	return y - y0
-
-
-func _addAttr(a: String, n: int) -> void:
-	var c = CH()
-	n = mini(n, c.ap)
-	c.attrs[a] += n
-	c.ap -= n
-	_restat()
-	Sfx.ui()
-	_changed()
 
 
 # ================================================================ Inventory

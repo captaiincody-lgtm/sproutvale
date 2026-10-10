@@ -338,8 +338,8 @@ func damageSlime(e, mv: Dictionary, _from = null) -> void:
 		P.juggleT = gameTime   # every hit on the juggled enemy extends the window
 	if e.state == "dead":
 		return
-	var crit = randf() * 100 < PS.crit
-	var dmg: float = PS.atk * mv.get("dmg", 1.0) * rand(0.9, 1.1) * 100 / (100 + e.def * 4)
+	var crit = treeCrit() or randf() * 100 < PS.crit
+	var dmg: float = PS.atk * mv.get("dmg", 1.0) * rand(0.9, 1.1) * 100 / (100 + e.def * 4) * treeHitMul(e, crit)
 	if crit:
 		dmg *= PS.critDmg
 	if classId == "tank" and tankWeakHit(e):   # the Diagnostic Helmet: a weak point is a super crit, twice a crit
@@ -356,9 +356,8 @@ func damageSlime(e, mv: Dictionary, _from = null) -> void:
 		dmg *= 1 + PS.hunt
 	if e.boss:
 		dmg *= bossDmgMul(e, mv)   # (Glamrax's mana shield)
-	if PS.get("leech") and P.hp > 0:
-		P.hp = minf(PS.hp, P.hp + PS.hp * PS.leech)
-	dmg = maxf(1, roundf(dmg))
+	treeLeech(crit)
+	dmg = treeAfterHit(e, crit, maxf(1, roundf(dmg)))
 	e.hp -= dmg
 	e.flash = 0.1; e.showBar = 3; e.aggro = true
 	floatText(e.x, e.y - e.h - 6, str(int(dmg)), "crit" if crit else "dmg")
@@ -410,6 +409,7 @@ func killSlime(e) -> void:
 		killBoss(e)
 		return
 	e.state = "dead"; e.deadT = 0; e.hp = 0
+	treeOnKill()
 	if e.T.get("ai") == "climb":   # the mountain's monsters: a heavy crunch
 		Sfx.slam()
 		Sfx.tone(140, 0.3, "triangle", 0.08, 60)
