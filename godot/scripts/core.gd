@@ -220,6 +220,7 @@ func init_data() -> void:
 	CHARM_TIERS = D.charms
 	ARROW_TIERS = GEAR.archer.arrows
 	JOBS_BY = D.jobs
+	applyJobTitles()
 	JOBS = JOBS_BY.rock
 	SKILLS = D.skills
 	SKILL = {}
@@ -558,13 +559,38 @@ static func expNeed(lv: int) -> int:
 
 # ================================================================ jobs, skills, buffs
 
-## Sorcerer / Sorceress follows the hero's chosen gender
+## Advancement titles, lowest to highest: each one should sound like a clear step up in power.
+## [male / default title, female title] by job id (Tank's live in tank.gd).
+const JOB_TITLES := {
+	"trainee": ["Squire"], "swordsman": ["Swordsman", "Swordswoman"], "knight": ["Knight"], "hero": ["Champion"],
+	"master": ["Blademaster"], "saint": ["Sword Saint"], "avatar": ["Sword God", "Sword Goddess"],
+	"a_trainee": ["Scout"], "bowman": ["Hunter", "Huntress"], "marksman": ["Ranger"], "sniper": ["Sharpshooter"],
+	"bowmaster": ["Bowmaster"], "bowsaint": ["Skypiercer"], "bowavatar": ["Celestial Archer"],
+	"m_trainee": ["Apprentice"], "caster": ["Mage"], "sorcerer": ["Sorcerer", "Sorceress"], "magician": ["Warlock"],
+	"archmage": ["Archmage"], "sage": ["Grand Magus"], "m_avatar": ["Arcane God", "Arcane Goddess"],
+	"s_trainee": ["Tamer"], "summoner": ["Summoner"], "commander": ["Beastmaster"], "dcommander": ["Dragon Tamer"],
+	"rider": ["Dragon Rider"], "dsage": ["Dragon Lord", "Dragon Queen"], "s_avatar": ["Dragon God", "Dragon Goddess"],
+}
+
+
+func applyJobTitles() -> void:
+	for cls in JOBS_BY:
+		for J in JOBS_BY[cls]:
+			if JOB_TITLES.has(J.id):
+				var T: Array = JOB_TITLES[J.id]
+				J.nameM = T[0]
+				J.nameF = T[1] if T.size() > 1 else T[0]
+
+
+## gendered titles (Swordsman / Swordswoman…) follow each hero's chosen gender
 func refreshJobNames() -> void:
-	for J in JOBS_BY.mage:
-		if J.has("nameF"):
-			if not J.has("nameM"):
-				J.nameM = J.name
-			J.name = J.nameF if save.chars.mage.look.gender == "f" else J.nameM
+	for cls in JOBS_BY:
+		var f: bool = save.get("chars", {}).get(cls, {}).get("look", {}).get("gender", "m") == "f"
+		for J in JOBS_BY[cls]:
+			if J.has("nameF"):
+				if not J.has("nameM"):
+					J.nameM = J.name
+				J.name = J.nameF if f else J.nameM
 
 
 func jobIndex(lv: int) -> int:
@@ -838,7 +864,7 @@ func gainExp(n: float) -> void:
 		if jobIndex(c.level) > oldJob:
 			var J = jobOf(c.level)
 			later(1.4, func():
-				banner("JOB ADVANCEMENT", "%s is now a %s! New skills in the Skills tab." % [CLASSES[classId].name, J.name])
+				banner("JOB ADVANCEMENT", "%s advanced to %s! New skills in the Skills tab." % [CLASSES[classId].name, J.name])
 				Sfx.rankUp(8))
 			fx.append({"type": "ring", "x": P.x, "y": P.y - 20, "t": 0.0, "life": 1.0, "r": 60, "col": J.color})
 		for i in 30:
