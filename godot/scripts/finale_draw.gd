@@ -463,7 +463,7 @@ func _finGlamrax(x: Ctx, X: float, Y: float, face: int, anim: String, t: float, 
 ## a hero mid-move for the story cards (frame from the time t into the animation)
 func _finHero(x: Ctx, cls: String, X: float, Y: float, face: int, anim: String, t: float, k: float) -> void:
 	var look = lookOf(cls)
-	var anims: Dictionary = Assets.hero.looks.get(look, {}).get("anims", {})
+	var anims: Dictionary = Assets.hero_look(look).get("anims", {})
 	if not anims.has(anim):
 		anim = {"a_shoot": "thrust"}.get(anim, "idle")
 		if not anims.has(anim):

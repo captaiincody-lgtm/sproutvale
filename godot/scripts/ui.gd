@@ -186,12 +186,13 @@ func currencyBag(x: float, y: float, w: float, extra := "") -> float:
 	return flow(x, y, w, items) + 8
 
 
-func heroPic(r: Rect2, cls: String, anim := "idle", f := 0, bg := true) -> void:
+func heroPic(r: Rect2, cls: String, anim := "idle", f := 0, bg := true, look := "") -> void:
 	if bg:
 		uBox(r, css("#e8f6ff"), INK, 2, 7)
 		uGrad(Rect2(r.position + Vector2(2, 2), Vector2(r.size.x - 4, r.size.y * 0.75 - 2)), css("#bfe6ff"), css("#d4eeff"), css("#e8f6ff"), 0.5)
 		uci.draw_rect(Rect2(r.position.x + 2, r.position.y + r.size.y * 0.75, r.size.x - 4, r.size.y * 0.25 - 2), css("#8fd06a"))
-	var look = lookOf(cls)
+	if look == "":
+		look = lookOf(cls)
 	var A = Assets.hero_anim(look, anim)
 	var tex = Assets.hero_strip(look, anim, 1)
 	if tex == null:
@@ -603,7 +604,14 @@ func _gearCard(kind: String, tiers: Array, cur: int) -> Callable:
 		var C: Dictionary = CLASSES[classId]
 		var nx = _tier(tiers, cur + 1)
 		var yy = Y + h2(C.armorLabel if kind == "armor" else ("Staff" if kind == "staff" else C.weaponLabel), X, Y, W)
-		heroPic(Rect2(X, yy, 44, 54), classId)
+		# the picture shows the next tier on the hero, so you can see what the upgrade looks like
+		var c = CH()
+		var pv = {"armor": int(c.armor), "weapon": int(c.weapon), "staff": int(c.get("staff", 0))}
+		if nx:
+			pv[kind] = cur + 1
+		heroPic(Rect2(X, yy, 44, 54), classId, "idle", 0, true, gearLook(classId, pv.armor, pv.weapon, pv.staff))
+		if nx:
+			uText("Next", X + 22, yy + 46, 7, css("#2a8a55"), UB, 1)
 		var tx = X + 52
 		uPara("Now: **%s**" % tiers[cur].name, tx, yy + 4, W - 52, 9, INK)
 		if nx:
@@ -1429,55 +1437,26 @@ func _pMap(x: float, y: float, w: float) -> float:
 
 
 func drawWorldMap(x: Ctx, t: float) -> void:
-	var sea = x.createLinearGradient(0, 0, 0, 430)
-	sea.addColorStop(0, "#5fb2e8")
-	sea.addColorStop(1, "#3a86c8")
 	var top = WM_TOP if wmOpen("climb1") else 0.0
-	x.fillStyle = sea
-	x.fillRect(0, -top, 1000, 430 + top)
+	# the painted land (tools/bake/worldmap.mjs): sea and home island, then each region as it opens
+	_wmLayer(x, "base", top)
+	if crimsonOpen():
+		_wmLayer(x, "crimson", top)
+	if wmOpen("abyss1"):
+		_wmLayer(x, "abyss", top)
+	if top > 0:
+		_wmLayer(x, "north", top)
+	# glints running over the sea
 	x.fillStyle = "rgba(255,255,255,0.35)"
 	for i in 60:
 		var wx = fmod(i * 97 + t * 8, 1020.0) - 10
 		var wy = (i * 53) % int(430 + top) - top
 		x.fillRect(roundf(wx), wy, 6, 1)
-	var blob = func(cx, cy, rx, ry, fill, edge):
-		x.fillStyle = edge
-		x.beginPath(); x.ellipse(cx, cy + 4, rx + 3, ry + 3, 0, 0, TAU); x.fill()
-		x.fillStyle = fill
-		x.beginPath(); x.ellipse(cx, cy, rx, ry, 0, 0, TAU); x.fill()
-	x.fillStyle = "#e8d8a8"
-	x.beginPath(); x.moveTo(90, 250); x.bezierCurveTo(90, 40, 330, 20, 360, 150); x.bezierCurveTo(470, 80, 700, 90, 720, 220); x.bezierCurveTo(740, 390, 520, 410, 420, 360); x.bezierCurveTo(300, 420, 90, 400, 90, 250); x.fill()
-	x.strokeStyle = "#b89a60"; x.lineWidth = 3; x.stroke()
-	blob.call(215, 262, 95, 62, "#8fd06a", "#5a9a44"); blob.call(205, 100, 70, 44, "#9ad6a0", "#5a9a6a")
-	x.fillStyle = "#4aa0e0"; x.beginPath(); x.ellipse(205, 104, 36, 18, 0, 0, TAU); x.fill()
-	blob.call(405, 262, 72, 56, "#3f6a4c", "#2a4a34"); blob.call(565, 188, 88, 58, "#e0a84a", "#a8702e"); blob.call(650, 330, 62, 42, "#4a5a3a", "#2a3424")
-	for p in [[160, 240], [185, 290], [255, 235], [270, 290], [150, 275]]:
-		x.fillStyle = "#6e4428"; x.fillRect(p[0], p[1], 3, 8)
-		x.fillStyle = "#3f8f45" if p[0] % 2 else "#ec8fb0"
-		x.beginPath(); x.arc(p[0] + 1, p[1] - 2, 7, 0, TAU); x.fill()
-	for p in [[375, 250], [425, 245], [400, 285]]:
-		x.fillStyle = "#e8dcc0"; x.fillRect(p[0], p[1], 3, 8)
-		x.fillStyle = "#c24058"; x.beginPath(); x.ellipse(p[0] + 1, p[1] - 1, 8, 5, 0, PI, TAU); x.fill()
-	for p in [[530, 185], [590, 170], [610, 210]]:
-		x.fillStyle = "#c2562a"; x.beginPath(); x.moveTo(p[0] - 12, p[1] + 8); x.lineTo(p[0], p[1] - 10); x.lineTo(p[0] + 12, p[1] + 8); x.fill()
-	if crimsonOpen():
-		x.fillStyle = "#3a0c14"; x.beginPath(); x.moveTo(720, 400); x.bezierCurveTo(700, 300, 760, 40, 860, 50); x.bezierCurveTo(990, 60, 990, 330, 900, 400); x.closePath(); x.fill()
-		x.strokeStyle = "#1a0408"; x.lineWidth = 3; x.stroke()
-		x.fillStyle = "#6a1018"; x.beginPath(); x.ellipse(860, 230, 90, 140, 0.1, 0, TAU); x.fill()
-		for i in 14:
-			var tx = 790 + hsh(i + 3) * 150
-			var ty = 100 + hsh(i + 4) * 260
-			x.fillStyle = "#1a0408"; x.fillRect(tx, ty, 2, 9); x.fillRect(tx - 3, ty + 1, 8, 1)
-		x.fillStyle = "#c0282a"; x.beginPath(); x.arc(950, 40, 9, 0, TAU); x.fill()
 	if wmOpen("abyss1"):
-		# the Abyss: a black-violet trench cutting across the northern sea, red runes glinting in it
-		var tr = x.createLinearGradient(0, 0, 0, 96)
-		tr.addColorStop(0, "#08040e"); tr.addColorStop(0.7, "#2a0c3a"); tr.addColorStop(1, "rgba(58,20,80,0)")
-		x.fillStyle = tr
-		x.beginPath(); x.moveTo(60, 0); x.lineTo(730, 0); x.bezierCurveTo(740, 60, 700, 80, 620, 78); x.bezierCurveTo(480, 92, 300, 70, 170, 84); x.bezierCurveTo(90, 90, 50, 60, 60, 0); x.fill()
+		# red runes glinting in the Abyss trench
 		for i in 18:
 			var rx = 90 + hsh(i + 11) * 620
-			var ry = 8 + hsh(i + 12) * 50
+			var ry = 26 + hsh(i + 12) * 36
 			x.fillStyle = "rgba(255,50,80,%.2f)" % (0.35 + 0.35 * sin(t * 2 + i))
 			x.fillRect(rx, ry, 2, 5); x.fillRect(rx - 2, ry + 2, 6, 1)
 		if wmOpen("bubble"):
@@ -1530,37 +1509,33 @@ func drawWorldMap(x: Ctx, t: float) -> void:
 const WM_TOP := 210.0
 
 
-## the climb to the Abyssal Volcano: a rocky ridge turning to snow, up to the smoking summit
+var _wmTex := {}
+
+## one painted World Map layer (1500 × 960, covering map units x 0…1000, y -210…430), smoothly filtered
+func _wmLayer(x: Ctx, k: String, top: float) -> void:
+	if not _wmTex.has(k):
+		var tx = Assets.tex("worldmap/%s.webp" % k)
+		var ct = null
+		if tx:
+			ct = CanvasTexture.new()
+			ct.diffuse_texture = tx
+			ct.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		_wmTex[k] = ct
+	var ct = _wmTex[k]
+	if ct == null:
+		return
+	var k2 = 1.5   # pixels per map unit
+	x.drawImageRegion(ct, 0, (WM_TOP - top) * k2, 1000 * k2, (430 + top) * k2, 0, -top, 1000, 430 + top)
+
+
+## the volcano's live bits: the crater's pulse and its smoke
 func _wmVolcano(x: Ctx, t: float) -> void:
-	# the ridge
-	x.fillStyle = "#3a3e48"
-	x.beginPath(); x.moveTo(70, -2); x.bezierCurveTo(120, -60, 260, -80, 360, -110); x.bezierCurveTo(470, -140, 600, -150, 700, -160)
-	x.lineTo(760, -150); x.bezierCurveTo(860, -110, 950, -60, 970, -4); x.closePath(); x.fill()
-	x.strokeStyle = "#1e2028"; x.lineWidth = 3; x.stroke()
-	x.fillStyle = "#6a6e7a"
-	x.beginPath(); x.moveTo(90, -6); x.bezierCurveTo(140, -54, 260, -70, 360, -98); x.bezierCurveTo(470, -126, 600, -136, 690, -146)
-	x.lineTo(700, -120); x.bezierCurveTo(560, -100, 300, -40, 200, -6); x.closePath(); x.fill()
-	# snow from the second climb on
-	x.fillStyle = "#e8f4ff"
-	x.beginPath(); x.moveTo(250, -74); x.bezierCurveTo(330, -98, 470, -132, 600, -142); x.lineTo(690, -150)
-	x.lineTo(680, -132); x.bezierCurveTo(560, -122, 420, -104, 300, -60); x.closePath(); x.fill()
-	# the volcano cone (abyssal purple, like the opening cutscene) and its glowing crater
-	x.fillStyle = "#3a1450"
-	x.beginPath(); x.moveTo(700, -40); x.lineTo(790, -150); x.lineTo(850, -150); x.lineTo(940, -40); x.closePath(); x.fill()
-	x.fillStyle = "#5a2070"
-	x.beginPath(); x.moveTo(850, -150); x.lineTo(940, -40); x.lineTo(900, -40); x.lineTo(842, -146); x.closePath(); x.fill()
-	x.fillStyle = "rgba(255,90,230,%.2f)" % (0.7 + 0.25 * sin(t * 3))
-	x.beginPath(); x.ellipse(820, -150, 32, 7, 0, 0, TAU); x.fill()
+	x.fillStyle = "rgba(255,90,230,%.2f)" % (0.25 + 0.25 * sin(t * 3))
+	x.beginPath(); x.ellipse(820, -150, 34, 8, 0, 0, TAU); x.fill()
 	for i in 3:
 		var k = fmod(t * 0.25 + i / 3.0, 1.0)
 		x.fillStyle = "rgba(110,60,130,%.2f)" % (0.5 * (1 - k))
 		x.beginPath(); x.arc(820 + k * 30 + i * 6, -160 - k * 20, 8 + k * 10, 0, TAU); x.fill()
-	for i in 6:
-		x.fillStyle = "#ff3ad8"
-		var lx = 800 + i * 7
-		x.fillRect(lx, -146 + hsh(i + 40) * 30, 2, 10 + hsh(i + 41) * 20)
-	# the cave mouth on the snowy slope
-	x.fillStyle = "#141820"; x.beginPath(); x.ellipse(452, -112, 16, 9, 0, PI, TAU); x.fill()
 
 
 func _wmLabel(x: Ctx, from: Dictionary, to: Dictionary, text: String) -> void:

@@ -1378,4 +1378,16 @@ func lookOf(cls: String) -> String:
 		if classId == "tank" and inGame and buffOn("titanProtocol"):
 			return "tank_%s_5" % g
 		return "tank_%s_%d" % [g, exoStage(c)]
-	return "%s_%s" % [cls, c.get("look", {}).get("gender", "m")]
+	return gearLook(cls, int(c.get("armor", 0)), int(c.get("weapon", 0)), int(c.get("staff", 0)))
+
+
+## a layered hero's look in a given armor / weapon (and Remy's staff) tier — see Assets.hero_look
+const GEAR_SET := {"rock": "sword", "archer": "bow", "summoner": "ring"}
+func gearLook(cls: String, armor: int, weapon: int, staff := 0) -> String:
+	var g: String = save.get("chars", {}).get(cls, {}).get("look", {}).get("gender", "m")
+	var base := "%s_%s" % [cls, g]
+	if not Assets.hero.looks.get(base, {}).get("layered", false):
+		return base
+	var w := clampi(weapon, 0, 10)
+	var sets: String = "staff_%d,wand_%d" % [clampi(staff, 0, 10), w] if cls == "mage" else "%s_%d" % [GEAR_SET.get(cls, "sword"), w]
+	return "%s|%d|%s" % [base, clampi(armor, 0, int(Assets.hero_look(base).get("armor", 1)) - 1), sets]

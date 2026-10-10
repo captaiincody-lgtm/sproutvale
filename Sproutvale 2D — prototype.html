@@ -1362,6 +1362,49 @@ Frame.prototype.commit = function (colFn, opt = {}) {
   this.clearMask();
 };
 let CHARM = { on: false, col: [255, 255, 255], shape: 0 };
+/* What each armor tier adds on top of its colours (see drawRock's gear section). pauld: shoulder plates 1-5,
+   cape + capeLen (sprite units below the hips), capeWing: feathered, head: 1 circlet 2 crown 3 jewelled crown 4 crown + horns,
+   emblem: chest emblem 1-3, runes: glowing rune colour, halo, shards: floating crystals, knee: knee guards, hatGem: Remy's hat. */
+const ARMOR_STYLE = {
+  rock: [{},
+    { pauld: 1, belt: 1, knee: 1 },
+    { pauld: 2, cape: 0xc8342a, capeLen: 5, emblem: 1, emblemCol: 0xffd35a, belt: 1, knee: 1, head: 1, headCol: 0xd8dee6 },
+    { pauld: 3, cape: 0x1e8a6b, capeLen: 9, capeTrim: 1, emblem: 2, emblemCol: 0xffd35a, belt: 1, knee: 2, head: 2, headCol: 0xffd35a, gem: 0x1e8a6b },
+    { pauld: 4, cape: 0x5b2a86, capeLen: 11, capeTrim: 1, emblem: 3, emblemCol: 0xffc93c, runes: 0x5ee6ff, belt: 1, knee: 2, head: 4, headCol: 0xffc93c, hornCol: 0x1c1f36, gem: 0x5ee6ff },
+    { pauld: 5, cape: 0xffffff, capeLen: 12, capeWing: 1, capeTrim: 1, emblem: 3, emblemCol: 0xffd75e, runes: 0xff9ff0, belt: 1, knee: 2, head: 3, headCol: 0xffd75e, gem: 0xff9ff0, halo: 0xfff1a8, shards: 0xff9ff0 }],
+  archer: [{},
+    { pauld: 1, pauldCol: 0x8a5a34, belt: 1 },
+    { pauld: 2, pauldCol: 0x3f7a4a, cape: 0x2f6a3a, capeLen: 3, head: 1, headCol: 0xffd35a, gem: 0x5fd39a, belt: 1 },
+    { pauld: 3, pauldCol: 0xa3c4e6, cape: 0x3a78c8, capeLen: 7, capeTrim: 1, head: 1, headCol: 0xffffff, gem: 0x6fd4ff, emblem: 1, emblemCol: 0xffffff, knee: 1, belt: 1 },
+    { pauld: 4, pauldCol: 0x5b4a96, cape: 0x5b2a86, capeLen: 10, capeTrim: 1, head: 2, headCol: 0xffc93c, gem: 0x9ff0ff, emblem: 2, emblemCol: 0xffc93c, runes: 0x9ff0ff, knee: 1, belt: 1 },
+    { pauld: 5, pauldCol: 0xffd75e, cape: 0xffffff, capeLen: 12, capeWing: 1, capeTrim: 1, head: 3, headCol: 0xffd75e, gem: 0xff9ff0, emblem: 3, emblemCol: 0xffd75e, runes: 0xff9ff0, halo: 0xfff1a8, shards: 0xfff1a8, knee: 2, belt: 1 }],
+  mage: [{},
+    { hatGem: 1, gem: 0x9fe6ff, belt: 1 },
+    { hatGem: 1, gem: 0x9fffe0, pauld: 1, pauldCol: 0x4aa08a, cape: 0x2f7a6a, capeLen: 6, belt: 1 },
+    { hatGem: 2, gem: 0x9fe6ff, pauld: 2, pauldCol: 0x4a6ac8, cape: 0x2a3a7a, capeLen: 9, capeTrim: 1, emblem: 1, emblemCol: 0x9fe6ff },
+    { hatGem: 2, gem: 0xc28aff, pauld: 4, pauldCol: 0x5a3a86, cape: 0x2a1838, capeLen: 11, capeTrim: 1, emblem: 2, emblemCol: 0xffc93c, runes: 0xc28aff },
+    { hatGem: 3, gem: 0xff9ff0, pauld: 5, pauldCol: 0xffd75e, cape: 0xf2f0ff, capeLen: 12, capeWing: 1, capeTrim: 1, emblem: 3, emblemCol: 0xffd75e, runes: 0xff9ff0, shards: 0xfff1a8 }],
+  summoner: [{},
+    { pauld: 1, pauldCol: 0x3a6a7a, belt: 1 },
+    { pauld: 2, pauldCol: 0x5a7a3a, belt: 1, emblem: 1, emblemCol: 0xd8a830, knee: 1 },
+    { pauld: 3, pauldCol: 0x7a2a3a, cape: 0x5a1a2a, capeLen: 9, capeTrim: 1, emblem: 2, emblemCol: 0xffd35a, head: 1, headCol: 0xffd35a, gem: 0xd8303a, knee: 1, belt: 1 },
+    { pauld: 4, pauldCol: 0x2f6a3a, cape: 0x1e2a1e, capeLen: 11, capeTrim: 1, emblem: 3, emblemCol: 0x9fffb0, runes: 0x9fffb0, head: 4, headCol: 0x2f6a3a, hornCol: 0x101810, gem: 0xff6a3a, knee: 2, belt: 1 },
+    { pauld: 5, pauldCol: 0xffd75e, cape: 0xf2f0ff, capeLen: 12, capeWing: 1, capeTrim: 1, emblem: 3, emblemCol: 0xffd75e, runes: 0x9fe6ff, head: 3, headCol: 0xffd75e, gem: 0x9fe6ff, halo: 0xfff1a8, shards: 0x9fe6ff, knee: 2, belt: 1 }],
+};
+const inPoly = (pts, x, y, inset = 0) => {   // point in polygon, at least `inset` away from every edge
+  let inside = false;
+  for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    const [xi, yi] = pts[i], [xj, yj] = pts[j];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+    if (inset) { const dx = xj - xi, dy = yj - yi, L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((x - xi) * dx + (y - yi) * dy) / L2)); if (Math.hypot(xi + dx * t - x, yi + dy * t - y) < inset) return false; }
+  }
+  return inside;
+};
+const starIn = (x, y, r) => { const a = Math.atan2(y, x), d = Math.hypot(x, y), k = Math.cos(5 * (a + Math.PI / 2)) * 0.5 + 0.5; return d < r * (0.45 + 0.55 * k * k); };
+/* Layered rendering for the Godot bake: when HERO_LAYERS is an array, drawRock cuts the frame into 9 layers,
+   body and weapon interleaved — B_pre, W0, B0, W1, B1, W2, B2, W3, B3 — so any armor tier can be stacked
+   with any weapon tier without baking every combination. */
+let HERO_LAYERS = null;
 let LOOK = { kind: 'rock' };   // which hero the rasteriser is drawing ('rock' | 'archer')
 const tri = (b, s, l) => (x, y, t) => t === 1 ? s : t === 2 ? l : b;
 
@@ -1376,7 +1419,9 @@ const BASE_POSE = {
 
 /* ---------------- one frame ---------------- */
 function drawRock(P) {
-  if (P.back) return drawRockBack(P);
+  if (P.back) { const Fb = drawRockBack(P); if (HERO_LAYERS) HERO_LAYERS.push(Fb.px); return Fb; }
+  // running, Rock carries the sword at his side, blade forward, instead of trailing it behind him
+  if (P.runHold && LOOK.kind === 'rock' && !LOOK.armored) P = Object.assign({}, P, { nA: 0.45 + P.nA * 0.35, nE: 1.05, sa: null, sw: 0.75 + P.nA * 0.12 });
   const F = new Frame(SW, SH, CHAR_RES);
   const piv = [RX + P.x, RY + P.y - 8];
   const cr = Math.cos(P.rot), sr = Math.sin(P.rot);
@@ -1398,7 +1443,7 @@ function drawRock(P) {
   const ARCH = LOOK.kind === 'archer';
   // the Archer holds the bow in her front hand: the pose's bow-arm angles drive the near arm
   const armN = ARCH ? arm(shoulderN, P.fA, P.fE) : arm(shoulderN, P.nA, P.nE), armF = ARCH ? arm(shoulderF, P.nA, P.nE) : arm(shoulderF, P.fA, P.fE);
-  const hipN = [root[0] + 0.9, root[1] - 0.4], hipF = [root[0] - 0.9, root[1] - 0.6];
+  const FEMH = !!LOOK.female && !LOOK.armored, hipN = [root[0] + (FEMH ? 1.25 : 0.9), root[1] - 0.4], hipF = [root[0] - (FEMH ? 1.25 : 0.9), root[1] - 0.6];
   const legN = leg(hipN, P.nL, P.nK), legF = leg(hipF, P.fL, P.fK);
   const TT = p => T(p[0], p[1]);
   // segment colouring by fraction along a limb
@@ -1455,14 +1500,14 @@ function drawRock(P) {
       return;
     }
     if (LOOK.kind === 'mage') {   // bare legs under the robe and bare feet with little toes
-      F.capsule(hx, hy, kx, ky, 2.5, 2.1); F.commit(along(Lg.hip, Lg.kn, (t, tone) => t < 0.55 ? dk(pick(PAL.shorts, PAL.shortsS, PAL.shortsL, tone)) : dk(pick(PAL.skin, PAL.skinS, PAL.skinL, tone))));
+      F.capsule(hx, hy, kx, ky, FEMH ? 2.8 : 2.5, 2.1); F.commit(along(Lg.hip, Lg.kn, (t, tone) => t < 0.55 ? dk(pick(PAL.shorts, PAL.shortsS, PAL.shortsL, tone)) : dk(pick(PAL.skin, PAL.skinS, PAL.skinL, tone))));
       F.capsule(kx, ky, ax, ay, 2, 1.8); F.commit((x, y, tone) => dk(pick(PAL.skin, PAL.skinS, PAL.skinL, tone)));
       const fa = Lg.sa * 0.45, f = [[-1.8, -1], [2.6, -1], [4.6, 0.6], [4.4, 1.8], [-2, 1.8]].map(([x, y]) => { const [a, b] = rot(x, y, -fa * 0.8); return TT([Lg.an[0] + a, Lg.an[1] + b]); });
       F.poly(f); F.commit((x, y, tone) => dk(pick(PAL.skin, PAL.skinS, PAL.skinL, tone)));
       const toe = TT([Lg.an[0] + 3.6, Lg.an[1] + 0.8]); F.set(Math.floor(toe[0]), Math.floor(toe[1]), dk(PAL.skinS));
       return;
     }
-    F.capsule(hx, hy, kx, ky, 2.7, 2.2);
+    F.capsule(hx, hy, kx, ky, FEMH ? 3.0 : 2.7, 2.2);
     const ROCKLEG = LOOK.kind === 'rock' && !LOOK.armored;   // full-length legs: trousers, or plate cuisses and greaves on armoured tiers
     if (ROCKLEG) F.commit(along(Lg.hip, Lg.kn, (t, tone) => PAL.legPlate && t > 0.12 && t < 0.78 ? dk(pick(PAL.greave, PAL.greaveS, PAL.greaveL, tone)) : t > 0.86 ? dk(pick(PAL.trim, PAL.trimS, PAL.trim, tone)) : dk(pick(PAL.shorts, PAL.shortsS, PAL.shortsL, tone))));
     else F.commit(along(Lg.hip, Lg.kn, (t, tone) => t < 0.52 ? dk(pick(PAL.shorts, PAL.shortsS, PAL.shortsL, tone)) : t < 0.64 ? dk(pick(PAL.trim, PAL.trimS, PAL.trim, tone)) : dk(pick(PAL.skin, PAL.skinS, PAL.skinL, tone))));
@@ -1507,11 +1552,13 @@ function drawRock(P) {
   };
   const drawTorso = () => {
     const cl = (P.wind || 0) * 0.5 + (P.hair || 0) * 0.35;
-    const fw = LOOK.female ? 0.4 : 0;   // a narrower waist for female heroes
+    const fw = LOOK.female ? 0.6 : 0;   // a narrower waist for female heroes
     const PUNK = !!LOOK.punk;
     const hem = PUNK ? -0.6 : LOOK.kind === 'mage' ? 3.6 : LOOK.kind === 'summoner' ? 2.6 : 0;   // robes reach the knee; Jojo's coat nearly so; the punk's skirt is short
-    const bust = PUNK ? [[5.4, -9.4], [7.9, -8], [8.6, -6.4], [7.4, -4.8], [4.8, -4.2]] : [[4.9 - fw * 0.3, -7.2]];   // a fuller chest for the punk
-    const pts = [[-4.3 + fw * 0.5, -10.4], [3.6 - fw * 0.5, -10.6], ...bust, [4.5 - fw, -2.2], [6.1 + hem * 0.3 - cl * 0.4, 4.8 + hem - cl * 0.15], [0.2 - cl * 0.5, 5.2 + hem], [-5.7 - hem * 0.3 - cl, 4.8 + hem - cl * 0.35], [-4.7 + fw, -2.2], [-5.1 + fw * 0.3, -7.2]].map(([x, y]) => TT(torso(x, y)));
+    const FEMB = LOOK.female && !LOOK.armored;   // female heroes: a bust, a narrow waist and wider hips
+    const bust = PUNK ? [[5.4, -9.4], [7.9, -8], [8.6, -6.4], [7.4, -4.8], [4.8, -4.2]] : FEMB ? [[4.6, -10], [7.4, -9.4], [8.9, -7.6], [8.5, -5.7], [6.4, -4.7], [4.9, -4.5]] : [[4.9 - fw * 0.3, -7.2]];
+    const hipF = FEMB ? [[5.9, 0.6]] : [], hipB = FEMB ? [[-6.6, 0.6]] : [];
+    const pts = [[-4.3 + fw * 0.5, -10.4], [3.6 - fw * 0.5, -10.6], ...bust, [4.5 - fw, -2.2], ...hipF, [6.1 + hem * 0.3 - cl * 0.4 + (FEMB ? 0.5 : 0), 4.8 + hem - cl * 0.15], [0.2 - cl * 0.5, 5.2 + hem], [-5.7 - hem * 0.3 - cl - (FEMB ? 0.7 : 0), 4.8 + hem - cl * 0.35], ...hipB, [-4.7 + fw, -2.2], [-5.1 + fw * 0.3, -7.2]].map(([x, y]) => TT(torso(x, y)));
     F.poly(pts);
     const inv = (x0, y0) => { const [x, y] = unS(x0, y0); let X = x; if (P.mirror) X = 2 * RX - X; const dx = X - piv[0], dy = y - piv[1]; const ux = piv[0] + dx * cr + dy * sr, uy = piv[1] - dx * sr + dy * cr; const [lx, ly] = rot(ux - root[0], uy - root[1], -P.t); return [lx, ly]; };
     F.commit((x, y, tone) => {
@@ -1529,6 +1576,8 @@ function drawRock(P) {
         if (lx > 3.1) return (Math.floor(lx * 2) + Math.floor(ly * 2)) % 2 ? PAL.buckleA : PAL.buckleB;
         return pick(PAL.leather, PAL.leatherS, PAL.leatherL, tone);
       }
+      if (FEMB && lx > 4.4 && ly > -5.5 && ly < -4.4) return PAL.tunicS;   // the shadow under her bust
+      if (FEMB && lx > 5.6 && lx < 7.4 && ly > -9 && ly < -7.6 && tone === 0) return PAL.tunicL;   // and its highlight
       const base = pick(PAL.tunic, PAL.tunicS, PAL.tunicL, tone);
       if (LOOK.kind === 'rock' && tone === 0 && ((Math.floor(lx + 20)) % 2 === 0)) return PAL.stripe;
       return base;
@@ -1801,60 +1850,409 @@ function drawRock(P) {
     }
   };
 
+  // ---------- gear looks: every armor and weapon tier adds detail on top of the tier colours ----------
+  // LOOK.gA / gW / gS are the armor, weapon and staff tiers (set by applyTierPalette; knights have none)
+  const GA = LOOK.gA == null ? -1 : LOOK.gA, GW = LOOK.gW == null ? -1 : LOOK.gW, GS = LOOK.gS == null ? -1 : LOOK.gS;
+  const GX = (ARMOR_STYLE[LOOK.kind] || [])[GA] || {};
+  const shade = (c, k) => k < 0 ? mix(c, [0, 0, 0], -k) : mix(c, [255, 255, 255], k);
+  const tri = c => [c, shade(c, -0.3), shade(c, 0.3)];
+  const triPick = (T, t) => pick(T[0], T[1], T[2], t);
+  const lerpP = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+  const ptsT = (fn, pts) => pts.map(([x, y]) => TT(fn(x, y)));
+  const sparkle = (cx, cy, col, big) => {   // a little four-point star
+    const X = Math.floor(cx), Y = Math.floor(cy), l = mix(col, [255, 255, 255], 0.6);
+    F.set(X, Y, [255, 255, 255]); for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) F.set(X + dx, Y + dy, l);
+    if (big) for (const [dx, dy] of [[-2, 0], [2, 0], [0, -2], [0, 2]]) F.set(X + dx, Y + dy, col);
+  };
+  const OUTD = hex(0x1a1030);
+  // a cape hanging from the shoulders, swaying back with motion and wind
+  const drawCape = () => {
+    if (!GX.cape) return;
+    const B = (P.hair || 0) * 0.8 + (P.wind || 0) * 0.9, L = GX.capeLen || 6, C = tri(hex(GX.cape)), lin = shade(hex(GX.cape), -0.45);
+    const wing = GX.capeWing;
+    const pts = wing
+      ? [[-3.4, -11], [1.2, -11.2], [0, -6], [-1.2 - B * 0.5, L * 0.45], [-2.6 - B * 1.1, L], [-4.4 - B * 1.3, L - 2.4], [-6.2 - B * 1.5, L + 0.6], [-8 - B * 1.7, L - 2.6], [-10 - B * 1.9, L - 0.4], [-11 - B * 1.6, L - 5], [-10.4 - B, 0], [-8.6, -6], [-6, -10]]
+      : [[-3.6, -11], [1.2, -11.2], [0.2, -6], [-1 - B * 0.5, L * 0.5], [-2 - B * 1.1, L], [-4.2 - B * 1.3, L + 0.8], [-6.4 - B * 1.5, L + 0.3], [-8.4 - B * 1.7, L - 0.6], [-7.2 - B * 0.9, 2], [-5.8, -6]];
+    F.poly(ptsT(torso, pts));
+    F.commit((x, y, t) => {
+      if (GX.capeTrim && t !== 1) { const [, ly] = invT(x, y); if (ly > L - 1.4) return PAL.trim; }
+      return t === 1 ? lin : triPick(C, t);
+    }, { band: 2, outline: OUTD });
+  };
+  const invT = (x0, y0) => { const [x, y] = unS(x0, y0); let X = x; if (P.mirror) X = 2 * RX - X; const dx = X - piv[0], dy = y - piv[1]; const ux = piv[0] + dx * cr + dy * sr, uy = piv[1] - dx * sr + dy * cr; return rot(ux - root[0], uy - root[1], -P.t); };
+  // shoulder armour: grows from a cap to layered, spiked or winged plates
+  const drawPauldron = (A, near) => {
+    const lv = GX.pauld || 0; if (!lv) return;
+    const dk = c => near ? c : mix(c, PAL.outline, 0.14);
+    const PL = GX.pauldCol ? tri(hex(GX.pauldCol)) : [PAL.tunic, PAL.tunicS, PAL.tunicL];
+    const c = lerpP(A.sh, A.el, 0.06), r = 1.9 + lv * 0.32;
+    const plate = (cx, cy, rx, ry) => { const p = TT([cx, cy]); F.ellipse(p[0], p[1], rx, ry, 0); };
+    plate(c[0], c[1] - 0.6, r, r * 0.78);
+    F.commit((x, y, t) => dk(y > TT(c)[1] + r * 0.45 && t !== 2 ? PAL.trim : triPick(PL, t)), { band: 1, outline: OUTD });
+    if (lv >= 3) { plate(c[0], c[1] + r * 0.55, r * 0.8, r * 0.45); F.commit((x, y, t) => dk(t === 1 ? PAL.trimS : PAL.trim), { outline: OUTD }); }
+    if (lv >= 4) {   // spikes / fins rising off the plate
+      const tip = (ox, oy, len) => { const b0 = TT([c[0] + ox - 0.9, c[1] - r * 0.5 + oy]), b1 = TT([c[0] + ox + 0.9, c[1] - r * 0.5 + oy]), tp = TT([c[0] + ox - len * 0.35, c[1] - r * 0.5 + oy - len]); F.poly([b0, tp, b1]); };
+      tip(-1.2, 0.2, 2.6 + (lv - 4) * 1.4); tip(1, 0, 3.2 + (lv - 4) * 1.6);
+      F.commit((x, y, t) => dk(pick(PAL.trim, PAL.trimS, [255, 255, 255], t)), { outline: OUTD });
+    }
+    if (GX.runes && lv >= 4) { const p = TT(c); F.set(Math.floor(p[0]), Math.floor(p[1]), hex(GX.runes)); glowDot(p[0], p[1], 2.4, hex(GX.runes), 0.4); }
+  };
+  // knee guards and boot cuffs
+  const drawKnee = (Lg, near) => {
+    if (!GX.knee) return;
+    const dk = c => near ? c : mix(c, PAL.outline, 0.14), PL = GX.pauldCol ? tri(hex(GX.pauldCol)) : [PAL.tunic, PAL.tunicS, PAL.tunicL];
+    const k = TT(Lg.kn); F.ellipse(k[0] + 0.4, k[1], 2.1 + GX.knee * 0.25, 1.8 + GX.knee * 0.2, 0);
+    F.commit((x, y, t) => dk(GX.knee >= 2 && t === 0 && y < k[1] - 0.5 ? PAL.trim : triPick(PL, t)), { band: 1, outline: OUTD });
+    if (GX.knee >= 2) { const a = TT(lerpP(Lg.kn, Lg.an, 0.62)); F.ellipse(a[0], a[1], 2.6, 0.9, 0); F.commit((x, y, t) => dk(t === 1 ? PAL.trimS : PAL.trim), { outline: OUTD }); }
+  };
+  // chest emblem, belt buckle and glowing runes, drawn over the torso
+  const drawChest = () => {
+    if (GX.emblem) {
+      const e = TT(torso(GX.emblemX || 1.6, -6.6)), col = hex(GX.emblemCol || 0xffd35a), sh = GX.emblem;
+      const X = Math.floor(e[0]), Y = Math.floor(e[1]);
+      const cells = sh === 1 ? [[0, -1], [-1, 0], [0, 0], [1, 0], [0, 1]] : sh === 2 ? [[0, -2], [-1, -1], [0, -1], [1, -1], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [-1, 1], [0, 1], [1, 1], [0, 2]] : [[0, -2], [0, -1], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [0, 1], [0, 2], [-1, -1], [1, -1], [-1, 1], [1, 1]];
+      for (const [dx, dy] of cells) for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) { if (!cells.some(([a, b]) => a === dx + ox && b === dy + oy)) F.set(X + dx + ox, Y + dy + oy, shade(col, -0.55)); }
+      for (const [dx, dy] of cells) F.set(X + dx, Y + dy, col); F.set(X, Y, sh >= 2 ? [255, 255, 255] : mix(col, [255, 255, 255], 0.5));
+      if (GX.runes) glowDot(e[0], e[1], 3.5, hex(GX.runes), 0.45);
+    }
+    if (GX.belt) {   // a bigger buckle with a gem
+      const b = TT(torso(4, -1)), X = Math.floor(b[0]), Y = Math.floor(b[1]);
+      for (const [dx, dy] of [[0, -1], [-1, 0], [1, 0], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]]) F.set(X + dx, Y + dy, PAL.trim);
+      F.set(X, Y, hex(GX.gem || 0xd8303a));
+    }
+    if (GX.runes) {   // rune lines down the torso
+      const col = hex(GX.runes);
+      for (const [x0, y0, x1, y1] of [[-2.6, -9, -3.2, -3.4], [2.2, -9.4, 3, -3.6], [-0.4, 0.6, 2.6, 0.6]]) {
+        const a = TT(torso(x0, y0)), b = TT(torso(x1, y1));
+        for (let k = 0; k <= 1; k += 0.08) { if (Math.floor(k * 12) % 3 === 2) continue; F.set(Math.floor(a[0] + (b[0] - a[0]) * k), Math.floor(a[1] + (b[1] - a[1]) * k), col); }
+      }
+    }
+  };
+  // headpiece: circlet, crown, horns or a halo
+  const drawHeadpiece = () => {
+    const hp = GX.head || 0; if (!hp) return;
+    const col = hex(GX.headCol || 0xffd35a), C = tri(col), gem = hex(GX.gem || 0xd8303a);
+    if (hp >= 1) {   // a band across the brow
+      F.poly(ptsT(head, [[-7.6, -6.4], [8.4, -7.6], [8.6, -5.8], [-7.4, -4.6]])); F.commit((x, y, t) => triPick(C, t), { outline: OUTD });
+      const g = TT(head(6.4, -6.4)); F.ellipse(g[0], g[1], 1.1, 1.1); F.commit((x, y, t) => t === 2 ? [255, 255, 255] : gem, { outline: OUTD });
+    }
+    if (hp >= 2) {   // crown points
+      for (const [x, h] of [[-5, 3.2], [-1.4, 4.4], [2.4, 4.8], [6, 3.6]]) F.poly(ptsT(head, [[x - 1.5, -6.6 + (x + 8) * -0.07], [x, -6.8 - h + (x + 8) * -0.07], [x + 1.5, -6.8 + (x + 8) * -0.07]]));
+      F.commit((x, y, t) => triPick(C, t), { outline: OUTD });
+      if (hp >= 3) for (const x of [-1.4, 2.4]) { const p = TT(head(x, -9.8 + (x + 8) * -0.07)); F.set(Math.floor(p[0]), Math.floor(p[1]), gem); }
+    }
+    if (hp >= 4) {   // horns sweeping back from the crown
+      const hc = hex(GX.hornCol || 0x2a2440), H = tri(hc);
+      F.poly(ptsT(head, [[-4, -8], [-7, -12], [-12 - (P.hair || 0) * 0.3, -13.6], [-9, -11.2], [-6.4, -7.4]])); F.commit((x, y, t) => triPick(H, t), { band: 1, outline: OUTD });
+    }
+  };
+  const drawHalo = () => {   // behind the head
+    if (!GX.halo) return;
+    const col = hex(GX.halo), c = TT(head(-1.5, -12.5)), ry = 2.2, rx = 7.6;
+    for (let a2 = 0; a2 < TAU; a2 += 0.05) { const x = c[0] + Math.cos(a2) * rx, y = c[1] + Math.sin(a2) * ry; F.set(Math.floor(x), Math.floor(y), Math.sin(a2) < 0 ? mix(col, [255, 255, 255], 0.5) : col); }
+    glowDot(c[0], c[1], 9, col, 0.25);
+  };
+  const drawShards = () => {   // crystal shards (or embers / stars) floating around the hero
+    if (!GX.shards) return;
+    const col = hex(GX.shards), ph = (P.y || 0) * 0.7 + (P.t || 0) * 3 + (P.hair || 0);
+    for (let i = 0; i < 4; i++) {
+      const a2 = i * 1.7 + ph, cx = RX + P.x + Math.cos(a2) * 13, cy = RY + P.y - 12 + Math.sin(a2 * 1.3) * 9;
+      const X = Math.floor(cx), Y = Math.floor(cy);
+      F.set(X, Y - 1, mix(col, [255, 255, 255], 0.5)); F.set(X, Y, col); F.set(X, Y + 1, shade(col, -0.3)); F.set(X - 1, Y, col); F.set(X + 1, Y, shade(col, -0.2));
+      glowDot(cx, cy, 2.6, col, 0.3);
+    }
+  };
+  // mage only: ornaments on the hat band
+  const drawHatGear = () => {
+    if (LOOK.kind !== 'mage' || !GX.hatGem) return;
+    const by = -7.2, g = TT(head(4.2, by - 1.6)), gem = hex(GX.gem || 0x9fe6ff);
+    F.ellipse(g[0], g[1], 1.3, 1.3); F.commit((x, y, t) => t === 2 ? [255, 255, 255] : gem, { outline: OUTD });
+    if (GX.hatGem >= 2) { glowDot(g[0], g[1], 3, gem, 0.35); for (const [hx2, hy2] of [[-3, by - 6], [0.5, by - 12], [-2, by - 16]]) { const p = TT(head(hx2, hy2)); F.set(Math.floor(p[0]), Math.floor(p[1]), PAL.hatBand); } }
+    if (GX.hatGem >= 3) { const tip = TT(head(-1, by - 24)); sparkle(tip[0], tip[1], gem, false); }
+  };
+
+  /* ----- weapons by tier ----- */
+  const SWORDS = [   // blade length, half-width, profile, guard half-span, guard style, pommel gem, glow fx
+    [18.5, 1.15, 'plain', 3.0, 'bar', 0, null], [19.5, 1.2, 'plain', 3.2, 'bar', 0, null], [21, 1.2, 'fuller', 3.6, 'bar', 0, null],
+    [22.5, 1.25, 'fuller', 3.8, 'curl', 0, null], [23.5, 1.3, 'fuller', 4.4, 'curl', 1, null], [24, 1.4, 'leaf', 4.2, 'leaf', 1, 'mote'],
+    [25, 1.35, 'storm', 4.6, 'curl', 1, 'spark'], [25.5, 1.6, 'flame', 4.8, 'horn', 1, 'ember'], [26.5, 1.55, 'leaf', 5, 'crown', 1, 'mote'],
+    [27.5, 1.6, 'crystal', 5.2, 'wing', 1, 'star'], [30, 2.0, 'great', 6, 'wing', 1, 'star']];
+  const drawSwordG = (h, fa) => {
+    const S = SWORDS[Math.max(0, Math.min(10, GW))], [BL, HW, prof, GSp, gst, pg, fx] = S, glow = WEAPON_TIERS[GW].look.glow;
+    const a = P.sa != null ? P.sa : fa + P.sw, d = dir(a), n = [-d[1], d[0]], hx = h[0], hy = h[1];
+    const at = (k, w = 0) => [hx + d[0] * k + n[0] * w, hy + d[1] * k + n[1] * w];
+    const gl = GW >= 9 ? 4.2 : 3.2;
+    let p0 = TT(at(-gl)), p1 = TT(at(2.4));
+    F.capsule(p0[0], p0[1], p1[0], p1[1], 0.95); F.commit((x, y, t) => GW >= 4 && Math.floor((x + y) * 1.2) % 2 ? PAL.guardS : PAL.grip);
+    const pm = TT(at(-gl - 0.6)); F.ellipse(pm[0], pm[1], 1.3 + pg * 0.3, 1.3 + pg * 0.3); F.commit((x, y, t) => pick(PAL.guard, PAL.guardS, PAL.guardL, t));
+    if (pg) F.set(Math.floor(pm[0]), Math.floor(pm[1]), glow ? hex(glow) : hex(0xd23a3a));
+    // blade outline from a half-width profile along its length
+    const N = 18, L0 = 3, side = [], other = [];
+    const hw = t => prof === 'leaf' ? HW * (0.8 + 0.75 * Math.sin(Math.PI * Math.min(1, t * 1.1))) : prof === 'storm' ? HW + (Math.floor(t * 8) % 2 ? 0.55 : 0) : prof === 'flame' ? HW + 0.5 * Math.sin(t * 15) : prof === 'crystal' ? HW * (1.25 - Math.abs(t - 0.4) * 0.9) : prof === 'great' ? HW * (1.15 - t * 0.25) : HW;
+    for (let i = 0; i <= N; i++) {
+      const t = i / N, k = L0 + (BL - L0) * t, taper = t > 0.82 ? (1 - t) / 0.18 : 1, w = hw(t) * taper;
+      side.push(at(k, w)); other.push(at(k, prof === 'flame' ? -(HW + 0.5 * Math.sin(t * 15 + 1.6)) * taper : -w));
+    }
+    side.push(at(BL + 1.2)); F.poly(side.concat(other.reverse()).map(TT));
+    F.commit((x, y, t) => pick(PAL.blade, PAL.bladeS, PAL.bladeL, t), { outline: GW >= 6 ? shade(PAL.bladeS, -0.5) : PAL.outline });
+    // fuller (blood groove), with a glowing core on enchanted blades
+    if (prof !== 'plain') { const f0 = TT(at(4.5)), f1 = TT(at(BL * 0.72)); for (let k = 0; k <= 1; k += 0.04) F.set(Math.floor(f0[0] + (f1[0] - f0[0]) * k), Math.floor(f0[1] + (f1[1] - f0[1]) * k), glow ? hex(glow) : PAL.bladeS); }
+    if (prof === 'great') { const f0 = TT(at(5, 0.9)), f1 = TT(at(BL * 0.7, 0.6)); for (let k = 0; k <= 1; k += 0.04) F.set(Math.floor(f0[0] + (f1[0] - f0[0]) * k), Math.floor(f0[1] + (f1[1] - f0[1]) * k), PAL.bladeL); }
+    // crossguard
+    const g = at(2.6);
+    if (gst === 'wing') {   // feathered wings off the guard
+      for (const s of [1, -1]) F.poly([at(2.2, s * 0.6), at(1.4, s * GSp), at(-0.2, s * (GSp + 1.6)), at(1.6, s * (GSp - 0.4)), at(-0.6, s * (GSp - 0.6)), at(1.2, s * (GSp - 2)), at(3.4, s * 1.2)].map(TT));
+      F.commit((x, y, t) => pick(PAL.guard, PAL.guardS, PAL.guardL, t), { outline: OUTD });
+    } else {
+      const ga = TT([g[0] + n[0] * GSp, g[1] + n[1] * GSp]), gb = TT([g[0] - n[0] * GSp, g[1] - n[1] * GSp]);
+      F.capsule(ga[0], ga[1], gb[0], gb[1], 0.95 + (GW >= 4 ? 0.2 : 0)); F.commit((x, y, t) => pick(PAL.guard, PAL.guardS, PAL.guardL, t));
+      if (gst === 'curl' || gst === 'horn' || gst === 'crown' || gst === 'leaf') {   // quillons curling toward the blade
+        for (const s of [1, -1]) { const q0 = TT(at(2.6, s * GSp)), q1 = TT(at(gst === 'horn' ? 5.2 : 4.2, s * (GSp + (gst === 'horn' ? 0.8 : -0.4)))); F.capsule(q0[0], q0[1], q1[0], q1[1], 0.8, 0.45); }
+        F.commit((x, y, t) => pick(PAL.guard, PAL.guardS, PAL.guardL, t));
+      }
+      if (gst === 'crown') for (const s of [-1.4, 0, 1.4]) { const q = TT(at(4.4, s)); F.set(Math.floor(q[0]), Math.floor(q[1]), PAL.guard); }
+    }
+    const gc = TT(g); F.ellipse(gc[0], gc[1], GW >= 4 ? 1.2 : 0.7, GW >= 4 ? 1.2 : 0.7); F.commit((x, y, t) => t === 2 ? [255, 255, 255] : glow ? hex(glow) : hex(0xd23a3a), { outline: OUTD });
+    // enchantment effects along the blade
+    if (glow) {
+      const gcol = hex(glow);
+      glowDot(TT(at(BL * 0.55))[0], TT(at(BL * 0.55))[1], 4 + GW * 0.4, gcol, 0.18 + GW * 0.02);
+      for (let i = 0; i < (fx === 'star' ? 3 : 2); i++) {
+        const k = 6 + ((i * 7.3 + (P.hair || 0) * 3 + (P.y || 0) * 2) % (BL - 7)), side2 = i % 2 ? 1 : -1, p = TT(at(k, side2 * (HW + 1.6)));
+        if (fx === 'spark') { F.set(Math.floor(p[0]), Math.floor(p[1]), [255, 255, 255]); F.set(Math.floor(p[0]) + 1, Math.floor(p[1]) - 1, gcol); F.set(Math.floor(p[0]) - 1, Math.floor(p[1]) + 1, gcol); }
+        else if (fx === 'ember') { F.set(Math.floor(p[0]), Math.floor(p[1]), hex(0xffe08a)); F.set(Math.floor(p[0]), Math.floor(p[1]) + 1, gcol); }
+        else if (fx === 'star') sparkle(p[0], p[1], gcol, GW >= 10 && i === 0);
+        else F.set(Math.floor(p[0]), Math.floor(p[1]), mix(gcol, [255, 255, 255], 0.4));
+      }
+    }
+  };
+  // shields: shape, size and emblem grow with the tier
+  const SHIELD_EMB = [0, 1, 1, 2, 3, 4, 5, 6, 4, 7, 8];   // none, boss, stripe, cross, leaf, bolt, flame, star, sun
+  const drawShieldG = () => {
+    const look = WEAPON_TIERS[GW].look, shape = look.shape, emb = SHIELD_EMB[GW], glow = look.glow;
+    const W = PAL.wood, Wd = [PAL.wood, PAL.woodS, PAL.woodL], R = [PAL.rim, PAL.rimS, PAL.rimL];
+    if (P.guard) {   // edge-on in front of the chest
+      const c = TT(torso(6.2 + (P.gx || 0), -7.5 + (P.gy || 0))), hh = shape === 'tower' ? 10 : shape === 'kite' ? 9.2 : 8.2;
+      F.ellipse(c[0], c[1], 2.4, hh, TA(P.t * 0.5)); F.commit((x, y, t) => triPick(Wd, t), { band: 1 });
+      F.ellipse(c[0] + (P.mirror ? -1.6 : 1.6), c[1], 1, hh + 0.2, 0); F.commit((x, y, t) => triPick(R, t), { noOutline: true });
+      if (glow) glowDot(c[0], c[1], 6, hex(glow), 0.2);
+      return;
+    }
+    const hd = armF.hd, c = add(hd, [-1.8, -0.8], 1), s = 1 + GW * 0.025;
+    const local = shape === 'round' ? null
+      : shape === 'heater' ? [[-5, -6], [5, -6], [5, 0], [0, 7], [-5, 0]]
+      : shape === 'kite' ? [[-4.8, -6.4], [0, -7.6], [4.8, -6.4], [4.4, 0], [0, 9], [-4.4, 0]]
+      : [[-5.2, -7.6], [5.2, -7.6], [5.6, 4], [0, 9.4], [-5.6, 4]];
+    const C = TT(c);
+    if (!local) F.ellipse(C[0], C[1], 5.2 * s, 6.8 * s, 0);
+    else F.poly(local.map(([x, y]) => TT([c[0] + x * s, c[1] + y * s])));
+    const rimW = 0.9 + GW * 0.05;
+    // rim: anything near the outline
+    F.commit((x, y, t) => {
+      const lx = (x - C[0]) / s * (P.mirror ? -1 : 1), ly = (y - C[1]) / s;
+      let edge;
+      if (!local) edge = 1 - Math.hypot(lx / 5.2, ly / 6.8) < rimW / 5.2;
+      else edge = !inPoly(local, lx, ly, rimW);
+      if (edge) return triPick(R, t);
+      // emblems in the rim colour
+      const e = emb, ax = Math.abs(lx), ay = ly;
+      const on = e === 1 ? Math.hypot(lx, ly) < 1.6
+        : e === 2 ? ax < 0.9
+        : e === 3 ? (ax < 0.9 && ay > -4.6 && ay < 4.6) || (Math.abs(ay + 1) < 0.9 && ax < 3.4)
+        : e === 4 ? Math.abs(ax * 1.3 - (1.8 - Math.abs(ay) * 0.4)) < 0.6 && Math.abs(ay) < 4.5 || (ax < 0.5 && Math.abs(ay) < 4.5)
+        : e === 5 ? Math.abs(lx - (ay < 0 ? -ay * 0.4 : -ay * 0.4 + (ay > 0 ? 1.4 : 0)) * 0.9) < 0.7 && Math.abs(ay) < 4.6
+        : e === 6 ? Math.hypot(lx, ay + 0.4) < 2.6 - Math.max(0, -ay) * 0.35 && ay > -4.4
+        : e === 7 ? starIn(lx, ly + 0.4, 3.6)
+        : e === 8 ? Math.hypot(lx, ly) < 2 || (Math.hypot(lx, ly) < 4.2 && Math.floor((Math.atan2(ly, lx) + 7) * 8 / Math.PI) % 2 === 0)
+        : false;
+      if (on) return t === 1 ? R[1] : glow && e >= 4 ? mix(hex(glow), [255, 255, 255], 0.3) : R[2];
+      if (!local) { const plank = Math.floor((x - C[0] + 20) / 2.6) % 2; return pick(plank ? W : PAL.woodL, PAL.woodS, PAL.woodL, t); }
+      return triPick(Wd, t);
+    }, { band: 1, outline: GW >= 6 ? OUTD : PAL.outline });
+    if (glow && emb >= 4) glowDot(C[0], C[1], 5 + GW * 0.3, hex(glow), 0.2);
+    if (GW >= 4) for (const [x, y] of (local || [[-4.2, -4.4], [4.2, -4.4], [-4.2, 4.4], [4.2, 4.4]]).slice(0, 4)) { const p = TT([c[0] + x * s * 0.78, c[1] + y * s * 0.78]); F.set(Math.floor(p[0]), Math.floor(p[1]), PAL.rimL); }   // studs
+  };
+  // bows: longer, more curled and more ornate each tier
+  const drawBowG = (hand, ang) => {
+    const look = BOW_TIERS[GW].look, glow = look.glow, d = dir(ang), n = [-d[1], d[0]], L = 12.6 + GW * 0.42, curl = GW >= 2 ? 1.2 + GW * 0.12 : 0, pts = [];
+    for (let i = 0; i <= 10; i++) { const s = i / 5 - 1; pts.push([hand[0] + n[0] * s * L - d[0] * s * s * 4.5 + d[0] * Math.abs(s) * s * s * (1.5 + curl), hand[1] + n[1] * s * L - d[1] * s * s * 4.5 + d[1] * Math.abs(s) * s * s * (1.5 + curl)]); }
+    const T = pts.map(TT), th = 1.1 + GW * 0.04;
+    for (let i = 0; i < 10; i++) F.capsule(T[i][0], T[i][1], T[i + 1][0], T[i + 1][1], i === 0 || i === 9 ? 0.7 : (i === 4 || i === 5 ? th + 0.25 : th));
+    F.commit((x, y, t) => pick(PAL.bowWood, PAL.bowWoodS, PAL.bowWoodL, t), { band: 1, outline: GW >= 6 ? OUTD : PAL.outline });
+    const g0 = T[4], g1 = T[6]; F.capsule(g0[0], g0[1], g1[0], g1[1], 1.3); F.commit(() => PAL.bowTrim);
+    // tip ornaments: metal caps, then curled hooks, feathers, blades and finally wings
+    for (const [ti, tj] of [[0, 1], [10, 9]]) {
+      const tp = pts[ti], back = pts[tj], u = [tp[0] - back[0], tp[1] - back[1]], ul = Math.hypot(u[0], u[1]) || 1, ud = [u[0] / ul, u[1] / ul], un = [-ud[1], ud[0]];
+      const side = ti === 0 ? -1 : 1;
+      if (GW >= 1) { const a = TT(tp), b = TT([tp[0] - ud[0] * 1.6, tp[1] - ud[1] * 1.6]); F.capsule(a[0], a[1], b[0], b[1], 0.85); F.commit(() => PAL.bowTrim, { outline: OUTD }); }
+      if (GW >= 4) {   // a curved blade / fin off each tip
+        const f = [[0, 0], [-ud[0] * 1.2 + d[0] * -1.8 * 1, -ud[1] * 1.2 + d[1] * -1.8], [ud[0] * 2.4 - d[0] * (1 + GW * 0.2), ud[1] * 2.4 - d[1] * (1 + GW * 0.2)]].map(([x, y]) => TT([tp[0] + x, tp[1] + y]));
+        F.poly(f); F.commit((x, y, t) => pick(PAL.bowTrim, shade(PAL.bowTrim, -0.3), shade(PAL.bowTrim, 0.4), t), { outline: OUTD });
+      }
+      if (GW >= 9) {   // feathered wings
+        for (let k = 0; k < 3; k++) { const base = lerpP(pts[ti], pts[ti === 0 ? 3 : 7], 0.25 + k * 0.25), tipW = [base[0] - d[0] * (3.2 + k * 0.4) + ud[0] * 1.4, base[1] - d[1] * (3.2 + k * 0.4) + ud[1] * 1.4]; const a = TT(base), b = TT(tipW); F.capsule(a[0], a[1], b[0], b[1], 0.9, 0.35); }
+        F.commit((x, y, t) => pick([245, 245, 255], [200, 200, 230], [255, 255, 255], t), { outline: OUTD });
+      }
+      if (glow && GW >= 7) glowDot(TT(tp)[0], TT(tp)[1], 2.8, hex(glow), 0.4);
+    }
+    if (GW >= 5) {   // a gem set in the grip
+      const gp = TT([hand[0] - d[0] * 0.6, hand[1] - d[1] * 0.6]); F.ellipse(gp[0], gp[1] - 1.6, 0.9, 0.9); F.commit((x, y, t) => t === 2 ? [255, 255, 255] : hex(glow || 0x9fffd0), { outline: OUTD });
+      if (glow) glowDot(gp[0], gp[1] - 1.6, 3 + GW * 0.2, hex(glow), 0.3);
+    }
+    if (GW >= 3) for (const k of [2, 8]) { const p = T[k]; F.set(Math.floor(p[0]), Math.floor(p[1]), PAL.bowTrim); }   // bindings
+    return [pts[0], pts[10]];
+  };
+  // wands and staves
+  const drawWandG = (hand, ang) => {
+    const look = WAND_TIERS[GW].look, d = dir(ang), n = [-d[1], d[0]], len = 9 + GW * 0.45, gem = PAL.wandGem;
+    const a = TT([hand[0] - d[0] * 1.5, hand[1] - d[1] * 1.5]), b = TT([hand[0] + d[0] * len, hand[1] + d[1] * len]);
+    F.capsule(a[0], a[1], b[0], b[1], 0.75 + GW * 0.02, 0.5); F.commit((x, y, t) => pick(PAL.wandWood, mix(PAL.wandWood, [0, 0, 0], 0.3), mix(PAL.wandWood, [255, 255, 255], 0.3), t));
+    if (GW >= 2) for (const k of [1.5, 3.2]) { const p = TT([hand[0] + d[0] * k, hand[1] + d[1] * k]); F.set(Math.floor(p[0]), Math.floor(p[1]), hex(0xd8a830)); }   // wire bindings
+    const tip = [hand[0] + d[0] * (len + 0.6), hand[1] + d[1] * (len + 0.6)], B = TT(tip);
+    if (GW >= 4) {   // prongs cradling the gem
+      for (const s of [-1, 1]) { const p0 = TT([hand[0] + d[0] * (len - 1.6), hand[1] + d[1] * (len - 1.6)]), p1 = TT([tip[0] + n[0] * s * 1.9 + d[0] * 0.8, tip[1] + n[1] * s * 1.9 + d[1] * 0.8]); F.capsule(p0[0], p0[1], p1[0], p1[1], 0.55, 0.35); }
+      F.commit(() => hex(GW >= 6 ? 0xffd75e : 0xd8a830), { outline: OUTD });
+    }
+    const gr = 1.15 + GW * 0.07;
+    if (GW >= 3 && GW !== 6) { F.poly([[0, -gr * 1.5], [gr, 0], [0, gr * 1.2], [-gr, 0]].map(([x, y]) => [B[0] + x, B[1] + y])); }
+    else F.ellipse(B[0], B[1], gr, gr);
+    F.commit((x, y, t) => t === 2 ? [255, 255, 255] : gem, { outline: OUTD });
+    if (GW === 6 || GW >= 10) { for (let a2 = -2.1; a2 < 2.1; a2 += 0.15) { const p = TT([tip[0] - d[0] * Math.cos(a2) * 2.8 + n[0] * Math.sin(a2) * 2.8, tip[1] - d[1] * Math.cos(a2) * 2.8 + n[1] * Math.sin(a2) * 2.8]); F.ellipse(p[0], p[1], 0.55, 0.55); } F.commit(() => hex(GW >= 10 ? 0xffd75e : 0xe8e8ff), { outline: OUTD }); }   // crescent / gold ring cradling the gem
+    if (GW >= 9) for (const s of [-1, 1]) { const p0 = TT([tip[0] - d[0] * 1.5, tip[1] - d[1] * 1.5]), p1 = TT([tip[0] - d[0] * 3.4 + n[0] * s * 3.2, tip[1] - d[1] * 3.4 + n[1] * s * 3.2]); F.capsule(p0[0], p0[1], p1[0], p1[1], 0.8, 0.3); F.commit(() => hex(GW >= 10 ? 0xfff1f8 : 0xff8a3d), { outline: OUTD }); }   // little wings
+    glowDot(B[0], B[1], 3.5 + GW * 0.25 + (P.wglow || 0) * 3, gem, 0.3 + GW * 0.02 + (P.wglow || 0) * 0.5);
+    if (GW >= 7) sparkle(B[0] + 2, B[1] - 2, gem, false);
+  };
+  const STAFF_HEADS = ['knob', 'knob', 'ring', 'crook', 'flame', 'wave', 'crescent', 'star', 'storm', 'wings', 'world'];
+  const drawStaffG = (hand, ang) => {
+    const d = dir(ang), n = [-d[1], d[0]], len = 23 + GS * 0.5, top = [hand[0] + d[0] * len, hand[1] + d[1] * len], bot = [hand[0] - d[0] * 9, hand[1] - d[1] * 9];
+    const A = TT(bot), Bp = TT(top); F.capsule(A[0], A[1], Bp[0], Bp[1], 1.1 + GS * 0.03, 0.9); F.commit((x, y, t) => pick(PAL.staffWood, PAL.staffWoodS, PAL.staffWoodL, t));
+    if (GS >= 2) for (const k of [-6, 4, len - 3]) { const p = TT([hand[0] + d[0] * k, hand[1] + d[1] * k]); F.ellipse(p[0], p[1], 1.4, 0.8, Math.atan2(d[0], d[1])); F.commit(() => PAL.staffTrim, { outline: OUTD }); }   // metal bands
+    const hd = STAFF_HEADS[Math.max(0, Math.min(10, GS))], at = (k, w) => [hand[0] + d[0] * k + n[0] * w, hand[1] + d[1] * k + n[1] * w];
+    const gemAt = at(len + 4.5, 0), G = TT(gemAt), trim = PAL.staffTrim;
+    const arc = (cx, r, a0, a1, w) => { for (let a2 = a0; a2 < a1; a2 += 0.08) { const p = TT(at(cx + Math.cos(a2) * r, Math.sin(a2) * r)); F.ellipse(p[0], p[1], w, w); } };
+    if (hd === 'knob') { const k0 = TT(at(len + 1.5, 0)); F.ellipse(k0[0], k0[1], 2.6, 2.2); F.commit((x, y, t) => pick(PAL.staffWood, PAL.staffWoodS, PAL.staffWoodL, t)); }
+    if (hd === 'ring') { arc(len + 4.5, 3.6, 0, TAU, 0.55); F.commit(() => trim, { outline: OUTD }); }
+    if (hd === 'crook') { arc(len + 4, 4, -1.6, 1.8, 0.75); F.commit(() => trim, { outline: OUTD }); }
+    if (hd === 'flame' || hd === 'wings') {   // flame tongues / feathers fanning around the gem
+      for (const s of [-1, 1]) for (let k = 0; k < (hd === 'wings' ? 3 : 2); k++) F.poly([at(len + 1.5, s * 1), at(len + 5 + k * 2.2, s * (4.5 + k * 1.2) + (hd === 'wings' ? s * 1.5 : 0)), at(len + 4, s * 1.6)].map(TT));
+      F.commit((x, y, t) => hd === 'wings' ? pick(hex(0xff8a3d), hex(0xc8402a), hex(0xffd35a), t) : pick(hex(0xff6a2a), hex(0xa82a1a), hex(0xffd35a), t), { outline: OUTD });
+    }
+    if (hd === 'wave') { arc(len + 4.2, 3.8, -2.6, 1.2, 0.7); F.commit(() => trim, { outline: OUTD }); const p = TT(at(len + 8.4, -1.8)); F.set(Math.floor(p[0]), Math.floor(p[1]), [255, 255, 255]); }
+    if (hd === 'crescent') { arc(len + 4.5, 4.4, -2.4, 2.4, 0.85); F.commit((x, y, t) => pick(hex(0xe8e8ff), hex(0xa8a8c8), [255, 255, 255], t), { outline: OUTD }); }
+    if (hd === 'star' || hd === 'world') { for (const [ox, oy] of [[0, 5.4], [4.6, 0], [-4.6, 0], [0, -3.4], [3.2, 3.6], [-3.2, 3.6]]) { const p = TT(at(len + 4.5 + oy, ox)); F.capsule(G[0], G[1], p[0], p[1], 0.9, 0.3); } F.commit(() => trim, { outline: hex(0x3a2a10) }); }
+    if (hd === 'storm') { for (const s of [-1, 1]) F.poly([at(len + 1, s * 0.8), at(len + 4, s * 4.4), at(len + 5.4, s * 2.4), at(len + 8.4, s * 4.2), at(len + 6, s * 0.6)].map(TT)); F.commit(() => trim, { outline: OUTD }); }
+    const gr = 1.9 + GS * 0.08 + (hd === 'world' ? 0.8 : 0);
+    F.ellipse(G[0], G[1], gr, gr); F.commit((x, y, t) => t === 2 ? [255, 255, 255] : t === 1 ? shade(PAL.staffGem, -0.25) : PAL.staffGem, { outline: OUTD });
+    glowDot(G[0], G[1], 5 + GS * 0.35 + (P.glow || 0) * 4, PAL.staffGem, 0.25 + GS * 0.02 + (P.glow || 0) * 0.45);
+    if (hd === 'world' || hd === 'star') for (let i = 0; i < 3; i++) { const a2 = i * 2.1 + (P.y || 0); sparkle(G[0] + Math.cos(a2) * 6, G[1] + Math.sin(a2) * 4, PAL.staffGem, hd === 'world' && i === 0); }
+    if (hd === 'storm') { const p = TT(at(len + 10, 2)); F.set(Math.floor(p[0]), Math.floor(p[1]), [255, 255, 255]); F.set(Math.floor(p[0]) - 1, Math.floor(p[1]) + 1, PAL.staffGem); }
+  };
+  // Jojo's ring hand: the gem grows, then a bracer, claws and a glowing sigil join it
+  const drawRingG = (hand) => {
+    const p = TT(hand), g = PAL.ringGem, gw = Math.max(0, GW), r = 1.1 + gw * 0.06;
+    if (gw >= 3) {   // a jewelled bracer on the wrist
+      const w0 = TT(lerpP(armN.el, armN.hd, 0.45)), w1 = TT(lerpP(armN.el, armN.hd, 0.8));
+      F.capsule(w0[0], w0[1], w1[0], w1[1], 2.15, 2.0); F.commit((x, y, t) => pick(PAL.trim, PAL.trimS, mix(PAL.trim, [255, 255, 255], 0.4), t), { band: 1, outline: OUTD });
+      const m = TT(lerpP(armN.el, armN.hd, 0.62)); F.set(Math.floor(m[0]), Math.floor(m[1]), g);
+    }
+    if (gw >= 6) {   // dragon-claw tips over the knuckles
+      for (const s of [-1, 0, 1]) { const a = [p[0] + 1 + s * 0.2, p[1] - 0.6 + s * 1.1]; F.set(Math.floor(a[0]) + (P.mirror ? -1 : 1), Math.floor(a[1]), PAL.trim); F.set(Math.floor(a[0]) + (P.mirror ? -2 : 2), Math.floor(a[1]) + 1, [255, 255, 255]); }
+    }
+    F.ellipse(p[0], p[1] - 0.6, r, r); F.commit((x, y, t) => t === 2 ? [255, 255, 255] : g, { outline: OUTD });
+    glowDot(p[0], p[1] - 0.6, 3 + (PAL.ringGlow || 0) * 5 + (P.cmd || 0) * 3, g, 0.25 + (PAL.ringGlow || 0) * 0.35 + (P.cmd || 0) * 0.3);
+    if (gw >= 5) {   // spirit gems in the ring's colour float at the summoner's shoulder
+      const ph = (P.y || 0) * 0.8 + (P.hair || 0) * 0.5;
+      for (let i = 0; i < (gw >= 9 ? 3 : gw >= 7 ? 2 : 1); i++) {
+        const c = TT(torso(-6 - i * 3.2, -13 - i * 2.5 + Math.sin(ph + i * 2) * 1.2)), rr = 1.3 + gw * 0.05;
+        F.poly([[c[0], c[1] - rr * 1.6], [c[0] + rr, c[1]], [c[0], c[1] + rr * 1.3], [c[0] - rr, c[1]]]); F.commit((x, y, t) => t === 2 ? [255, 255, 255] : t === 1 ? shade(g, -0.3) : g, { outline: OUTD });
+        glowDot(c[0], c[1], 3.5 + gw * 0.2, g, 0.3);
+      }
+    }
+    if (gw >= 8) {   // a sigil circle turning around the hand
+      const ph = (P.cmd || 0) * 2 + (P.y || 0);
+      for (let a2 = 0; a2 < TAU; a2 += TAU / (gw >= 10 ? 10 : 7)) { const x = p[0] + Math.cos(a2 + ph) * (4.6 + gw * 0.2), y = p[1] - 0.6 + Math.sin(a2 + ph) * 2.4; F.set(Math.floor(x), Math.floor(y), mix(g, [255, 255, 255], 0.35)); }
+      glowDot(p[0], p[1] - 0.6, 6.5, g, 0.15);
+    }
+  };
+  const drawEarringG = () => {
+    const e0 = TT(head(-3.4, 5)), e1 = TT(head(-3.4, 7.2 + Math.max(0, GW) * 0.08)), r = 0.9 + Math.max(0, GW) * 0.05;
+    F.set(Math.floor(e0[0]), Math.floor(e0[1]), PAL.trim); F.ellipse(e1[0], e1[1], r, r * 1.3); F.commit((x, y, t) => t === 2 ? [255, 255, 255] : PAL.ringGem, { outline: OUTD });
+    glowDot(e1[0], e1[1], 2 + (PAL.ringGlow || 0) * 3, PAL.ringGem, 0.15 + (PAL.ringGlow || 0) * 0.3);
+  };
+  // quiver: fuller and fancier with the bow tier
+  const drawQuiverG = () => {
+    const a = TT(torso(-5.6, -11)), b = TT(torso(-4, 2));
+    F.capsule(a[0], a[1], b[0], b[1], 2.3, 2.1); F.commit((x, y, t) => GW >= 4 && Math.abs(y - (a[1] + b[1]) / 2) < 1 ? PAL.bowTrim : pick(PAL.leather, PAL.leatherS, PAL.leatherL, t));
+    const n = GW >= 6 ? 5 : 3;
+    for (let i = 0; i < n; i++) { const ox = -1.6 + i * (3.2 / (n - 1)), p = TT(torso(-5.6 + ox, -13 - (i % 2) * 0.6)), c = i % 2 ? PAL.trim : PAL.arrowFletch; F.set(Math.floor(p[0]), Math.floor(p[1]), c); F.set(Math.floor(p[0]), Math.floor(p[1]) + 1, c); }
+  };
+
   // draw order: shield (at rest) → far arm → far leg → near leg → torso → head → hair → sword → near arm/fist → guard shield → FX
   const ARM = !!LOOK.armored;
   const backHair = () => { if (ARM) return; if (LOOK.style === 'long') drawHairBackLong(); else if (LOOK.style === 'ponytail' && LOOK.bakeTail) drawPonytail(); };
   F.tail = TT(head(-7.6, -3.4));   // where a physics ponytail attaches (sprite units)
   const frontHair = () => { if (ARM) return drawHelmet(); if (LOOK.style === 'spiky') drawHair(); else drawHairArcher(); };
+  // layer bookkeeping: sec counts B_pre(0) W0(1) B0(2) W1(3) B1(4) W2(5) B2(6) W3(7) B3(8)
+  let sec = 0;
+  const cut = k => { if (!HERO_LAYERS) return; while (sec < k) { HERO_LAYERS.push(F.px); F.px = new Uint8ClampedArray(F.px.length); sec++; } };
+  const wslot = (i, fn) => { cut(1 + 2 * i); fn(); cut(2 + 2 * i); };
+  const G = GW >= 0;   // a hero with gear tiers (the crimson knights draw the old way)
+  const armFar = () => { const fh = drawArm(armF, false); drawFist(fh, false); drawPauldron(armF, false); };
+  const legs = () => { drawLeg(legF, false); drawKnee(legF, false); drawLeg(legN, true); drawKnee(legN, true); };
+  const headAll = (extra) => { drawHalo(); drawHead(); frontHair(); drawHeadpiece(); if (faceLater) faceLater(); if (extra) extra(); };
   if (LOOK.kind === 'summoner') {
-    backHair();
-    const fh = drawArm(armF, false); drawFist(fh, false);
-    drawLeg(legF, false); drawLeg(legN, true);
-    drawTorso();
-    drawHead(); frontHair(); if (faceLater) faceLater(); drawEarring();
+    backHair(); drawCape();
+    armFar(); legs();
+    drawTorso(); drawChest();
+    headAll();
+    wslot(1, () => G ? drawEarringG() : drawEarring());
     if (LOOK.punk) { const a = TT(head(2, -11.2)), b = TT(head(10.2, -9)); F.capsule(a[0], a[1], b[0], b[1], 1, 0.6); F.commit(() => hex(0xff3a9a), { noOutline: true }); const e2 = TT(head(-3.2, 3)); F.set(Math.floor(e2[0]), Math.floor(e2[1]), hex(0xd8d8e0)); }
-    const nh = drawArm(armN, true); drawFist(nh, true); drawRing(nh);
+    const nh = drawArm(armN, true); drawFist(nh, true); drawPauldron(armN, true);
+    wslot(2, () => G ? drawRingG(nh) : drawRing(nh));
   } else if (LOOK.kind === 'mage') {
-    backHair();
+    backHair(); drawCape();
     const stA = P.sta != null ? P.sta : 3.45, wnA = P.wa != null ? P.wa : armN.fa + 0.7;
-    if (!P.noWeapon && !P.guard && !P.staffFront) drawStaff(armF.hd, stA);
-    const fh = drawArm(armF, false); drawFist(fh, false);
-    drawLeg(legF, false); drawLeg(legN, true);
-    drawTorso();
-    drawHead(); frontHair(); if (faceLater) faceLater(); drawHat();
-    if (!P.noWeapon && P.staffFront) drawStaff(armF.hd, stA);
-    const nh = drawArm(armN, true);
-    if (!P.noWeapon) drawWand(armN.hd, wnA);
+    const staff = (h, a) => G ? drawStaffG(h, a) : drawStaff(h, a);
+    wslot(0, () => { if (!P.noWeapon && !P.guard && !P.staffFront) staff(armF.hd, stA); });
+    armFar(); legs();
+    drawTorso(); drawChest();
+    headAll(() => { drawHat(); drawHatGear(); });
+    wslot(1, () => { if (!P.noWeapon && P.staffFront) staff(armF.hd, stA); });
+    const nh = drawArm(armN, true); drawPauldron(armN, true);
+    wslot(2, () => { if (!P.noWeapon) (G ? drawWandG : drawWand)(armN.hd, wnA); });
     drawFist(nh, true);
-    if (P.guard && !P.noWeapon) drawStaff(torso(6.5, -8), 1.45);
+    wslot(3, () => { if (P.guard && !P.noWeapon) staff(torso(6.5, -8), 1.45); });
   } else if (LOOK.kind === 'archer') {
-    if (!P.noWeapon) drawQuiver();
-    backHair();
-    const fh = drawArm(armF, false); drawFist(fh, false);   // drawing hand, on the far side
+    const bow = (h, a) => G ? drawBowG(h, a) : drawBow(h, a);
+    wslot(0, () => { if (!P.noWeapon) (G ? drawQuiverG : drawQuiver)(); });
+    backHair(); drawCape();
+    armFar();   // drawing hand, on the far side
     const bowA = P.ba != null ? P.ba : armN.fa + (P.bw != null ? P.bw : 1.0);
     const aiming = P.ba != null;
-    drawLeg(legF, false); drawLeg(legN, true);
-    drawTorso();
+    legs();
+    drawTorso(); drawChest();
     let tips = null;
     const bowAt = aiming ? (() => { const d = dir(bowA); return [armN.hd[0] + d[0] * 4.5, armN.hd[1] + d[1] * 4.5]; })() : armN.hd;
-    if (!P.noWeapon && !P.guard && aiming) { tips = bowTips(bowAt, bowA); drawString(tips, bowA, P.draw > 0 ? armF.hd : null); }   // string runs back to the anchor at her cheek
-    drawHead(); frontHair(); if (faceLater) faceLater();
-    const nh = drawArm(armN, true);
-    if (!P.noWeapon && !P.guard) { tips = drawBow(bowAt, bowA); if (!aiming) drawString(tips, bowA, null); }   // the bow, in front of everything
+    const bowL = G ? 12.6 + GW * 0.42 : 13.5;
+    wslot(1, () => { if (!P.noWeapon && !P.guard && aiming) { const d = dir(bowA), n = [-d[1], d[0]]; tips = [[bowAt[0] - n[0] * bowL - d[0] * 3, bowAt[1] - n[1] * bowL - d[1] * 3], [bowAt[0] + n[0] * bowL - d[0] * 3, bowAt[1] + n[1] * bowL - d[1] * 3]]; drawString(tips, bowA, P.draw > 0 ? armF.hd : null); } });   // string runs back to the anchor at her cheek
+    headAll();
+    const nh = drawArm(armN, true); drawPauldron(armN, true);
+    wslot(2, () => { if (!P.noWeapon && !P.guard) { tips = bow(bowAt, bowA); if (!aiming) drawString(tips, bowA, null); } });   // the bow, in front of everything
     drawFist(nh, true);
-    if (P.guard && !P.noWeapon) { const g = torso(6.5, -6); drawString(drawBow(g, Math.PI / 2 + P.t), Math.PI / 2 + P.t, null); }
+    wslot(3, () => { if (P.guard && !P.noWeapon) { const g = torso(6.5, -6); drawString(bow(g, Math.PI / 2 + P.t), Math.PI / 2 + P.t, null); } });
   } else {
-  backHair();
-  if (!P.guard && !P.noWeapon && !LOOK.noShield) drawShield();
-  const fh = drawArm(armF, false); drawFist(fh, false);
-  drawLeg(legF, false); drawLeg(legN, true);
-  drawTorso();
-  drawHead(); frontHair(); if (faceLater) faceLater();
-  if (!P.noWeapon) drawSword(armN.hd, armN.fa);
-  const nh = drawArm(armN, true); drawFist(nh, true);
-  if (P.guard && !LOOK.noShield) drawShield();
+  backHair(); drawCape();
+  wslot(0, () => { if (!P.guard && !P.noWeapon && !LOOK.noShield) (G ? drawShieldG : drawShield)(); });
+  armFar(); legs();
+  drawTorso(); drawChest();
+  headAll();
+  wslot(1, () => { if (!P.noWeapon) (G ? drawSwordG : drawSword)(armN.hd, armN.fa); });
+  const nh = drawArm(armN, true); drawFist(nh, true); drawPauldron(armN, true);
+  wslot(2, () => { if (P.guard && !LOOK.noShield) (G ? drawShieldG : drawShield)(); });
   }
-  drawSmear(); drawDust();
+  cut(8);
+  drawShards(); drawSmear(); drawDust();
+  if (HERO_LAYERS) HERO_LAYERS.push(F.px);
   return F;
 }
 
@@ -1879,7 +2277,8 @@ function drawRockBack(P) {
     F.ellipse(ankle[0], ankle[1] + 1.6, bare ? 2.1 : 2.6, bare ? 1.3 : 1.6); F.commit((x, y, t) => bare ? pick(PAL.skin, PAL.skinS, PAL.skinL, t) : pick(PAL.boot, PAL.bootS, PAL.bootL, t));
   }
   // tunic back with stripes, belt and hem
-  F.poly([[cx - 5.2, base - 12.4], [cx + 5.2, base - 12.4], [cx + 5.8, base - 6.5], [cx + 5.2, base - 1.5], [cx + 6.6 - W * 0.3, base + (LOOK.kind === 'mage' ? 8.4 : 4.6)], [cx - 6.6 - W * 0.6, base + (LOOK.kind === 'mage' ? 8.4 : 4.6)], [cx - 5.2, base - 1.5], [cx - 5.8, base - 6.5]]);
+  const hw = LOOK.female ? 1.1 : 0;   // her hips are wider
+  F.poly([[cx - 5.2, base - 12.4], [cx + 5.2, base - 12.4], [cx + 5.8 - hw * 0.6, base - 6.5], [cx + 5.2 + hw, base - 1.5], [cx + 6.6 - W * 0.3, base + (LOOK.kind === 'mage' ? 8.4 : 4.6)], [cx - 6.6 - W * 0.6, base + (LOOK.kind === 'mage' ? 8.4 : 4.6)], [cx - 5.2 - hw, base - 1.5], [cx - 5.8 + hw * 0.6, base - 6.5]]);
   F.commit((x, y, t) => {
     if (y > base + (LOOK.kind === 'mage' ? 7.4 : 3.6)) return pick(PAL.trim, PAL.trimS, PAL.trim, t);
     if (y > base - 2.2 && y < base - 0.3) return pick(PAL.leather, PAL.leatherS, PAL.leatherL, t);
@@ -1963,7 +2362,7 @@ const ANIMS = [
     gen: u => { const p = u * TAU, c = Math.cos(p), sn = Math.sin(p);
       return { nL: 0.95 * c, fL: -0.95 * c, nK: 0.25 + 1.6 * Math.max(0, -sn), fK: 0.25 + 1.6 * Math.max(0, sn),
         y: 1.5 * Math.cos(2 * (p - 0.35)) + 0.6, t: 0.5 + 0.04 * Math.cos(2 * p), h: 0.16 - 0.04 * Math.cos(2 * p - 0.6),   // lean into the run, eyes on the ground ahead
-        nA: -0.95 * Math.cos(p - 0.3), nE: 1.25, sa: -2.15 + 0.15 * Math.cos(p - 0.5), fA: 0.9 * Math.cos(p - 0.3), fE: 1.2,
+        nA: -0.95 * Math.cos(p - 0.3), nE: 1.25, sa: -2.15 + 0.15 * Math.cos(p - 0.5), runHold: 1, fA: 0.9 * Math.cos(p - 0.3), fE: 1.2,
         hair: 1.7 + 0.5 * Math.cos(2 * p - 1) }; } },
   { id: 'land', name: 'Land', fps: 14, loop: false, list: [
     F_({ y: 3.2, t: 0.28, nK: 0.95, fK: 0.9, nL: -0.35, fL: -0.45, nA: 0.9, nE: 0.5, fA: 0.8, fE: 0.5, hair: -1.2, dust: 0.4 }),
@@ -3194,6 +3593,7 @@ function applyTierPalette(armor, weapon, charm = CH().charm, cls = classId, arro
   Object.assign(PAL, JSON.parse(JSON.stringify(PAL0))); PAL.legPlate = false;
   const lk = (save.chars[cls] || {}).look || Object.assign({ gender: cls === 'rock' || cls === 'summoner' ? 'm' : 'f' }, DEFAULT_LOOK[cls][cls === 'rock' || cls === 'summoner' ? 'm' : 'f']);
   LOOK = { kind: cls === 'archer' ? 'archer' : cls === 'mage' ? 'mage' : cls === 'summoner' ? 'summoner' : 'rock', female: lk.gender === 'f', style: lk.style, hat: lk.hatShape, punk: cls === 'summoner' && lk.gender === 'f' };
+  LOOK.gA = armor; LOOK.gW = weapon; LOOK.gS = cls === 'mage' ? ((save.chars.mage || {}).staffPreview ?? (save.chars.mage || {}).staff ?? 0) : 0;   // gear tiers: drawRock adds each tier's details
   LOOK_PAL = lk;
   if (cls === 'archer') return applyArcherPalette(armor, weapon, charm, arrows);
   if (cls === 'summoner') return applySummonerPalette(armor, weapon, charm);

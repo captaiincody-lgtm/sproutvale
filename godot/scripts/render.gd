@@ -74,7 +74,7 @@ func heroLook() -> String:
 
 
 func tailOn() -> bool:
-	return Assets.hero.looks.get(heroLook(), {}).has("tail")
+	return Assets.hero_look(heroLook()).has("tail") and Assets.hero_look(heroLook()).tail != null
 
 
 # ================================================================ the world
@@ -618,7 +618,7 @@ func drawPlayer(x: Ctx, sx: float, sy: float, dt: float) -> void:
 	for i in WIND_V.size():
 		if absf(WIND_V[i] - P.windV) < absf(WIND_V[vIdx] - P.windV):
 			vIdx = i
-	var anims: Dictionary = Assets.hero.looks.get(look, {}).get("anims", {})
+	var anims: Dictionary = Assets.hero_look(look).get("anims", {})
 	var anim: String = P.anim
 	var pose = heroPose()   # [anim, frame] when a hero holds a pose of their own (Tank aiming at a monster)
 	if pose != null and anims.has(pose[0]):
@@ -695,7 +695,7 @@ func drawTail(x: Ctx, look: String) -> void:
 	var pts: Array = Tail.pts
 	if pts.size() < 2:
 		return
-	var H: Dictionary = Assets.hero.looks[look].tail
+	var H: Dictionary = Assets.hero_look(look).tail
 	var L = []
 	var R = []
 	for i in pts.size():
