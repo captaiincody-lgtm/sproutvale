@@ -1,4 +1,4 @@
-extends "res://scripts/tank_ui.gd"
+extends "res://scripts/lunar_ui.gd"
 ## Sproutvale, part 11: the screens around the game. Character select (with the gender toggle),
 ## starting a hero (and their story intro the first time), Settings, and the Accomplishments record.
 
@@ -493,7 +493,7 @@ func renderOverPanel(ci: CanvasItem) -> void:
 	var mq = mainQ()
 	var stats = [["Heroes", str(H.size()), "Playable heroes on this account"], ["Combined levels", str(totalLv), "Every hero's level added together"],
 		["Monsters defeated", fmt(totalKills), "Across all heroes"], ["Time played", fmtTime(totalTime), "Across all heroes"],
-		["Coins", fmt(save.coins), CUR_TIPS.coin], ["Boss Coins", fmt(save.get("bossCoins", 0)), CUR_TIPS.boss], ["Abyssal Coins", fmt(save.get("abyssCoins", 0)), CUR_TIPS.abyss],
+		["Coins", fmt(save.coins), CUR_TIPS.coin], ["Boss Coins", fmt(save.get("bossCoins", 0)), CUR_TIPS.boss], ["Abyssal Coins", fmt(save.get("abyssCoins", 0)), CUR_TIPS.abyss], ["Luna Coins", fmt(save.get("lunaCoins", 0)), CUR_TIPS.luna],
 		["Bestiary", "%d/%d" % [discovered, BEST_ORDER.size()], "Monster types discovered (shared)"], ["Monster cards", "%d/%d" % [cardsOwned, cardsTotal], CUR_TIPS.cards],
 		["Trophies", "%d/10" % trophies, "One per boss beaten, +10% EXP each for every hero"], ["Furniture & curios", str(furn), "Owned house items (shared)"],
 		["Main quest", "%d: %s" % [mq.q + 1, "done" if mq.stage >= 3 else "step %d/3" % (mq.stage + 1)], MAINQS[mq.q].title]]

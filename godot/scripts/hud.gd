@@ -1,4 +1,4 @@
-extends "res://scripts/finale_draw.gd"
+extends "res://scripts/lunar_draw.gd"
 ## Sproutvale, part 9: the HUD, and the small immediate-mode toolkit it and the menus draw with.
 ## The prototype built these out of HTML and CSS. Here every box, label and button is drawn each
 ## frame in screen pixels (768×432), and anything clickable registers a "zone" for the mouse.
