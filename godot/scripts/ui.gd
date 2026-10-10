@@ -169,15 +169,21 @@ func flow(x: float, y: float, w: float, items: Array, h := 16.0, gap := 5.0) -> 
 
 
 ## the "currency" strip shown on the Inventory and Shop tabs
-func currencyBag(x: float, y: float, w: float, extra := "") -> float:
+func currencyBag(x: float, y: float, w: float, extra := "", cards := -1) -> float:
 	var items = [[uW("CURRENCY", 6, PX) + 4, func(X, Y): uText("CURRENCY", X, Y + 5, 6, css("#8a5a08"), PX)]]
 	var cur = [["coin", fmt(save.coins), "Coins", CUR_TIPS.coin], ["boss", fmt(save.get("bossCoins", 0)), "Boss Coins", CUR_TIPS.boss],
 		["abyss", fmt(save.get("abyssCoins", 0)), "Abyssal Coins", CUR_TIPS.abyss]]
+	if cards >= 0:
+		cur.append(["cards", fmt(cards), "Monster Cards", CUR_TIPS.get("cards", "")])
 	for c in cur:
 		var w0 = uW(c[1], 9) + uW(" " + c[2], 9, UF) + 30
 		items.append([w0, func(X, Y):
 			uBox(Rect2(X, Y, w0, 16), Color.WHITE, INK, 2, 8)
-			_coin(Vector2(X + 10, Y + 8), 4.5, c[0])
+			if c[0] == "cards":   # a little card instead of a coin
+				uBox(Rect2(X + 6, Y + 3, 8, 10), css("#9fe6ff"), INK, 1, 2)
+				uci.draw_rect(Rect2(X + 8, Y + 5, 4, 3), css("#ffffff"))
+			else:
+				_coin(Vector2(X + 10, Y + 8), 4.5, c[0])
 			var tw = uText(c[1], X + 18, Y + 3, 9, INK, UB)
 			uText(" " + c[2], X + 18 + tw, Y + 3, 9, INK, UF)
 			zone(Rect2(X, Y, w0, 16), Callable(), c[3])])
@@ -462,70 +468,172 @@ func _pInv(x: float, y: float, w: float) -> float:
 			if save.cards[k].get(q):
 				cards += 1
 	var y0 = y
-	y += currencyBag(x, y, w, "🃏 %d Monster cards" % cards)
-	var boxKinds = (["croc", "warlord", "dreamer", "kingYeti"] + MORE_BOSSES.keys().filter(func(k): return BOXES.has(k))).filter(func(k): return boxCount(k) > 0)
-	if not boxKinds.is_empty():
-		y += uCards(x, y, w, 1, [func(X, Y, W):
-			var yy = Y + h3("Boss boxes", X, Y)
-			yy += muted("Boxes you've collected. Open as many as you like at once — each one is rolled on its own.", X, yy, W) + 4
-			for k in boxKinds:
-				var BX: Dictionary = BOXES[k]
-				var n = boxCount(k)
-				var col = css(MORE_BOSSES[k].ui) if MORE_BOSSES.has(k) else css("#1f6f9a") if k == "kingYeti" else css("#6a2a9a") if k == "dreamer" else (css("#9a1f35") if k == "warlord" else css("#2a7a3a"))
-				uText("📦 %s ×%d" % [BX.name, n], X + 2, yy + 3, 10, col, UB)
-				uText("from %s" % BX.boss, X + 2, yy + 18, 8, MUTED, UF)
-				var bx = X + W
-				for q in [["All", n], ["10", 10], ["5", 5], ["1", 1]]:
-					var cnt: int = q[1]
-					if cnt <= 0 or (cnt > n and q[0] != "All"):
-						continue
-					var label: String = "Open %s" % q[0]
-					var bw = uW(label, 9) + 16
-					bx -= bw + 4
-					uButton(Rect2(bx, yy, bw, 19), label, func(): toggleMenu(false); openBoxes(k, cnt), {"bg": MINT, "shadow": 0.0})
-				dashed(X, X + W, yy + 28)
-				yy += 32
-			return yy - Y], [{"fill": css("#fff8e6"), "border": css("#e0b34a")}])
+	y += currencyBag(x, y, w, "", cards)
+	# boxes, loot bags and treasures side by side
+	y += uCards(x, y, w, 3, [_invBoxes(), _invBags(), _invRares()],
+		[{"fill": css("#fff8e6"), "border": css("#e0b34a")}, {"fill": css("#fdf3e4"), "border": css("#a0703a")}, {"fill": css("#eef8ff"), "border": css("#3a8ac0")}])
 	y += 10
-	var card = func(X, Y, W):
+	# materials, three to a row
+	var mats = func(X, Y, W):
 		var yy = Y + h3("Materials", X, Y)
-		for k in SLIME_KEYS:
-			var T: Dictionary = SLIME_TYPES[k]
+		var cols = 3
+		var gap = 14.0
+		var cw = (W - gap * (cols - 1)) / cols
+		var keys: Array = SLIME_KEYS.duplicate()
+		keys.sort_custom(func(a, b): return SLIME_TYPES[a].lv < SLIME_TYPES[b].lv)
+		for i in keys.size():
+			var k: String = keys[i]
+			var cx = X + (i % cols) * (cw + gap)
+			var ry = yy + floori(i / float(cols)) * 19
 			var n = int(save.mats.get(k, 0))
 			var seen = B.get(k, {}).get("kills", 0)
 			var a = 1.0 if n else 0.5
-			matIcon(k, X + 3, yy + 2, 12)
-			uText(matName(k), X + 24, yy + 2, 9, Color(INK, a))
-			uText(("Dropped by " + T.name) if seen else "Dropped by ???", X + 150, yy + 3, 8, Color(MUTED, a), UF)
-			uText("×" + fmt(n), X + W - 4, yy + 2, 9, Color(INK, a), UB, 2)
-			dashed(X, X + W, yy + 17)
-			zone(Rect2(X, yy, W, 17), Callable(), MAT_TIPS.get(k, ""))
-			yy += 19
-		yy += 4
-		yy += muted("Materials are shared by all heroes and spent in the Shop.", X, yy, W)
+			matIcon(k, cx + 1, ry + 2, 12)
+			uText(matName(k), cx + 18, ry + 2, 9, Color(INK, a))
+			uText("×" + fmt(n), cx + cw - 2, ry + 2, 9, Color(INK, a), UB, 2)
+			dashed(cx, cx + cw, ry + 17)
+			zone(Rect2(cx, ry, cw, 17), Callable(), "%s\n%s" % [MAT_TIPS.get(k, ""), ("Dropped by %s (Lv %d)" % [SLIME_TYPES[k].name, SLIME_TYPES[k].lv]) if seen else "Dropped by ???"])
+		yy += ceili(keys.size() / float(cols)) * 19 + 4
+		yy += muted("Materials are shared by all heroes and spent in the Shop. Hover one to see who drops it.", X, yy, W)
 		return yy - Y
-	y += uCards(x, y, w, 1, [card])
+	y += uCards(x, y, w, 1, [mats])
 	var KI: Dictionary = save.get("keyItems", {})
 	if tb(KI.get("dreamKey")) or tb(KI.get("yetiPendant")):
 		y += 10
-		y += uCards(x, y, w, 1, [func(X, Y, W):
-			var yy = Y + h3("Key items", X, Y)
-			if tb(KI.get("dreamKey")):
-				var t = Assets.tex("items/dream_key.png")
-				if t:
-					uci.draw_texture_rect(t, Rect2(X, yy, 32, 32), false)
-				uText("The Dream Key", X + 40, yy + 2, 10, css("#6a2a9a"))
-				uPara("Dropped by The Dreamer. It hums when you hold it. It can break the crystal that Glamrax keeps people imprisoned in, high over the Abyss Volcano.", X + 40, yy + 16, W - 40, 8, MUTED)
-				yy += 38
-			if tb(KI.get("yetiPendant")):
-				var t = Assets.tex("items/yeti_pendant.png")
-				if t:
-					uci.draw_texture_rect(t, Rect2(X, yy, 32, 32), false)
-				uText("Glowing Pendant", X + 40, yy + 2, 10, css("#1f6f9a"))
-				uPara("Taken from King Yeti. Its light tore open the portal out of the collapsing cave, and it keeps that way to Glamrax's Gate open.", X + 40, yy + 16, W - 40, 8, MUTED)
-				yy += 38
-			return yy - Y], [{"fill": css("#f6efff"), "border": css("#6a2a9a")}])
+		var keyCards = []
+		if tb(KI.get("dreamKey")):
+			keyCards.append(_keyCard("items/dream_key.png", "The Dream Key", css("#6a2a9a"), "Dropped by The Dreamer. It hums when you hold it. It can break the crystal that Glamrax keeps people imprisoned in, high over the Abyss Volcano."))
+		if tb(KI.get("yetiPendant")):
+			keyCards.append(_keyCard("items/yeti_pendant.png", "Glowing Pendant", css("#1f6f9a"), "Taken from King Yeti. Its light tore open the portal out of the collapsing cave, and it keeps that way to Glamrax's Gate open."))
+		var st = []
+		for k in keyCards:
+			st.append({"fill": css("#f6efff"), "border": css("#6a2a9a")})
+		y += uCards(x, y, w, 2, keyCards, st)
 	return y - y0
+
+
+func _keyCard(tex: String, name: String, col: Color, text: String) -> Callable:
+	return func(X, Y, W):
+		var t = Assets.tex(tex)
+		if t:
+			uci.draw_texture_rect(t, Rect2(X, Y, 32, 32), false)
+		uText(name, X + 40, Y + 2, 10, col)
+		var h = uPara(text, X + 40, Y + 16, W - 40, 8, MUTED)
+		return maxf(34, 16 + h)
+
+
+## a row of small buttons, right to left from `bx`; each is [label, callable]
+func _btnRow(btns: Array, X: float, Y: float) -> void:
+	var bx = X
+	for b in btns:
+		var bw = uW(b[0], 8) + 12
+		uButton(Rect2(bx, Y, bw, 17), b[0], b[1], {"bg": b[2] if b.size() > 2 else MINT, "shadow": 0.0, "size": 8})
+		bx += bw + 4
+
+
+func _invBoxes() -> Callable:
+	return func(X, Y, W):
+		var yy = Y + h3("Boss boxes", X, Y)
+		var boxKinds = (["croc", "warlord", "dreamer", "kingYeti"] + MORE_BOSSES.keys().filter(func(k): return BOXES.has(k))).filter(func(k): return boxCount(k) > 0)
+		if boxKinds.is_empty():
+			return yy - Y + muted("A boss drops a box every time you beat it. Open them here.", X, yy, W)
+		for k in boxKinds:
+			var BX: Dictionary = BOXES[k]
+			var n = boxCount(k)
+			var col = css(MORE_BOSSES[k].ui) if MORE_BOSSES.has(k) else css("#1f6f9a") if k == "kingYeti" else css("#6a2a9a") if k == "dreamer" else (css("#9a1f35") if k == "warlord" else css("#2a7a3a"))
+			uText("📦 %s ×%d" % [BX.name, n], X + 2, yy + 2, 10, col, UB)
+			uText("from %s" % BX.boss, X + W, yy + 4, 7, MUTED, UF, 2)
+			var btns = []
+			for q in [["1", 1], ["5", 5], ["10", 10], ["All", n]]:
+				var cnt: int = q[1]
+				if cnt <= 0 or (cnt > n and q[0] != "All") or (q[0] == "All" and n <= 1):
+					continue
+				btns.append(["Open %s" % q[0], func(): toggleMenu(false); openBoxes(k, cnt)])
+			_btnRow(btns, X + 2, yy + 17)
+			dashed(X, X + W, yy + 39)
+			yy += 43
+		return yy - Y
+
+
+func _invBags() -> Callable:
+	return func(X, Y, W):
+		var yy = Y + h3("Loot bags", X, Y)
+		var kinds = SLIME_KEYS.filter(func(k): return bagCount(k) > 0)
+		if kinds.is_empty():
+			return yy - Y + muted("Every monster has a 1 in 100 chance to drop a loot bag: EXP, coins, its material, and sometimes its rare treasure.", X, yy, W)
+		for k in kinds:
+			var n = bagCount(k)
+			withCtx(Vector2(X + 9, yy + 20), 1.3, func(cx): drawLootBag(cx, k, 0, 0, realTime))
+			uText("%s Bag" % SLIME_TYPES[k].name, X + 22, yy + 2, 9, INK, UB)
+			uText("×%d" % n, X + W, yy + 2, 9, INK, UB, 2)
+			var btns = [["Open 1", func(): _openBags(k, 1)]]
+			if n > 1:
+				btns.append(["Open all", func(): _openBags(k, n)])
+			_btnRow(btns, X + 22, yy + 15)
+			dashed(X, X + W, yy + 36)
+			yy += 40
+		return yy - Y
+
+
+func _openBags(k: String, n: int) -> void:
+	var got = openBags(k, n)
+	if got.exp == 0 and got.coins == 0:
+		return
+	Sfx.buy()
+	var bits = ["+%s EXP" % fmt(got.exp), "+%s coins" % fmt(got.coins), "+%d %s" % [got.mats, matName(k).to_lower()]]
+	toast("💰 %s: %s" % ["Loot bag" if n == 1 else "%d loot bags" % n, ", ".join(bits)])
+	for key in got.rares:
+		Sfx.rankUp(9 if key.ends_with("_shiny") else 7)
+		banner("SHINY RARE TREASURE!" if key.ends_with("_shiny") else "RARE TREASURE!", "%s%s · sells for %s coins" % [rareName(key), (" ×%d" % got.rares[key]) if got.rares[key] > 1 else "", fmt(rareValue(key))])
+	PS = calcStats()
+	persist()
+	_changed()
+
+
+func _invRares() -> Callable:
+	return func(X, Y, W):
+		uText("Rare treasures", X, Y, 10)
+		var R: Dictionary = save.get("rares", {})
+		var keys = R.keys().filter(func(k): return int(R[k]) > 0)
+		keys.sort_custom(func(a, b): return rareValue(a) > rareValue(b))
+		var yy = Y + 15
+		if keys.is_empty():
+			return yy - Y + muted("Every monster has a rare treasure it drops once in a long while (or from its loot bag). They aren't for crafting: sell them for a fortune. Shiny ones are worth five times as much.", X, yy, W)
+		var total = 0
+		for k in keys:
+			total += rareValue(k) * int(R[k])
+		uButton(Rect2(X + W - 70, Y - 2, 70, 15), "Sell all", func(): _sellRares(keys, -1), {"bg": GOLD, "shadow": 0.0, "size": 7})
+		for k in keys:
+			var n = int(R[k])
+			var shiny = k.ends_with("_shiny")
+			withCtx(Vector2(X + 8, yy + 19), 1.3, func(cx): drawRare(cx, rareType(k), shiny, 0, 0, realTime))
+			uText(rareName(k), X + 22, yy + 1, 9, css("#b0549a") if shiny else INK, UB)
+			uText("×%d" % n, X + W, yy + 1, 9, INK, UB, 2)
+			uText("%s each" % fmt(rareValue(k)), X + 22, yy + 13, 7, MUTED, UF)
+			var btns = [["Sell 1", func(): _sellRares([k], 1)]]
+			if n > 1:
+				btns.append(["Sell all", func(): _sellRares([k], -1)])
+			var bx = X + W
+			for b in btns:
+				bx -= uW(b[0], 8) + 12 + 4
+			_btnRow(btns, bx + 4, yy + 12)
+			zone(Rect2(X, yy, 22, 26), Callable(), "Dropped by %s. Not used for crafting: sell it for coins." % monsterName(rareType(k)))
+			dashed(X, X + W, yy + 31)
+			yy += 35
+		yy += muted("Worth %s coins in all." % fmt(total), X, yy, W)
+		return yy - Y
+
+
+func _sellRares(keys: Array, n: int) -> void:
+	var paid = 0
+	for k in keys:
+		paid += sellRares(k, int(save.rares.get(k, 0)) if n < 0 else n)
+	if paid > 0:
+		Sfx.coin()
+		Sfx.buy()
+		toast("Sold for %s coins." % fmt(paid))
+		persist()
+		_changed()
 
 
 # ================================================================ Shop

@@ -1077,7 +1077,20 @@ func obeliskCoins(o: Dictionary) -> void:
 			d.vx = rand(-15, 15); d.vy = rand(40, 120); d.val = v
 			d.surfY = fl.y; d.x0 = fl.x0 + 4; d.x1 = fl.x1 - 4; d.spin = randf() * 4
 			drops.append(d))
-	banner("COIN SHOWER!", "%s coins are raining down" % fmt(amount))
+	# Abyssal Coins and green EXP rain down with the gold
+	var nAb = rint(4, 9)
+	var expTotal = maxi(10, roundi(expNeed(CH().level) * 0.03 * amount / 1000.0))
+	var nExp = clampi(roundi(pieces * 0.4), 6, 24)
+	for i in nAb + nExp:
+		var isAb = i < nAb
+		var v = 1 if isAb else maxi(1, roundi(float(expTotal) / nExp))
+		later(rand(0.0, pieces * 0.06), func():
+			var d = S.Drop.new()
+			d.kind = "abyss" if isAb else "exp"; d.x = clampf(o.x + rand(-140, 140), fl.x0 + 4, fl.x1 - 4); d.y = cam.y - 10
+			d.vx = rand(-15, 15); d.vy = rand(40, 120); d.val = v
+			d.surfY = fl.y; d.x0 = fl.x0 + 4; d.x1 = fl.x1 - 4; d.spin = randf() * 4
+			drops.append(d))
+	banner("COIN SHOWER!", "%s coins, Abyssal Coins and EXP are raining down" % fmt(amount))
 	Sfx.rankUp(7)
 
 
