@@ -167,17 +167,25 @@ func hurtPlayer(src, dmg: float) -> void:
 		if P.hp <= 0:
 			killPlayer()
 		return
+	if PS.get("dodge", 0.0) > 0 and randf() * 100 < PS.dodge:   # the Attribute Tree's dodge chance
+		floatText(P.x, P.y - 52, "Dodged!", "call")
+		P.iframes = maxf(P.iframes, 0.35)
+		Sfx.tone(1100, 0.08, "sine", 0.05, 1600)
+		return
 	var dr = (1 - (0.1 + skillRank("guardian") * 0.01)) if buffOn("guardian") else 1.0
-	var ecrit = true if src.get("crit") else (false if src.get("noCrit") else randf() < (0.2 if src.get("boss") else 0.12))   # crit: every hit lands critical (the volcano's Security Sentinels)
+	dr *= 1 - PS.get("dr", 0.0)
+	var ecrit = true if src.get("crit") else (false if src.get("noCrit") else randf() < (0.2 if src.get("boss") else 0.12) * (1 - PS.get("critRes", 0.0)))   # crit: every hit lands critical (the volcano's Security Sentinels)
 	var d = maxi(1, roundi(dmg * dr * (1.5 if ecrit else 1.0) * defMul(src.get("lv")) * rand(0.9, 1.1)))
 	if buffOn("manaShield") and P.en > 0:
 		var pt = minf(P.en, roundi(d * (0.25 + skillRank("manaShield") * 0.02)))
 		P.en -= pt
 		d -= int(pt)
+	d = treeShield(d)
 	P.hp -= d
 	P.lastHurt = gameTime
 	P.hurtN += 1
-	floatText(P.x, P.y - 48, ("%d!" % d) if ecrit else str(d), "hurt")
+	floatText(P.x, P.y - 48, ("Shield" if d <= 0 else (("%d!" % d) if ecrit else str(d))), "call" if d <= 0 else "hurt")
+	treeThorns(src)
 	Sfx.hurt()
 	flashVig()
 	shake = 4 if ecrit else 2
@@ -215,7 +223,46 @@ func hurtPlayer(src, dmg: float) -> void:
 		killPlayer()
 
 
+## the Attribute Tree's energy shield takes what it can of a hit; returns what gets through
+func treeShield(d: int) -> int:
+	if P.shield <= 0 or d <= 0:
+		return d
+	var s = mini(d, ceili(P.shield))
+	P.shield = maxf(0, P.shield - s)
+	if P.shield <= 0:
+		floatText(P.x, P.y - 62, "Shield broken!", "call")
+		Sfx.tone(520, 0.18, "triangle", 0.05, 200)
+	return d - s
+
+
+## Spiked Hide and friends: a monster that hits you takes some of your ATK back
+func treeThorns(src) -> void:
+	if PS.get("thorns", 0.0) > 0 and src is S.Mob and src.state != "dead" and not src.bossEye:
+		damageSlime(src, {"dmg": PS.thorns, "kb": 60, "up": 0, "style": 2, "anim": "thorns", "both": true})
+
+
+## the energy shield refills once you've gone a while without being hurt
+func treeTick(dt: float) -> void:
+	var mx: float = PS.get("eshield", 0)
+	if mx <= 0:
+		P.shield = 0.0
+		return
+	var rate: float = PS.get("eshRate", 0.0)
+	if gameTime - P.lastHurt > 5.0 / (1 + rate) and P.state != "dead":
+		P.shield = minf(mx, P.shield + mx * 0.2 * (1 + rate) * dt)
+	P.shield = minf(P.shield, mx)
+
+
 func killPlayer() -> void:
+	if PS.get("lastStand") and gameTime >= P.lastStandT and P.state != "dead":   # the Attribute Tree's Last Stand
+		P.lastStandT = gameTime + 90
+		P.hp = maxf(1, roundf(PS.hp * 0.3))
+		P.iframes = maxf(P.iframes, 2.0)
+		P.flash = 0.3
+		floatText(P.x, P.y - 64, "Last Stand!", "call")
+		fx.append({"type": "ring", "x": P.x, "y": P.y - 20, "t": 0.0, "life": 0.8, "r": 50, "col": "#ffe08a"})
+		Sfx.rankUp(6)
+		return
 	P.hp = 0
 	P.poison = null
 	P.state = "dead"
@@ -232,6 +279,10 @@ func perfectDodge() -> void:
 	comboHit()
 	floatText(P.x, P.y - 52, "Perfect dodge!", "call")
 	Sfx.play("dodge_perfect")
+	if PS.get("dodgeEn", 0.0) > 0:
+		P.en = minf(PS.enMax, P.en + PS.dodgeEn)
+	if PS.get("phantom"):
+		P.sureCrit = 3
 
 
 func cheer() -> void:
@@ -967,6 +1018,7 @@ func updatePlayer(dt: float) -> void:
 	var regen: float = skillRank("tranquilHeart") * 0.002 + (0.015 if buffOn("saintsAura") else 0.0) + PS.get("hpRegen", 0)
 	if regen and P.hp > 0:
 		P.hp = minf(PS.hp, P.hp + PS.hp * regen * dt)
+	treeTick(dt)
 	updateBuffs(dt)
 	if save.settings.god:
 		P.en = PS.enMax

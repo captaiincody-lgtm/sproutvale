@@ -94,6 +94,8 @@ func calcStats() -> Dictionary:
 		s.def = GM_DEF
 		s.crit = 15.0
 		s.critDmg = 1.8
+		for k in TREE.PS_KEYS:   # Glamrax has no Attribute Tree
+			s.erase(k)
 	return s
 
 

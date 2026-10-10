@@ -24,7 +24,7 @@ func useSkill(id: String) -> bool:
 	if P.state == "attack" and not (P.move != null and (P.move.get("skill") or frameOf(P.anim, P.moveT * PS.aspd, false) >= P.move.cancel)):
 		if P.move == null or not P.move.get("skill"):
 			return false
-	if P.en < s.get("cost", 0):
+	if P.en < skillCost(s):
 		floatText(P.x, P.y - 58, "Not enough energy", "call")
 		Sfx.tone(160, 0.12, "square", 0.05, 120)
 		flashEnergy()
@@ -32,7 +32,7 @@ func useSkill(id: String) -> bool:
 	if P.state in ["dead", "climb", "hurt", "tumble", "held"] or (inWater() and M.get("sea") == null):
 		return false
 	var r = skillRank(id)
-	P.en -= s.get("cost", 0)
+	P.en -= skillCost(s)
 	P.lastSkillT = gameTime
 	if s.get("boss"):
 		Cool[id] = float(s.cd)
@@ -725,7 +725,7 @@ func aoeEmit(f: Dictionary, dt: float) -> void:
 
 func blink(dirIn: int, up: bool, down: bool) -> void:
 	var s: Dictionary = SKILL.get("blink", {})
-	var cost: float = s.get("cost", 6)
+	var cost: float = skillCost(s, 6)
 	if gameTime < P.blinkCd:
 		return
 	if P.en < cost:

@@ -94,6 +94,11 @@ class Player:
 	var spinY := 20.0            # how far above the feet the body turns when it spins (0 = around the feet)
 	var held = null              # {e, phase, t…} while a tentacle holds you, or the Dreamer chews on you
 	var hurtN := 0               # counts hits that really landed (not dodged, blocked or in god mode)
+	# the Attribute Tree
+	var shield := 0.0            # energy shield left (soaks up hits before HP)
+	var lastStandT := -999.0     # when Last Stand can save you again
+	var sureCrit := 0            # Phantom: hits left that are certain to crit
+	var critEnT := -9.0          # Lucky Star: last time a crit gave energy back
 
 
 class Mob:
