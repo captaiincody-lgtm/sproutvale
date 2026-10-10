@@ -220,6 +220,7 @@ func init_data() -> void:
 	CHARM_TIERS = D.charms
 	ARROW_TIERS = GEAR.archer.arrows
 	JOBS_BY = D.jobs
+	applyJobTitles()
 	JOBS = JOBS_BY.rock
 	SKILLS = D.skills
 	SKILL = {}
@@ -558,13 +559,38 @@ static func expNeed(lv: int) -> int:
 
 # ================================================================ jobs, skills, buffs
 
-## Sorcerer / Sorceress follows the hero's chosen gender
+## Advancement titles, lowest to highest: each one should sound like a clear step up in power.
+## [male / default title, female title] by job id (Tank's live in tank.gd).
+const JOB_TITLES := {
+	"trainee": ["Squire"], "swordsman": ["Swordsman", "Swordswoman"], "knight": ["Knight"], "hero": ["Champion"],
+	"master": ["Blademaster"], "saint": ["Sword Saint"], "avatar": ["Sword God", "Sword Goddess"],
+	"a_trainee": ["Scout"], "bowman": ["Hunter", "Huntress"], "marksman": ["Ranger"], "sniper": ["Sharpshooter"],
+	"bowmaster": ["Bowmaster"], "bowsaint": ["Skypiercer"], "bowavatar": ["Celestial Archer"],
+	"m_trainee": ["Apprentice"], "caster": ["Mage"], "sorcerer": ["Sorcerer", "Sorceress"], "magician": ["Warlock"],
+	"archmage": ["Archmage"], "sage": ["Grand Magus"], "m_avatar": ["Arcane God", "Arcane Goddess"],
+	"s_trainee": ["Tamer"], "summoner": ["Summoner"], "commander": ["Beastmaster"], "dcommander": ["Dragon Tamer"],
+	"rider": ["Dragon Rider"], "dsage": ["Dragon Lord", "Dragon Queen"], "s_avatar": ["Dragon God", "Dragon Goddess"],
+}
+
+
+func applyJobTitles() -> void:
+	for cls in JOBS_BY:
+		for J in JOBS_BY[cls]:
+			if JOB_TITLES.has(J.id):
+				var T: Array = JOB_TITLES[J.id]
+				J.nameM = T[0]
+				J.nameF = T[1] if T.size() > 1 else T[0]
+
+
+## gendered titles (Swordsman / Swordswoman…) follow each hero's chosen gender
 func refreshJobNames() -> void:
-	for J in JOBS_BY.mage:
-		if J.has("nameF"):
-			if not J.has("nameM"):
-				J.nameM = J.name
-			J.name = J.nameF if save.chars.mage.look.gender == "f" else J.nameM
+	for cls in JOBS_BY:
+		var f: bool = save.get("chars", {}).get(cls, {}).get("look", {}).get("gender", "m") == "f"
+		for J in JOBS_BY[cls]:
+			if J.has("nameF"):
+				if not J.has("nameM"):
+					J.nameM = J.name
+				J.name = J.nameF if f else J.nameM
 
 
 func jobIndex(lv: int) -> int:
@@ -838,7 +864,7 @@ func gainExp(n: float) -> void:
 		if jobIndex(c.level) > oldJob:
 			var J = jobOf(c.level)
 			later(1.4, func():
-				banner("JOB ADVANCEMENT", "%s is now a %s! New skills in the Skills tab." % [CLASSES[classId].name, J.name])
+				banner("JOB ADVANCEMENT", "%s advanced to %s! New skills in the Skills tab." % [CLASSES[classId].name, J.name])
 				Sfx.rankUp(8))
 			fx.append({"type": "ring", "x": P.x, "y": P.y - 20, "t": 0.0, "life": 1.0, "r": 60, "col": J.color})
 		for i in 30:
@@ -1352,4 +1378,16 @@ func lookOf(cls: String) -> String:
 		if classId == "tank" and inGame and buffOn("titanProtocol"):
 			return "tank_%s_5" % g
 		return "tank_%s_%d" % [g, exoStage(c)]
-	return "%s_%s" % [cls, c.get("look", {}).get("gender", "m")]
+	return gearLook(cls, int(c.get("armor", 0)), int(c.get("weapon", 0)), int(c.get("staff", 0)))
+
+
+## a layered hero's look in a given armor / weapon (and Remy's staff) tier — see Assets.hero_look
+const GEAR_SET := {"rock": "sword", "archer": "bow", "summoner": "ring"}
+func gearLook(cls: String, armor: int, weapon: int, staff := 0) -> String:
+	var g: String = save.get("chars", {}).get(cls, {}).get("look", {}).get("gender", "m")
+	var base := "%s_%s" % [cls, g]
+	if not Assets.hero.looks.get(base, {}).get("layered", false):
+		return base
+	var w := clampi(weapon, 0, 10)
+	var sets: String = "staff_%d,wand_%d" % [clampi(staff, 0, 10), w] if cls == "mage" else "%s_%d" % [GEAR_SET.get(cls, "sword"), w]
+	return "%s|%d|%s" % [base, clampi(armor, 0, int(Assets.hero_look(base).get("armor", 1)) - 1), sets]

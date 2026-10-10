@@ -5,24 +5,32 @@ Every picture in the game is a plain PNG in this folder. Right now they are
 art, overwrite a PNG with yours **using the same file name and the same
 frame size**, then reopen Godot. Nothing in the code needs to change.
 
-## Heroes (`hero/<class>_<m|f>/`)
+## Heroes (`hero/`)
 
-- One folder per hero look: `rock_m`, `rock_f`, `archer_m`, `archer_f`,
-  `mage_m`, `mage_f`, `summoner_m`, `summoner_f`.
-- One file per animation: `<animation>_<variant>.png`, e.g. `rock_m/walk_1.png`.
-- Each file is a horizontal strip of frames. Every frame is **168 × 152** px.
-- The hero's feet (the point that touches the ground) sit at **x 80, y 132**
-  inside every frame.
-- Frame counts and playback speed live in `hero/hero.json` under `looks.<folder>.anims` (`frames`, `fps`).
-  If you draw a different number of frames, change `frames` there.
-- `idle`, `rest`, `walk`, `run`, `jump` and `land` have five variants (0–4):
-  the hair blowing in no, light, normal, strong and stormy wind. If you only
-  draw variant `1`, the game uses it for every wind level. Delete the other
-  variants and remove them from the `variants` list in `hero.json`.
-- Gear and cosmetics don't change the hero's picture: every hero always uses
-  the starter look in their folder.
-- The art is drawn at 2× (the game world is 384 × 216, shown on a
-  768 × 432 canvas), so a 168 × 152 frame shows as 84 × 76 world pixels.
+Rock, the Archer, Remy and Jojo are drawn in **layers**, so every armor tier can be worn with every
+weapon tier without a separate drawing for each combination:
+
+- `hero/<class>_<m|f>_<armor tier>/<animation>_<variant>.png` — the hero's body in that armor tier (0–5),
+  e.g. `rock_f_3/walk_1.png`.
+- `hero/gear/<set>_<tier>/<animation>.png` — a weapon in that tier (0–10). The sets are `sword` (Rock's
+  sword and shield), `bow`, `wand` and `staff` (Remy), and `ring` (Jojo's ring, earring and spirit gems).
+  Weapons are shared by both genders.
+- Each file is a horizontal strip of frames. Every frame is **168 × 152** px, with the hero's feet at
+  **x 80, y 132**.
+- The layers are stacked **top to bottom** inside each file, one frame-height (152 px) apart:
+  body files have 5 rows, weapon files 4. The game draws them in this order:
+  body row 1 · weapon row 1 · body row 2 · weapon row 2 · body row 3 · weapon row 3 · body row 4 · weapon row 4 · body row 5.
+  (For Rock: back hair · shield · body and head · sword · near arm · raised shield · slash trails.)
+- **Your own art can be simpler:** a body file that is a single row (152 px tall) is used as the whole hero,
+  with the weapon rows drawn on top of it.
+- Frame counts and playback speed live in `hero/hero.json` under `looks.<class>_<m|f>.anims`.
+- `idle`, `rest`, `walk`, `run`, `jump` and `land` have five variants (0–4): the hair blowing in no, light,
+  normal, strong and stormy wind. If you only draw variant `1`, the game uses it for every wind level.
+- Tank is drawn in one piece per exosuit stage: `hero/tank_<m|f>_<0-5>/<animation>_1.png`.
+- The art is drawn at 2× (the game world is 384 × 216, shown on a 768 × 432 canvas), so a 168 × 152 frame
+  shows as 84 × 76 world pixels.
+- To re-bake the heroes from the prototype's drawing code (this overwrites the hero PNGs):
+  `node tools/bake/heroes.mjs` then `python3 tools/bake/pngpal.py godot/art/hero`, and `node tools/bake/tank.mjs` for Tank.
 
 ## Monsters (`mobs/<monster>/`)
 
@@ -39,6 +47,7 @@ frame size**, then reopen Godot. Nothing in the code needs to change.
 | `sky/galaxy.png`, `sky/clouds/` | Night sky, rain and snow clouds | |
 | `items/coin.png` | Spinning coin | 4 frames of 9 × 9 |
 | `items/residue_<monster>.png` | Material each monster drops | |
+| `worldmap/base.webp`, `crimson.webp`, `abyss.webp`, `north.webp` | The painted World Map: the home island, then each region as it opens | 1500 × 960, covering map x 0–1000, y -210–430; re-bake with `node tools/bake/worldmap.mjs godot` |
 
 Sounds and music work the same way: replace any `.ogg` in `../audio/`.
 

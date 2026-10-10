@@ -61,10 +61,10 @@ func initTankData() -> void:
 		{"id": "t_tinkerer", "name": "Tinkerer", "lv": 1, "targets": 1, "color": "#c9d3e6"},
 		{"id": "t_mechanic", "name": "Mechanic", "lv": 10, "targets": 3, "color": "#7fd35a"},
 		{"id": "t_engineer", "name": "Engineer", "lv": 30, "targets": 6, "color": "#6fd8ff"},
-		{"id": "t_robotics", "name": "Robotics Engineer", "lv": 75, "targets": 9, "color": "#ffc83d"},
-		{"id": "t_mecha", "name": "Mecha Mechanic", "lv": 100, "targets": 12, "color": "#ff7eb6"},
-		{"id": "t_sage", "name": "Mecha Sage", "lv": 150, "targets": 15, "color": "#fff3b0"},
-		{"id": "t_avatar", "name": "Mecha Avatar", "lv": 200, "targets": 18, "color": "#b388ff"},
+		{"id": "t_robotics", "name": "Mech Pilot", "lv": 75, "targets": 9, "color": "#ffc83d"},
+		{"id": "t_mecha", "name": "Ace Pilot", "lv": 100, "targets": 12, "color": "#ff7eb6"},
+		{"id": "t_sage", "name": "Titan Commander", "lv": 150, "targets": 15, "color": "#fff3b0"},
+		{"id": "t_avatar", "name": "Machine God", "nameF": "Machine Goddess", "lv": 200, "targets": 18, "color": "#b388ff"},
 	]
 	DEFAULT_LOOK.tank = {"m": {"style": "buzz", "hair": "raven", "eye": "amber"}, "f": {"style": "buzz", "hair": "raven", "eye": "amber"}}   # Tank's looks are baked per exosuit stage, so these are placeholders
 	PRIMARY.tank = ["ATK", "Attack Power"]
@@ -232,34 +232,34 @@ func _tankSkills() -> void:
 		func(r): return "Grenade and missile damage +%d%%, blast radius +%d%%" % [r * 5, r * 3])
 	_tsk("teslaRounds", "t_engineer", "buff", "Tesla Rounds", "🌩️", 15, {"cd": 80, "cost": 30, "fx": "#bfe8ff", "dur0": 40},
 		func(r): return "For %ds: every bullet arcs to a second enemy for %d%% of its damage" % [40 + r * 2, 40 + r * 2])
-	# Robotics Engineer
+	# Mech Pilot
 	_tsk("buildBot", "t_robotics", "buff", "Build-a-Bot", "🤖", 15, {"cd": 90, "cost": 30, "fx": "#ffc83d", "dur0": 50, "summon": true},
 		func(r): return "Builds a fighting robot that follows you for %ds. Its punches deal %d%% damage" % [50 + r * 2, 120 + r * 8])
 	_tsk("servoTuning", "t_robotics", "passive", "Servo Tuning", "⚙️", 10, {},
 		func(r): return "Critical rate +%d%%, critical damage +%d%%" % [r, r * 4])
 	_tsk("napalmDrones", "t_robotics", "active", "Napalm Drones", "🔥", 20, {"anim": "a_shootUp", "hitF": [2], "cd": 0.7, "cost": 24, "range": 260, "fx": "napalm"},
 		func(r): return "Drones carpet up to 9 enemies with napalm: %d%% damage, and they keep burning" % pct.call(1.6 + r * 0.1), func(r): return 1.6 + r * 0.1)
-	# Mecha Mechanic
+	# Ace Pilot
 	_tsk("missileStrike", "t_mecha", "active", "Missile Strike", "🚀", 20, {"anim": "a_shootUp", "hitF": [2, 4], "cd": 0.8, "cost": 28, "range": 280, "fx": "missiles"},
 		func(r): return "Missiles rain on up to 12 enemies, twice: %d%% damage each" % pct.call(2.0 + r * 0.12), func(r): return 2.0 + r * 0.12)
 	_tsk("reactorCore", "t_mecha", "passive", "Reactor Core", "☢️", 10, {},
 		func(r): return "Max HP +%d%%, max Electricity +%d" % [r * 3, r * 5])
 	_tsk("hardlight", "t_mecha", "buff", "Hardlight Plating", "🔰", 15, {"cd": 100, "cost": 30, "fx": "#ff7eb6", "dur0": 45},
 		func(r): return "For %ds: attack +%d%%, defense +25%%" % [45 + r * 2, 25 + r * 2])
-	# Mecha Sage
+	# Titan Commander
 	_tsk("orbitalLaser", "t_sage", "active", "Orbital Laser", "🛸", 20, {"anim": "a_shootUp", "hitF": [2, 3, 4], "cd": 0.9, "cost": 32, "range": 300, "fx": "laser"},
 		func(r): return "A satellite beam scorches up to 15 enemies three times: %d%% damage each" % pct.call(2.6 + r * 0.15), func(r): return 2.6 + r * 0.15)
 	_tsk("machineMind", "t_sage", "passive", "Machine Mind", "🧠", 10, {},
 		func(r): return "Attack +%d%%, Electricity recovers %d%% faster" % [r * 2, r * 3])
 	_tsk("swarmProtocol", "t_sage", "buff", "Swarm Protocol", "🐝", 15, {"cd": 110, "cost": 30, "fx": "#fff3b0", "dur0": 45},
 		func(r): return "For %ds: two wingman drones join yours, and all of them fire twice as fast" % [45 + r * 2])
-	# Mecha Avatar
+	# Machine God
 	_tsk("armageddon", "t_avatar", "active", "Armageddon", "☄️", 20, {"anim": "a_shootUp", "hitF": [2, 3, 4, 5], "cd": 1.0, "cost": 38, "range": 320, "fx": "armageddon"},
 		func(r): return "Missiles and orbital lasers sweep the field in four waves, on up to 18 enemies: %d%% damage each" % pct.call(3.6 + r * 0.28), func(r): return 3.6 + r * 0.28)
 	_tsk("avatarEngine", "t_avatar", "passive", "Avatar Engine", "✨", 10, {},
 		func(r): return "All attributes +%d, attack +%d%%" % [r * 5, r * 2])
 	_tsk("titanProtocol", "t_avatar", "buff", "Titan Protocol", "🦾", 15, {"cd": 150, "cost": 30, "fx": "#b388ff", "dur0": 60},
-		func(r): return "For %ds: become the Mecha Avatar. Attack +%d%%, defense +30%%, and every shot is an energy blast" % [60 + r * 2, 55 + r * 3])
+		func(r): return "For %ds: go full mecha. Attack +%d%%, defense +30%%, and every shot is an energy blast" % [60 + r * 2, 55 + r * 3])
 
 
 # ================================================================ helpers

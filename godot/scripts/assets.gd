@@ -53,10 +53,18 @@ func tex(path: String) -> Texture2D:
 	return _tex[path]
 
 
-## One hero animation strip for a look ("rock_m", "archer_f"…). Animations with wind variants
-## (hair and hem streaming) have five strips, 0–4; the rest only have strip 1.
+## A hero "look" names a sprite set. Tank's are plain folders ("tank_m_3"). The other four heroes are baked in
+## layers (tools/bake/heroes.mjs) and their look also carries the gear to wear: "rock_f|3|sword_7" is female
+## Rock in armor tier 3 holding sword tier 7; Remy carries two sets ("mage_m|2|staff_4,wand_6").
+## hero_look() gives the animation table either way.
+func hero_look(look: String) -> Dictionary:
+	return hero.looks.get(look.get_slice("|", 0), hero.looks.get("rock_m", hero.looks.values()[0]))
+
+
+## One hero animation strip for a look. Animations with wind variants (hair and hem streaming) have five
+## strips, 0–4; the rest only have strip 1.
 func hero_anim(look: String, anim: String) -> Dictionary:
-	var L: Dictionary = hero.looks.get(look, hero.looks.rock_m)
+	var L: Dictionary = hero_look(look)
 	return L.anims.get(anim, L.anims.idle)
 
 
@@ -66,10 +74,82 @@ func hero_variant(look: String, anim: String, variant: int) -> int:
 
 
 func hero_strip(look: String, anim: String, variant: int) -> Texture2D:
-	var L: Dictionary = hero.looks.get(look, hero.looks.rock_m)
+	var L: Dictionary = hero_look(look)
 	if not L.anims.has(anim):
 		anim = "idle"
-	return tex("hero/%s/%s_%d.png" % [look, anim, hero_variant(look, anim, variant)])
+	var v := hero_variant(look, anim, variant)
+	if not L.get("layered", false):
+		return tex("hero/%s/%s_%d.png" % [look, anim, v])
+	return _stacked(look, anim, v)
+
+
+const LAYER_CACHE := 160
+var _stack := {}        # stacked strips, most recently used last
+var _layerImg := {}     # decoded layer sheets, so changing one gear piece re-stacks without re-decoding the rest
+
+
+## Puts a layered hero strip back together: body and weapon layers interleaved
+## B_pre, W0, B0, W1, B1, W2, B2, W3, B3 (see tools/bake/heroes.mjs).
+func _stacked(look: String, anim: String, v: int) -> Texture2D:
+	var key := "%s|%s|%d" % [look, anim, v]
+	if _stack.has(key):
+		var t: Texture2D = _stack[key]
+		_stack.erase(key)
+		_stack[key] = t
+		return t
+	var parts := look.split("|")
+	var base := parts[0]
+	var armor := int(parts[1]) if parts.size() > 1 else 0
+	var body := _layers("hero/%s_%d/%s_%d.png" % [base, armor, anim, v])
+	if body == null:
+		body = _layers("hero/%s_0/%s_%d.png" % [base, anim, v])
+	if body == null:
+		return null
+	var H := int(hero.get("frame_h", 152))
+	var W := body.get_width()
+	var gear := []
+	if parts.size() > 2 and parts[2] != "":
+		for g in parts[2].split(","):
+			var gi := _layers("hero/gear/%s/%s.png" % [g, anim])
+			if gi != null and gi.get_width() == W:
+				gear.append(gi)
+	var nb := body.get_height() / H   # 5 body layers, or 1 for a flat, hand-drawn strip
+	var out := Image.create_empty(W, H, false, Image.FORMAT_RGBA8)
+	var whole := Rect2i(0, 0, W, H)
+	if nb < 5:
+		out.blend_rect(body, Rect2i(0, 0, W, H), Vector2i.ZERO)
+		for gi in gear:
+			for r in 4:
+				out.blend_rect(gi, Rect2i(0, r * H, W, H), Vector2i.ZERO)
+	else:
+		out.blend_rect(body, whole, Vector2i.ZERO)
+		for r in 4:
+			for gi in gear:
+				out.blend_rect(gi, Rect2i(0, r * H, W, H), Vector2i.ZERO)
+			out.blend_rect(body, Rect2i(0, (r + 1) * H, W, H), Vector2i.ZERO)
+	var t := ImageTexture.create_from_image(out)
+	_stack[key] = t
+	if _stack.size() > LAYER_CACHE:
+		_stack.erase(_stack.keys()[0])
+	return t
+
+
+func _layers(path: String) -> Image:
+	if _layerImg.has(path):
+		return _layerImg[path]
+	var t := tex(path) if ResourceLoader.exists(ART + path) else null
+	var img: Image = null
+	if t != null:
+		img = t.get_image()
+		if img.is_compressed():
+			img.decompress()
+		if img.get_format() != Image.FORMAT_RGBA8:
+			img.convert(Image.FORMAT_RGBA8)
+		_tex.erase(path)   # the image is what we keep; the texture was only the way in
+	_layerImg[path] = img
+	if _layerImg.size() > LAYER_CACHE * 2:
+		_layerImg.erase(_layerImg.keys()[0])
+	return img
 
 
 ## where the ponytail is tied on, for looks that have one: [x, y] inside the frame, in world units
@@ -85,7 +165,7 @@ func hero_tail(look: String, anim: String, variant: int, f: int):
 
 ## the head's middle in frame f of an animation, in hero pixels (null if unknown)
 func hero_head(look: String, anim: String, f: int):
-	var fr: Array = heads.get(look, {}).get(anim, [])
+	var fr: Array = heads.get(look.get_slice("|", 0), {}).get(anim, [])
 	if fr.is_empty():
 		return null
 	var p = fr[clampi(f, 0, fr.size() - 1)]
