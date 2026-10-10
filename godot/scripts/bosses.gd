@@ -306,9 +306,11 @@ func advanceMain(mapId_: String, bossKind := "") -> void:
 		return
 	var Q: Dictionary = MAINQS[mq.q]
 	var before: int = mq.stage
+	var last: int = Q.on.size() - 1
 	for i in Q.on.size():
 		var trig: String = Q.on[i]
-		if mq.stage == i and (trig == mapId_ or trig == bossKind):
+		# the boss always finishes the quest, even if you took a shortcut past the earlier steps
+		if (mq.stage == i or (i == last and mq.stage < i)) and (trig == mapId_ or trig == bossKind):
 			mq.stage = i + 1
 	if mq.stage != before and inGame:
 		saveDirty = true
