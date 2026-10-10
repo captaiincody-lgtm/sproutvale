@@ -1,4 +1,4 @@
-extends "res://scripts/tank_ui.gd"
+extends "res://scripts/tree_ui.gd"
 ## Sproutvale, the Lunar Shop: a shop that sells nothing. Luna Coins go into it, a meter fills, and at a
 ## thousand something answers (lunar.gd). Also the Luna Coin's little icon and the ↑ hints for talking
 ## to people and boarding the rocket.

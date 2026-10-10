@@ -74,7 +74,7 @@ func heroLook() -> String:
 
 
 func tailOn() -> bool:
-	return Assets.hero.looks.get(heroLook(), {}).has("tail")
+	return Assets.hero_look(heroLook()).has("tail") and Assets.hero_look(heroLook()).tail != null
 
 
 # ================================================================ the world
@@ -232,6 +232,13 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 				drawPendantDrop(x, X, Y, tt)
 			"part":
 				drawPartDrop(x, d, X, Y, tt)
+			"exp":
+				var bob = roundf(sin(tt * 4 + d.spin)) if d.vy == 0 else 0.0
+				drawExpDrop(x, X, Y + bob)
+			"bag":
+				drawLootBag(x, d.type, X, Y + (roundf(sin(tt * 3 + d.spin)) if d.vy == 0 else 0.0), tt)
+			"rare":
+				drawRare(x, d.type, d.shiny, X, Y + (roundf(sin(tt * 3 + d.spin) * 1.5) - 1 if d.vy == 0 else 0.0), tt)
 			"abyss":
 				var gl = 0.5 + 0.5 * sin(tt * 5 + d.x)
 				x.fillStyle = rgba(255, 58, 216, 0.3 * gl)
@@ -618,7 +625,7 @@ func drawPlayer(x: Ctx, sx: float, sy: float, dt: float) -> void:
 	for i in WIND_V.size():
 		if absf(WIND_V[i] - P.windV) < absf(WIND_V[vIdx] - P.windV):
 			vIdx = i
-	var anims: Dictionary = Assets.hero.looks.get(look, {}).get("anims", {})
+	var anims: Dictionary = Assets.hero_look(look).get("anims", {})
 	var anim: String = P.anim
 	var pose = heroPose()   # [anim, frame] when a hero holds a pose of their own (Tank aiming at a monster)
 	if pose != null and anims.has(pose[0]):
@@ -695,7 +702,7 @@ func drawTail(x: Ctx, look: String) -> void:
 	var pts: Array = Tail.pts
 	if pts.size() < 2:
 		return
-	var H: Dictionary = Assets.hero.looks[look].tail
+	var H: Dictionary = Assets.hero_look(look).tail
 	var L = []
 	var R = []
 	for i in pts.size():
@@ -1376,6 +1383,80 @@ func drawBossSkills(x: Ctx, sx: float, sy: float) -> void:
 		x.stroke()
 
 
+## a monster's loot bag: a burlap sack tied with a band of the monster's colour, a coin peeking out.
+## (X, Y) is the bottom centre; about 12×12
+func drawLootBag(x: Ctx, type: String, X: float, Y: float, tt: float) -> void:
+	var col: Color = hexc(int(SLIME_TYPES[type].color)) if SLIME_TYPES.has(type) else css("#8fff6a")
+	x.fillStyle = "#3a2410"   # outline
+	x.fillRect(X - 3, Y - 13, 6, 3); x.fillRect(X - 5, Y - 10, 10, 2); x.fillRect(X - 6, Y - 8, 12, 2)
+	x.fillRect(X - 7, Y - 6, 14, 5); x.fillRect(X - 6, Y - 1, 12, 1)
+	x.fillStyle = "#c9965a"   # burlap
+	x.fillRect(X - 2, Y - 12, 4, 2); x.fillRect(X - 5, Y - 7, 10, 1); x.fillRect(X - 6, Y - 6, 12, 4); x.fillRect(X - 5, Y - 2, 10, 1)
+	x.fillStyle = "#a0703a"
+	x.fillRect(X + 2, Y - 6, 3, 4); x.fillRect(X - 5, Y - 2, 10, 1)
+	x.fillStyle = "#e8c28a"
+	x.fillRect(X - 4, Y - 6, 2, 2); x.fillRect(X - 1, Y - 12, 1, 1)
+	x.fillStyle = col   # the tie
+	x.fillRect(X - 4, Y - 10, 8, 2)
+	x.fillStyle = col.lightened(0.45)
+	x.fillRect(X - 3, Y - 10, 2, 1)
+	x.fillStyle = "#ffe14d"   # a coin peeking out of the neck
+	x.fillRect(X - 1, Y - 14, 3, 2)
+	x.fillStyle = "#fff6b0"
+	x.fillRect(X - 1, Y - 14, 1, 1)
+
+
+## a rare treasure: a cut gem in the monster's colour with a travelling glint (a shiny one shimmers
+## through the rainbow and throws sparkles). (X, Y) is the bottom centre; about 12×10
+const GEM_ROWS := [[-3, 6], [-5, 10], [-6, 12], [-5, 10], [-4, 8], [-3, 6], [-2, 4], [-1, 2]]
+func drawRare(x: Ctx, type: String, shiny: bool, X: float, Y: float, tt: float) -> void:
+	var col: Color = hexc(int(SLIME_TYPES[type].color)) if SLIME_TYPES.has(type) else css("#9fe6ff")
+	if shiny:
+		col = Color.from_hsv(fmod(tt * 0.35, 1.0), 0.45, 1.0)
+	var top = Y - 10
+	x.fillStyle = "#1a1030"   # outline
+	for i in GEM_ROWS.size():
+		x.fillRect(X + GEM_ROWS[i][0] - 1, top + i - 1, GEM_ROWS[i][1] + 2, 3)
+	for i in GEM_ROWS.size():
+		var r: Array = GEM_ROWS[i]
+		x.fillStyle = col.lightened(0.35) if i == 0 else (col if i < 3 else col.darkened(0.25))
+		x.fillRect(X + r[0], top + i, r[1], 1)
+	x.fillStyle = col.darkened(0.45)   # facets
+	x.fillRect(X - 6, top + 2, 12, 1)
+	x.fillRect(X + 1, top + 3, 1, 4)
+	x.fillStyle = col.lightened(0.7)
+	x.fillRect(X - 3, top + 1, 2, 1); x.fillRect(X - 4, top + 3, 1, 2)
+	var g = int(fmod(tt * 1.5 + X * 0.05, 3.0) * 5)   # a glint that runs over it now and then
+	if g < 6:
+		x.fillStyle = "#ffffff"
+		x.fillRect(X - 3 + g, top + 1, 1, 1)
+	if shiny or fmod(tt * 1.3 + X * 0.07, 2.0) < 0.35:   # a sparkle (always twinkling on a shiny)
+		x.fillStyle = "#ffffff"
+		var on = fmod(tt * 2.0 + X, 1.0) < 0.5
+		var sx = X + (6 if on else -7)
+		var sy = top + (-3 if on else 4)
+		x.fillRect(sx, sy - 1, 1, 3); x.fillRect(sx - 1, sy, 3, 1)
+
+
+## "EXP" in a tiny 3×5 pixel font, green with a dark outline (the EXP that rains from an Obelisk)
+const EXP_GLYPHS := ["111100110100111", "101101010101101", "110101110100100"]
+func drawExpDrop(x: Ctx, X: float, Y: float) -> void:
+	var x0 = X - 5
+	var y0 = Y - 6
+	for pass_ in 2:
+		x.fillStyle = "#0a3a14" if pass_ == 0 else "#5dff7a"
+		for l in 3:
+			var gl: String = EXP_GLYPHS[l]
+			for k in 15:
+				if gl[k] == "1":
+					var px = x0 + l * 4 + k % 3
+					var py = y0 + floori(k / 3.0)
+					if pass_ == 0:
+						x.fillRect(px - 1, py - 1, 3, 3)
+					else:
+						x.fillRect(px, py, 1, 1)
+
+
 ## a boss's loot box: Crocbox (swamp green, gold bands), Crimsonbox (blood red, black iron) or Dreambox (abyss purple, red runes)
 func drawBossBox(x: Ctx, kind: String, X: float, Y: float, tt: float) -> void:
 	if kind == "kingYeti":
@@ -1563,6 +1644,29 @@ func drawCurio(x: Ctx, id: String, X: float, Y: float) -> void:
 			R.call("#4ad8a8", -3, -9, 6, 3); R.call("#bfffe8", -2, -9, 2, 1)
 
 
+## "The Errand Runner": a little courier dashing down a country road with the post (centred on X, Y)
+func drawQuestPainting(x: Ctx, X: float, Y: float) -> void:
+	var R = func(c, a: float, b: float, w: float, h: float):
+		x.fillStyle = c
+		x.fillRect(X + a, Y + b, w, h)
+	R.call("#241410", -16, -12, 32, 24)                             # frame
+	R.call("#c8941e", -15, -11, 30, 22); R.call("#ffd86a", -15, -11, 30, 1.2); R.call("#8a5a10", -15, 9.8, 30, 1.2)
+	R.call("#7ec8f0", -12, -8, 24, 16)                              # sky
+	R.call("#bfe6ff", -12, -8, 24, 3)
+	R.call("#fff2a8", 6, -6, 3, 3)                                  # sun
+	R.call("#ffffff", -9, -5, 5, 1.5); R.call("#ffffff", -8, -6, 3, 1)
+	R.call("#5aa84a", -12, 1, 24, 7); R.call("#7cc860", -12, 0, 10, 2); R.call("#7cc860", 3, -1, 9, 3)   # hills
+	R.call("#e0c08a", -12, 5, 24, 3); R.call("#c8a070", -12, 7, 24, 1)                                    # the road
+	# the runner, mid-stride
+	R.call("#3a5ab8", -2, -1, 4, 4)                                 # tunic
+	R.call("#ffdcc2", -1.5, -4, 3, 3); R.call("#8a4a20", -1.5, -4.5, 3, 1.2)   # head and hair
+	R.call("#c0504a", -2.5, -5, 4, 1)                               # cap
+	R.call("#3a2a20", -3, 3, 1.5, 2.5); R.call("#3a2a20", 1.5, 3, 1.5, 2); R.call("#3a2a20", 2.5, 4.5, 1.5, 1)   # legs
+	R.call("#b8864a", -4.5, -1, 2.5, 3)                             # satchel
+	R.call("#ffffff", 2, -2, 3, 2); R.call("#ffffff", 4, -3.5, 2.5, 1.8); R.call("#f4e8c8", 5.5, -5, 2.5, 1.8)   # letters flying
+	R.call(rgba(255, 255, 255, 0.7), -9, 0, 4, 0.8); R.call(rgba(255, 255, 255, 0.7), -8, 2, 3, 0.8)          # speed lines
+
+
 ## one label at a time, for whichever spot you're standing closest to (on the ground floor)
 func nearestSlot():
 	if absf(P.y - M.floorY) > 4:
@@ -1604,6 +1708,8 @@ func drawHouse(x: Ctx, sx: float, sy: float) -> void:
 		x.restore()
 		x.fillStyle = rgba(110, 170, 255, 0.08 + 0.04 * sin(t * 7))
 		x.fillRect(X0 - 10, Y0 - sy - 6, 84, 8)   # its glow on the floor
+	if autoQuestOwned():
+		drawQuestPainting(x, 40 - sx, Y0 - 100 - sy)   # above the front door: a clear patch of wall in every home
 	var near = nearestSlot()
 	for s in M.slots:
 		var id: String = str(Hs.get("placed", {}).get(s.k, ""))

@@ -50,47 +50,13 @@ await page.evaluate(() => {
 });
 
 /* ------------------------------------------------------------------ art */
-// every hero in both genders, in their starter look (gear and cosmetics change stats, not the sprite)
-const LOOKS = [['rock', 'm'], ['rock', 'f'], ['archer', 'm'], ['archer', 'f'], ['mage', 'm'], ['mage', 'f'], ['summoner', 'm'], ['summoner', 'f']];
-const WIND_ANIMS = ['idle', 'rest', 'walk', 'run', 'jump', 'land'];   // these also get the four other hair/wind variants
-const PREFIX = { rock: null, archer: 'a_', mage: 'm_', summoner: 'j_' };
 const THEMES = ['meadow', 'ridge', 'hollow', 'interior', 'crimson', 'lair'];
 const CLASS_IDS = ['rock', 'archer', 'mage', 'summoner'];
 
 if (ONLY.includes('art')) {
-  rmSync(join(OUT, 'art/hero'), { recursive: true, force: true });
+  // the heroes are baked in layers (every armor and weapon tier) by heroes.mjs, and Tank by tank.mjs
+  console.log('heroes: run tools/bake/heroes.mjs (and tank.mjs) for the hero sprites');
   rmSync(join(OUT, 'art/mobs'), { recursive: true, force: true });
-  const heroManifest = { frame_w: 0, frame_h: 0, origin: [80, 132], looks: {} };
-  for (const [cls, g] of LOOKS) {
-    console.log(`hero ${cls} ${g}…`);
-    const info = await page.evaluate(([cls, g, windy, prefix]) => {
-      const c = save.chars[cls]; c.look = Object.assign({ gender: g }, DEFAULT_LOOK[cls][g]); ensureLook(cls, c);
-      setClass(cls); buildRock(0, 0); clearTimeout(warmTimer); WARM = [];
-      const ids = ANIMS.map(a => a.id).filter(id => !/^[amj]_/.test(id) || (prefix && id.startsWith(prefix)));
-      const out = {}, tail = HERO.look.style === 'ponytail';
-      for (const id of ids) {
-        const A = ANIM_BY_ID[id], n = RF[id].length, vs = windy.includes(id) && !WINDLESS.has(id) ? [0, 1, 2, 3, 4] : [1];
-        out[id] = { fps: A.fps || 10, loop: !!A.loop, frames: n, variants: vs, strips: {} };
-        if (tail) out[id].tail = {};
-        for (const vi of vs) {
-          const frames = Array.from({ length: n }, (_, f) => heroFrame(id, vi, f));
-          out[id].strips[vi] = __strip(frames);
-          if (tail) out[id].tail[vi] = frames.map(c => c.tail ? [+c.tail[0].toFixed(2), +c.tail[1].toFixed(2)] : null);
-        }
-      }
-      const P = HERO.pal, rgb = k => P[k] ? '#' + P[k].map(v => v.toString(16).padStart(2, '0')).join('') : null;
-      return { anims: out, tail: tail ? { hair: rgb('hair'), out: rgb('hairOut') || '#3c2814', light: rgb('hairL'), shade: rgb('hairS') } : null };
-    }, [cls, g, WIND_ANIMS, PREFIX[cls]]);
-    const look = `${cls}_${g}`, L = { anims: {}, tail: info.tail };
-    for (const [id, a] of Object.entries(info.anims)) {
-      for (const [vi, s] of Object.entries(a.strips)) { png(`art/hero/${look}/${id}_${vi}.png`, s.url); heroManifest.frame_w = s.w; heroManifest.frame_h = s.h; }
-      L.anims[id] = { fps: a.fps, loop: a.loop, frames: a.frames, variants: a.variants };
-      if (a.tail) L.anims[id].tail = a.tail;
-    }
-    heroManifest.looks[look] = L;
-  }
-  json('art/hero/hero.json', heroManifest);
-
   console.log('monsters, bosses and companions…');
   const sets = await page.evaluate(() => {
     const out = {};

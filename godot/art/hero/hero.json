@@ -289,7 +289,12 @@
      ]
     }
    },
-   "tail": null
+   "tail": null,
+   "layered": true,
+   "armor": 6,
+   "gear": [
+    "sword"
+   ]
   },
   "rock_f": {
    "anims": {
@@ -574,7 +579,12 @@
      ]
     }
    },
-   "tail": null
+   "tail": null,
+   "layered": true,
+   "armor": 6,
+   "gear": [
+    "sword"
+   ]
   },
   "archer_m": {
    "anims": {
@@ -955,7 +965,12 @@
      ]
     }
    },
-   "tail": null
+   "tail": null,
+   "layered": true,
+   "armor": 6,
+   "gear": [
+    "bow"
+   ]
   },
   "archer_f": {
    "anims": {
@@ -3661,7 +3676,12 @@
     "out": "#41361b",
     "light": "#efd390",
     "shade": "#9b8140"
-   }
+   },
+   "layered": true,
+   "armor": 6,
+   "gear": [
+    "bow"
+   ]
   },
   "mage_m": {
    "anims": {
@@ -4026,7 +4046,13 @@
      ]
     }
    },
-   "tail": null
+   "tail": null,
+   "layered": true,
+   "armor": 6,
+   "gear": [
+    "staff",
+    "wand"
+   ]
   },
   "mage_f": {
    "anims": {
@@ -4391,7 +4417,13 @@
      ]
     }
    },
-   "tail": null
+   "tail": null,
+   "layered": true,
+   "armor": 6,
+   "gear": [
+    "staff",
+    "wand"
+   ]
   },
   "summoner_m": {
    "anims": {
@@ -4748,7 +4780,12 @@
      ]
     }
    },
-   "tail": null
+   "tail": null,
+   "layered": true,
+   "armor": 6,
+   "gear": [
+    "ring"
+   ]
   },
   "summoner_f": {
    "anims": {
@@ -5105,7 +5142,12 @@
      ]
     }
    },
-   "tail": null
+   "tail": null,
+   "layered": true,
+   "armor": 6,
+   "gear": [
+    "ring"
+   ]
   },
   "tank_m_0": {
    "anims": {

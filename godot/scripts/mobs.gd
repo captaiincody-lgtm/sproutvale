@@ -338,8 +338,8 @@ func damageSlime(e, mv: Dictionary, _from = null) -> void:
 		P.juggleT = gameTime   # every hit on the juggled enemy extends the window
 	if e.state == "dead":
 		return
-	var crit = randf() * 100 < PS.crit
-	var dmg: float = PS.atk * mv.get("dmg", 1.0) * rand(0.9, 1.1) * 100 / (100 + e.def * 4)
+	var crit = treeCrit() or randf() * 100 < PS.crit
+	var dmg: float = PS.atk * mv.get("dmg", 1.0) * rand(0.9, 1.1) * 100 / (100 + e.def * 4) * treeHitMul(e, crit)
 	if crit:
 		dmg *= PS.critDmg
 	if classId == "tank" and tankWeakHit(e):   # the Diagnostic Helmet: a weak point is a super crit, twice a crit
@@ -356,9 +356,8 @@ func damageSlime(e, mv: Dictionary, _from = null) -> void:
 		dmg *= 1 + PS.hunt
 	if e.boss:
 		dmg *= bossDmgMul(e, mv)   # (Glamrax's mana shield)
-	if PS.get("leech") and P.hp > 0:
-		P.hp = minf(PS.hp, P.hp + PS.hp * PS.leech)
-	dmg = maxf(1, roundf(dmg))
+	treeLeech(crit)
+	dmg = treeAfterHit(e, crit, maxf(1, roundf(dmg)))
 	e.hp -= dmg
 	e.flash = 0.1; e.showBar = 3; e.aggro = true
 	floatText(e.x, e.y - e.h - 6, str(int(dmg)), "crit" if crit else "dmg")
@@ -410,6 +409,7 @@ func killSlime(e) -> void:
 		killBoss(e)
 		return
 	e.state = "dead"; e.deadT = 0; e.hp = 0
+	treeOnKill()
 	if e.T.get("ai") == "climb":   # the mountain's monsters: a heavy crunch
 		Sfx.slam()
 		Sfx.tone(140, 0.3, "triangle", 0.08, 60)
@@ -440,10 +440,11 @@ func killSlime(e) -> void:
 		cheer()
 		banner("Elite defeated!", "%s · huge rewards" % e.T.name)
 		shake = 6
-	if e.type == "abyss":
-		var n = rint(1, 3) if randf() < 0.6 else 0   # they're five levels above you now: more coins
+	if e.type == "abyss" or e.elite:   # everything an Obelisk calls up pays in Abyssal Coins
+		var n = rint(5, 9) if e.elite else rint(1, 3)
 		for k in n:
 			_drop("abyss", e, rand(-60, 60), rand(-240, -160))
+	dropLoot(e)
 	rollCards(e)
 	gainExp(gained)
 	var xs = ""
@@ -467,6 +468,18 @@ func killSlime(e) -> void:
 				Sfx.buy()
 	styleAdd(40.0 if e.T.get("metal") else 16.0, "kill")
 	saveDirty = true
+
+
+## the rare stuff: a loot bag (1%) and the monster's rare treasure (shinies and elites are luckier)
+func dropLoot(e) -> void:
+	if not SLIME_TYPES.has(e.type) or e.type == "abyss":
+		return
+	var luck: float = (5.0 if e.shiny else 1.0) * (3.0 if e.elite else 1.0)
+	if randf() < LOOT_BAG_RATE * luck:
+		_drop("bag", e, rand(-40, 40), rand(-260, -200), 1, e.type)
+	if randf() < RARE_DROP_RATE * luck:
+		var d = _drop("rare", e, rand(-30, 30), rand(-280, -220), 1, e.type)
+		d.shiny = e.shiny or randf() < SHINY_RARE_RATE
 
 
 # ================================================================ the Crimson Wastes

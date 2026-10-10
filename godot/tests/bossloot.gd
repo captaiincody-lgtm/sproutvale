@@ -213,7 +213,7 @@ func _process(delta: float) -> void:
 				c.skills["avatarBlade"] = 5
 				game.PS = game.calcStats()
 				game.gainExp(game.expNeed(204) * 2)
-				print("level after exp past 200: ", c.level, " sp ", c.sp, " ap ", c.ap, " ascCap ", game.ascCap())
+				print("level after exp past 200: ", c.level, " sp ", c.sp, " tp ", c.tp, " ascCap ", game.ascCap())
 			"selskill": game.skillSel = s[2]
 			"ascbuy":
 				game.CH().asc = {}

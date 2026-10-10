@@ -4,7 +4,7 @@ extends "res://scripts/hud.gd"
 ## Cards are drawn content first; their backgrounds go into two canvas items that sit behind it,
 ## so a card can be sized to whatever it ended up holding.
 
-const TABS := [["char", "Character"], ["inv", "Inventory"], ["shop", "Shop"], ["skills", "Skills"], ["quests", "Quests"],
+const TABS := [["char", "Character"], ["tree", "Attributes"], ["inv", "Inventory"], ["shop", "Shop"], ["skills", "Skills"], ["quests", "Quests"],
 	["map", "World Map"], ["bestiary", "Bestiary"], ["controls", "Controls"], ["world", "World"]]
 const PAD := 8.0
 const CARD := {"fill": Color.WHITE, "border": INK}
@@ -169,15 +169,21 @@ func flow(x: float, y: float, w: float, items: Array, h := 16.0, gap := 5.0) -> 
 
 
 ## the "currency" strip shown on the Inventory and Shop tabs
-func currencyBag(x: float, y: float, w: float, extra := "") -> float:
+func currencyBag(x: float, y: float, w: float, extra := "", cards := -1) -> float:
 	var items = [[uW("CURRENCY", 6, PX) + 4, func(X, Y): uText("CURRENCY", X, Y + 5, 6, css("#8a5a08"), PX)]]
 	var cur = [["coin", fmt(save.coins), "Coins", CUR_TIPS.coin], ["boss", fmt(save.get("bossCoins", 0)), "Boss Coins", CUR_TIPS.boss],
 		["abyss", fmt(save.get("abyssCoins", 0)), "Abyssal Coins", CUR_TIPS.abyss], ["luna", fmt(save.get("lunaCoins", 0)), "Luna Coins", CUR_TIPS.luna]]
+	if cards >= 0:
+		cur.append(["cards", fmt(cards), "Monster Cards", CUR_TIPS.get("cards", "")])
 	for c in cur:
 		var w0 = uW(c[1], 9) + uW(" " + c[2], 9, UF) + 30
 		items.append([w0, func(X, Y):
 			uBox(Rect2(X, Y, w0, 16), Color.WHITE, INK, 2, 8)
-			_coin(Vector2(X + 10, Y + 8), 4.5, c[0])
+			if c[0] == "cards":   # a little card instead of a coin
+				uBox(Rect2(X + 6, Y + 3, 8, 10), css("#9fe6ff"), INK, 1, 2)
+				uci.draw_rect(Rect2(X + 8, Y + 5, 4, 3), css("#ffffff"))
+			else:
+				_coin(Vector2(X + 10, Y + 8), 4.5, c[0])
 			var tw = uText(c[1], X + 18, Y + 3, 9, INK, UB)
 			uText(" " + c[2], X + 18 + tw, Y + 3, 9, INK, UF)
 			zone(Rect2(X, Y, w0, 16), Callable(), c[3])])
@@ -186,12 +192,13 @@ func currencyBag(x: float, y: float, w: float, extra := "") -> float:
 	return flow(x, y, w, items) + 8
 
 
-func heroPic(r: Rect2, cls: String, anim := "idle", f := 0, bg := true) -> void:
+func heroPic(r: Rect2, cls: String, anim := "idle", f := 0, bg := true, look := "") -> void:
 	if bg:
 		uBox(r, css("#e8f6ff"), INK, 2, 7)
 		uGrad(Rect2(r.position + Vector2(2, 2), Vector2(r.size.x - 4, r.size.y * 0.75 - 2)), css("#bfe6ff"), css("#d4eeff"), css("#e8f6ff"), 0.5)
 		uci.draw_rect(Rect2(r.position.x + 2, r.position.y + r.size.y * 0.75, r.size.x - 4, r.size.y * 0.25 - 2), css("#8fd06a"))
-	var look = lookOf(cls)
+	if look == "":
+		look = lookOf(cls)
 	var A = Assets.hero_anim(look, anim)
 	var tex = Assets.hero_strip(look, anim, 1)
 	if tex == null:
@@ -291,8 +298,8 @@ func renderMenu(ci: CanvasItem) -> void:
 
 
 func _tabBadge(id: String, c: Dictionary) -> String:
-	if id == "char" and c.ap:
-		return str(c.ap)
+	if id == "tree" and int(c.get("tp", 0)) > 0:
+		return str(c.tp)
 	if id == "quests" and save.quests.any(func(q): return q.done):
 		return "!"
 	if id == "shop":
@@ -337,6 +344,7 @@ func renderPanel(ci: CanvasItem) -> void:
 	var h = 0.0
 	match curTab:
 		"char": h = _pChar(x, y, w)
+		"tree": h = _pTree(x, y, w)
 		"inv": h = _pInv(x, y, w)
 		"shop": h = _pShop(x, y, w)
 		"skills": h = _pSkills(x, y, w)
@@ -379,6 +387,9 @@ func attrTip(a: String) -> String:
 		"DEX": ("Luck" if classId == "archer" else "Dexterity") + ". +0.7% critical rate and a bit more critical damage per point."}.get(a, "")
 
 
+func _pTree(_x: float, _y: float, _w: float) -> float: return 0.0   # tree_ui.gd
+
+
 func _pChar(x: float, y: float, w: float) -> float:
 	var c = CH()
 	var s = PS
@@ -393,23 +404,29 @@ func _pChar(x: float, y: float, w: float) -> float:
 		var tw = uText(C.name, X, Y, 11)
 		jobPill(J, X + tw + 8, Y)
 		var yy = Y + 18
-		yy += muted("%s · 3 attribute points and 3 skill points per level%s" % [C.role, (" · becomes a **%s** at Lv %d" % [nextJ.name, nextJ.lv]) if nextJ else ""], X, yy, W) + 4
+		yy += muted("%s · 1 attribute point (for the Attribute Tree) and 3 skill points per level%s" % [C.role, (" · becomes a **%s** at Lv %d" % [nextJ.name, nextJ.lv]) if nextJ else ""], X, yy, W) + 4
 		for i in STAT_KEYS.size():
 			yy += statRow(X, yy, W, STAT_KEYS[i], vals[i], STAT_TIPS.get(STAT_KEYS[i], ""))
 		return yy - Y
 	var card2 = func(X, Y, W):
+		var tp = int(c.get("tp", 0))
 		uText("Attributes", X, Y, 11)
-		uPill("%d to spend" % c.ap, X + W, Y + 1, GOLD, INK, 8, 2)
-		var yy = Y + 22
+		if tp > 0:
+			uPill("%d to spend" % tp, X + W, Y + 1, GOLD, INK, 8, 2)
+		var yy = Y + 20
+		yy += muted("Grown in the **Attribute Tree**: one point every level.", X, yy, W) + 4
+		var T = TREE.totals(c.get("tree", {}))
 		for a in ATTRS:
-			var r = Rect2(X, yy, W, 20)
 			uText(attrName(a), X, yy + 3, 10)
 			uText(attrDesc(a), X + 40, yy + 4, 8, MUTED, UF)
-			uText(str(c.attrs[a]), X + W - 70, yy + 3, 10, INK, UB, 2)
-			uButton(Rect2(X + W - 64, yy + 1, 28, 17), "+1", func(): _addAttr(a, 1), {"disabled": c.ap < 1, "size": 8})
-			uButton(Rect2(X + W - 32, yy + 1, 30, 17), "+5", func(): _addAttr(a, 5), {"disabled": c.ap < 5, "size": 8})
-			zone(Rect2(X, yy, W - 68, 20), Callable(), attrTip(a))
-			yy += 24
+			var bonus = int(T.get(a, 0))
+			uText(str(int(c.attrs[a]) + bonus), X + W - 4, yy + 3, 10, INK, UB, 2)
+			if bonus:
+				uText("+%d tree" % bonus, X + W - 34, yy + 4, 7, css("#2a8a55"), UB, 2)
+			zone(Rect2(X, yy, W, 20), Callable(), attrTip(a))
+			yy += 21
+		uButton(Rect2(X, yy + 2, W, 20), "🌳 Open the Attribute Tree", func(): openTab("tree"), {"bg": GOLD if tp > 0 else MINT, "size": 9})
+		yy += 24
 		return yy - Y
 	var y0 = y
 	y += uCards(x, y, w, 2, [card1, card2])
@@ -442,16 +459,6 @@ func _pChar(x: float, y: float, w: float) -> float:
 	return y - y0
 
 
-func _addAttr(a: String, n: int) -> void:
-	var c = CH()
-	n = mini(n, c.ap)
-	c.attrs[a] += n
-	c.ap -= n
-	_restat()
-	Sfx.ui()
-	_changed()
-
-
 # ================================================================ Inventory
 
 func _pInv(x: float, y: float, w: float) -> float:
@@ -462,70 +469,172 @@ func _pInv(x: float, y: float, w: float) -> float:
 			if save.cards[k].get(q):
 				cards += 1
 	var y0 = y
-	y += currencyBag(x, y, w, "🃏 %d Monster cards" % cards)
-	var boxKinds = (["croc", "warlord", "dreamer", "kingYeti"] + MORE_BOSSES.keys().filter(func(k): return BOXES.has(k))).filter(func(k): return boxCount(k) > 0)
-	if not boxKinds.is_empty():
-		y += uCards(x, y, w, 1, [func(X, Y, W):
-			var yy = Y + h3("Boss boxes", X, Y)
-			yy += muted("Boxes you've collected. Open as many as you like at once — each one is rolled on its own.", X, yy, W) + 4
-			for k in boxKinds:
-				var BX: Dictionary = BOXES[k]
-				var n = boxCount(k)
-				var col = css(MORE_BOSSES[k].ui) if MORE_BOSSES.has(k) else css("#1f6f9a") if k == "kingYeti" else css("#6a2a9a") if k == "dreamer" else (css("#9a1f35") if k == "warlord" else css("#2a7a3a"))
-				uText("📦 %s ×%d" % [BX.name, n], X + 2, yy + 3, 10, col, UB)
-				uText("from %s" % BX.boss, X + 2, yy + 18, 8, MUTED, UF)
-				var bx = X + W
-				for q in [["All", n], ["10", 10], ["5", 5], ["1", 1]]:
-					var cnt: int = q[1]
-					if cnt <= 0 or (cnt > n and q[0] != "All"):
-						continue
-					var label: String = "Open %s" % q[0]
-					var bw = uW(label, 9) + 16
-					bx -= bw + 4
-					uButton(Rect2(bx, yy, bw, 19), label, func(): toggleMenu(false); openBoxes(k, cnt), {"bg": MINT, "shadow": 0.0})
-				dashed(X, X + W, yy + 28)
-				yy += 32
-			return yy - Y], [{"fill": css("#fff8e6"), "border": css("#e0b34a")}])
+	y += currencyBag(x, y, w, "", cards)
+	# boxes, loot bags and treasures side by side
+	y += uCards(x, y, w, 3, [_invBoxes(), _invBags(), _invRares()],
+		[{"fill": css("#fff8e6"), "border": css("#e0b34a")}, {"fill": css("#fdf3e4"), "border": css("#a0703a")}, {"fill": css("#eef8ff"), "border": css("#3a8ac0")}])
 	y += 10
-	var card = func(X, Y, W):
+	# materials, three to a row
+	var mats = func(X, Y, W):
 		var yy = Y + h3("Materials", X, Y)
-		for k in SLIME_KEYS:
-			var T: Dictionary = SLIME_TYPES[k]
+		var cols = 3
+		var gap = 14.0
+		var cw = (W - gap * (cols - 1)) / cols
+		var keys: Array = SLIME_KEYS.duplicate()
+		keys.sort_custom(func(a, b): return SLIME_TYPES[a].lv < SLIME_TYPES[b].lv)
+		for i in keys.size():
+			var k: String = keys[i]
+			var cx = X + (i % cols) * (cw + gap)
+			var ry = yy + floori(i / float(cols)) * 19
 			var n = int(save.mats.get(k, 0))
 			var seen = B.get(k, {}).get("kills", 0)
 			var a = 1.0 if n else 0.5
-			matIcon(k, X + 3, yy + 2, 12)
-			uText(matName(k), X + 24, yy + 2, 9, Color(INK, a))
-			uText(("Dropped by " + T.name) if seen else "Dropped by ???", X + 150, yy + 3, 8, Color(MUTED, a), UF)
-			uText("×" + fmt(n), X + W - 4, yy + 2, 9, Color(INK, a), UB, 2)
-			dashed(X, X + W, yy + 17)
-			zone(Rect2(X, yy, W, 17), Callable(), MAT_TIPS.get(k, ""))
-			yy += 19
-		yy += 4
-		yy += muted("Materials are shared by all heroes and spent in the Shop.", X, yy, W)
+			matIcon(k, cx + 1, ry + 2, 12)
+			uText(matName(k), cx + 18, ry + 2, 9, Color(INK, a))
+			uText("×" + fmt(n), cx + cw - 2, ry + 2, 9, Color(INK, a), UB, 2)
+			dashed(cx, cx + cw, ry + 17)
+			zone(Rect2(cx, ry, cw, 17), Callable(), "%s\n%s" % [MAT_TIPS.get(k, ""), ("Dropped by %s (Lv %d)" % [SLIME_TYPES[k].name, SLIME_TYPES[k].lv]) if seen else "Dropped by ???"])
+		yy += ceili(keys.size() / float(cols)) * 19 + 4
+		yy += muted("Materials are shared by all heroes and spent in the Shop. Hover one to see who drops it.", X, yy, W)
 		return yy - Y
-	y += uCards(x, y, w, 1, [card])
+	y += uCards(x, y, w, 1, [mats])
 	var KI: Dictionary = save.get("keyItems", {})
 	if tb(KI.get("dreamKey")) or tb(KI.get("yetiPendant")):
 		y += 10
-		y += uCards(x, y, w, 1, [func(X, Y, W):
-			var yy = Y + h3("Key items", X, Y)
-			if tb(KI.get("dreamKey")):
-				var t = Assets.tex("items/dream_key.png")
-				if t:
-					uci.draw_texture_rect(t, Rect2(X, yy, 32, 32), false)
-				uText("The Dream Key", X + 40, yy + 2, 10, css("#6a2a9a"))
-				uPara("Dropped by The Dreamer. It hums when you hold it. It can break the crystal that Glamrax keeps people imprisoned in, high over the Abyss Volcano.", X + 40, yy + 16, W - 40, 8, MUTED)
-				yy += 38
-			if tb(KI.get("yetiPendant")):
-				var t = Assets.tex("items/yeti_pendant.png")
-				if t:
-					uci.draw_texture_rect(t, Rect2(X, yy, 32, 32), false)
-				uText("Glowing Pendant", X + 40, yy + 2, 10, css("#1f6f9a"))
-				uPara("Taken from King Yeti. Its light tore open the portal out of the collapsing cave, and it keeps that way to Glamrax's Gate open.", X + 40, yy + 16, W - 40, 8, MUTED)
-				yy += 38
-			return yy - Y], [{"fill": css("#f6efff"), "border": css("#6a2a9a")}])
+		var keyCards = []
+		if tb(KI.get("dreamKey")):
+			keyCards.append(_keyCard("items/dream_key.png", "The Dream Key", css("#6a2a9a"), "Dropped by The Dreamer. It hums when you hold it. It can break the crystal that Glamrax keeps people imprisoned in, high over the Abyss Volcano."))
+		if tb(KI.get("yetiPendant")):
+			keyCards.append(_keyCard("items/yeti_pendant.png", "Glowing Pendant", css("#1f6f9a"), "Taken from King Yeti. Its light tore open the portal out of the collapsing cave, and it keeps that way to Glamrax's Gate open."))
+		var st = []
+		for k in keyCards:
+			st.append({"fill": css("#f6efff"), "border": css("#6a2a9a")})
+		y += uCards(x, y, w, 2, keyCards, st)
 	return y - y0
+
+
+func _keyCard(tex: String, name: String, col: Color, text: String) -> Callable:
+	return func(X, Y, W):
+		var t = Assets.tex(tex)
+		if t:
+			uci.draw_texture_rect(t, Rect2(X, Y, 32, 32), false)
+		uText(name, X + 40, Y + 2, 10, col)
+		var h = uPara(text, X + 40, Y + 16, W - 40, 8, MUTED)
+		return maxf(34, 16 + h)
+
+
+## a row of small buttons, right to left from `bx`; each is [label, callable]
+func _btnRow(btns: Array, X: float, Y: float) -> void:
+	var bx = X
+	for b in btns:
+		var bw = uW(b[0], 8) + 12
+		uButton(Rect2(bx, Y, bw, 17), b[0], b[1], {"bg": b[2] if b.size() > 2 else MINT, "shadow": 0.0, "size": 8})
+		bx += bw + 4
+
+
+func _invBoxes() -> Callable:
+	return func(X, Y, W):
+		var yy = Y + h3("Boss boxes", X, Y)
+		var boxKinds = (["croc", "warlord", "dreamer", "kingYeti"] + MORE_BOSSES.keys().filter(func(k): return BOXES.has(k))).filter(func(k): return boxCount(k) > 0)
+		if boxKinds.is_empty():
+			return yy - Y + muted("A boss drops a box every time you beat it. Open them here.", X, yy, W)
+		for k in boxKinds:
+			var BX: Dictionary = BOXES[k]
+			var n = boxCount(k)
+			var col = css(MORE_BOSSES[k].ui) if MORE_BOSSES.has(k) else css("#1f6f9a") if k == "kingYeti" else css("#6a2a9a") if k == "dreamer" else (css("#9a1f35") if k == "warlord" else css("#2a7a3a"))
+			uText("📦 %s ×%d" % [BX.name, n], X + 2, yy + 2, 10, col, UB)
+			uText("from %s" % BX.boss, X + W, yy + 4, 7, MUTED, UF, 2)
+			var btns = []
+			for q in [["1", 1], ["5", 5], ["10", 10], ["All", n]]:
+				var cnt: int = q[1]
+				if cnt <= 0 or (cnt > n and q[0] != "All") or (q[0] == "All" and n <= 1):
+					continue
+				btns.append(["Open %s" % q[0], func(): toggleMenu(false); openBoxes(k, cnt)])
+			_btnRow(btns, X + 2, yy + 17)
+			dashed(X, X + W, yy + 39)
+			yy += 43
+		return yy - Y
+
+
+func _invBags() -> Callable:
+	return func(X, Y, W):
+		var yy = Y + h3("Loot bags", X, Y)
+		var kinds = SLIME_KEYS.filter(func(k): return bagCount(k) > 0)
+		if kinds.is_empty():
+			return yy - Y + muted("Every monster has a 1 in 100 chance to drop a loot bag: EXP, coins, its material, and sometimes its rare treasure.", X, yy, W)
+		for k in kinds:
+			var n = bagCount(k)
+			withCtx(Vector2(X + 9, yy + 20), 1.3, func(cx): drawLootBag(cx, k, 0, 0, realTime))
+			uText("%s Bag" % SLIME_TYPES[k].name, X + 22, yy + 2, 9, INK, UB)
+			uText("×%d" % n, X + W, yy + 2, 9, INK, UB, 2)
+			var btns = [["Open 1", func(): _openBags(k, 1)]]
+			if n > 1:
+				btns.append(["Open all", func(): _openBags(k, n)])
+			_btnRow(btns, X + 22, yy + 15)
+			dashed(X, X + W, yy + 36)
+			yy += 40
+		return yy - Y
+
+
+func _openBags(k: String, n: int) -> void:
+	var got = openBags(k, n)
+	if got.exp == 0 and got.coins == 0:
+		return
+	Sfx.buy()
+	var bits = ["+%s EXP" % fmt(got.exp), "+%s coins" % fmt(got.coins), "+%d %s" % [got.mats, matName(k).to_lower()]]
+	toast("💰 %s: %s" % ["Loot bag" if n == 1 else "%d loot bags" % n, ", ".join(bits)])
+	for key in got.rares:
+		Sfx.rankUp(9 if key.ends_with("_shiny") else 7)
+		banner("SHINY RARE TREASURE!" if key.ends_with("_shiny") else "RARE TREASURE!", "%s%s · sells for %s coins" % [rareName(key), (" ×%d" % got.rares[key]) if got.rares[key] > 1 else "", fmt(rareValue(key))])
+	PS = calcStats()
+	persist()
+	_changed()
+
+
+func _invRares() -> Callable:
+	return func(X, Y, W):
+		uText("Rare treasures", X, Y, 10)
+		var R: Dictionary = save.get("rares", {})
+		var keys = R.keys().filter(func(k): return int(R[k]) > 0)
+		keys.sort_custom(func(a, b): return rareValue(a) > rareValue(b))
+		var yy = Y + 15
+		if keys.is_empty():
+			return yy - Y + muted("Every monster has a rare treasure it drops once in a long while (or from its loot bag). They aren't for crafting: sell them for a fortune. Shiny ones are worth five times as much.", X, yy, W)
+		var total = 0
+		for k in keys:
+			total += rareValue(k) * int(R[k])
+		uButton(Rect2(X + W - 70, Y - 2, 70, 15), "Sell all", func(): _sellRares(keys, -1), {"bg": GOLD, "shadow": 0.0, "size": 7})
+		for k in keys:
+			var n = int(R[k])
+			var shiny = k.ends_with("_shiny")
+			withCtx(Vector2(X + 8, yy + 19), 1.3, func(cx): drawRare(cx, rareType(k), shiny, 0, 0, realTime))
+			uText(rareName(k), X + 22, yy + 1, 9, css("#b0549a") if shiny else INK, UB)
+			uText("×%d" % n, X + W, yy + 1, 9, INK, UB, 2)
+			uText("%s each" % fmt(rareValue(k)), X + 22, yy + 13, 7, MUTED, UF)
+			var btns = [["Sell 1", func(): _sellRares([k], 1)]]
+			if n > 1:
+				btns.append(["Sell all", func(): _sellRares([k], -1)])
+			var bx = X + W
+			for b in btns:
+				bx -= uW(b[0], 8) + 12 + 4
+			_btnRow(btns, bx + 4, yy + 12)
+			zone(Rect2(X, yy, 22, 26), Callable(), "Dropped by %s. Not used for crafting: sell it for coins." % monsterName(rareType(k)))
+			dashed(X, X + W, yy + 31)
+			yy += 35
+		yy += muted("Worth %s coins in all." % fmt(total), X, yy, W)
+		return yy - Y
+
+
+func _sellRares(keys: Array, n: int) -> void:
+	var paid = 0
+	for k in keys:
+		paid += sellRares(k, int(save.rares.get(k, 0)) if n < 0 else n)
+	if paid > 0:
+		Sfx.coin()
+		Sfx.buy()
+		toast("Sold for %s coins." % fmt(paid))
+		persist()
+		_changed()
 
 
 # ================================================================ Shop
@@ -604,7 +713,14 @@ func _gearCard(kind: String, tiers: Array, cur: int) -> Callable:
 		var C: Dictionary = CLASSES[classId]
 		var nx = _tier(tiers, cur + 1)
 		var yy = Y + h2(C.armorLabel if kind == "armor" else ("Staff" if kind == "staff" else C.weaponLabel), X, Y, W)
-		heroPic(Rect2(X, yy, 44, 54), classId)
+		# the picture shows the next tier on the hero, so you can see what the upgrade looks like
+		var c = CH()
+		var pv = {"armor": int(c.armor), "weapon": int(c.weapon), "staff": int(c.get("staff", 0))}
+		if nx:
+			pv[kind] = cur + 1
+		heroPic(Rect2(X, yy, 44, 54), classId, "idle", 0, true, gearLook(classId, pv.armor, pv.weapon, pv.staff))
+		if nx:
+			uText("Next", X + 22, yy + 46, 7, css("#2a8a55"), UB, 1)
 		var tx = X + 52
 		uPara("Now: **%s**" % tiers[cur].name, tx, yy + 4, W - 52, 9, INK)
 		if nx:
@@ -870,8 +986,34 @@ func houseCard(x: float, y: float, w: float) -> float:
 					else:
 						uButton(Rect2(bx, by, 64, 18), "Take down" if on else "Display", func(): _ctoggle(it.id), {"disabled": not on and Hs.shelfItems.size() >= slots, "size": 8}))
 		return yy - Y)
+	cards.append(func(X, Y, W):
+		var P_: Dictionary = QUEST_PAINTING
+		var own = autoQuestOwned()
+		uText("Painting", X, Y, 11)
+		uText("Hangs on the wall", X + uW("Painting", 11) + 6, Y + 2, 8, MUTED, UF)
+		var yy = Y + 18
+		yy += _fitem(X, yy, W, P_.name, P_.desc, P_.flavor, own, func(px, py): withCtx(Vector2(px, py), 1.0, func(cx): drawQuestPainting(cx, 21, 15)),
+			func(bx, by):
+				if own:
+					uPill("Hung", bx + 64, by + 2, GOLD, INK, 8, 2)
+				else:
+					_priceBtn(Rect2(bx, by, 64, 18), P_.price, func(): _paintBuy()))
+		return yy - Y)
 	y += uCards(x, y, w, 2, cards)
 	return y - y0
+
+
+func _paintBuy() -> void:
+	var Hs: Dictionary = save.house
+	if autoQuestOwned() or save.coins < QUEST_PAINTING.price:
+		return
+	save.coins -= QUEST_PAINTING.price
+	Hs.owned.append(QUEST_PAINTING.id)
+	save.settings.autoQuests = true
+	Sfx.buy()
+	Sfx.levelUp()
+	toast("%s hung in your house! Auto-complete is on (Quests tab)." % QUEST_PAINTING.name)
+	_changed()
 
 
 func _priceBtn(r: Rect2, price: int, cb: Callable) -> void:
@@ -1263,7 +1405,7 @@ func _pQuests(x: float, y: float, w: float) -> float:
 	y += uCards(x, y, w, 1, [func(X, Y, W):
 		uText("★ Main Quest %d · %s" % [mq.q + 1, Q.title], X, Y, 11, css("#8a5a08"))
 		if done and not mq.claimed:
-			uButton(Rect2(X + W - 56, Y - 2, 56, 18), "Claim", func(): _mainClaim(), {"bg": MINT})
+			uButton(Rect2(X + W - 64, Y - 2, 64, 18), "Complete", func(): _mainClaim(), {"bg": MINT})
 		elif mq.claimed:
 			uPill("Complete", X + W, Y, GOLD, INK, 8, 2)
 		var yy = Y + 18
@@ -1274,6 +1416,19 @@ func _pQuests(x: float, y: float, w: float) -> float:
 			yy += 14
 		yy += 3 + muted("Reward: %s EXP and %s coins" % [fmt(Q.exp), fmt(Q.coins)], X, yy + 3, W)
 		return yy - Y], [{"fill": css("#fff6e3"), "border": css("#c89418")}])
+	y += 12
+	y += uCards(x, y, w, 1, [func(X, Y, W):
+		var own = autoQuestOwned()
+		var on = autoQuestOn()
+		uText("Auto-complete", X, Y, 11)
+		if own:
+			uButton(Rect2(X + W - 64, Y - 2, 64, 18), "On" if on else "Off", func(): _autoQuests(not on), {"on": on, "size": 8})
+		else:
+			uPill("🔒 Locked", X + W, Y, css("#d8dcea"), INK, 8, 2)
+		var yy = Y + 17
+		yy += muted(("Finished quests hand over their rewards by themselves, main quest included." if own else
+			"Hang the painting \"%s\" in your house (Shop › House) to unlock this. Finished quests will then hand over their rewards by themselves." % QUEST_PAINTING.name), X, yy, W)
+		return yy - Y])
 	y += 12
 	y += h3("Side quests", x, y) + 2
 	var cards = []
@@ -1287,7 +1442,7 @@ func _pQuests(x: float, y: float, w: float) -> float:
 				uBox(Rect2(pr.position, Vector2(pr.size.x * p, 6)), MINT, NONE, 0, 3)
 			uText("Reward: %s EXP and %s coins" % [fmt(q.exp), fmt(q.coins)], X, Y + 27, 8, MUTED, UF)
 			if q.done:
-				uButton(Rect2(X + W - 58, Y + 10, 58, 19), "Claim", func(): _claim(q.id), {"bg": MINT})
+				uButton(Rect2(X + W - 64, Y + 10, 64, 19), "Complete", func(): _claim(q.id), {"bg": MINT})
 			else:
 				uButton(Rect2(X + W - 58, Y + 10, 58, 19), "Swap", func(): _swap(q.id))
 			return 38.0)
@@ -1296,30 +1451,20 @@ func _pQuests(x: float, y: float, w: float) -> float:
 
 
 func _mainClaim() -> void:
-	var mq = mainQ()
-	var Q = MAINQS[mq.q]
-	if mq.stage >= Q.steps.size() and not mq.claimed:
-		mq.claimed = true
-		gainExp(Q.exp)
-		save.coins += Q.coins
-		toast("Main quest reward: +%s EXP, +%s coins" % [fmt(Q.exp), fmt(Q.coins)])
-		Sfx.levelUp()
-		mainQ()
+	if claimMainQuest():
 		_changed()
 
 
 func _claim(id) -> void:
-	for i in save.quests.size():
-		var q = save.quests[i]
-		if q.id == id and q.done:
-			save.quests.remove_at(i)
-			save.coins += q.coins
-			gainExp(q.exp)
-			toast("+%s EXP, +%s coins" % [fmt(q.exp), fmt(q.coins)])
-			Sfx.buy()
-			fillQuests()
-			_changed()
-			return
+	if claimSideQuest(id):
+		_changed()
+
+
+func _autoQuests(on: bool) -> void:
+	save.settings.autoQuests = on
+	Sfx.ui()
+	toast("Auto-complete is %s." % ("on: finished quests complete themselves" if on else "off"))
+	_changed()
 
 
 func _swap(id) -> void:
@@ -1430,55 +1575,26 @@ func _pMap(x: float, y: float, w: float) -> float:
 
 
 func drawWorldMap(x: Ctx, t: float) -> void:
-	var sea = x.createLinearGradient(0, 0, 0, 430)
-	sea.addColorStop(0, "#5fb2e8")
-	sea.addColorStop(1, "#3a86c8")
 	var top = WM_TOP if wmOpen("climb1") else 0.0
-	x.fillStyle = sea
-	x.fillRect(0, -top, 1000, 430 + top)
+	# the painted land (tools/bake/worldmap.mjs): sea and home island, then each region as it opens
+	_wmLayer(x, "base", top)
+	if crimsonOpen():
+		_wmLayer(x, "crimson", top)
+	if wmOpen("abyss1"):
+		_wmLayer(x, "abyss", top)
+	if top > 0:
+		_wmLayer(x, "north", top)
+	# glints running over the sea
 	x.fillStyle = "rgba(255,255,255,0.35)"
 	for i in 60:
 		var wx = fmod(i * 97 + t * 8, 1020.0) - 10
 		var wy = (i * 53) % int(430 + top) - top
 		x.fillRect(roundf(wx), wy, 6, 1)
-	var blob = func(cx, cy, rx, ry, fill, edge):
-		x.fillStyle = edge
-		x.beginPath(); x.ellipse(cx, cy + 4, rx + 3, ry + 3, 0, 0, TAU); x.fill()
-		x.fillStyle = fill
-		x.beginPath(); x.ellipse(cx, cy, rx, ry, 0, 0, TAU); x.fill()
-	x.fillStyle = "#e8d8a8"
-	x.beginPath(); x.moveTo(90, 250); x.bezierCurveTo(90, 40, 330, 20, 360, 150); x.bezierCurveTo(470, 80, 700, 90, 720, 220); x.bezierCurveTo(740, 390, 520, 410, 420, 360); x.bezierCurveTo(300, 420, 90, 400, 90, 250); x.fill()
-	x.strokeStyle = "#b89a60"; x.lineWidth = 3; x.stroke()
-	blob.call(215, 262, 95, 62, "#8fd06a", "#5a9a44"); blob.call(205, 100, 70, 44, "#9ad6a0", "#5a9a6a")
-	x.fillStyle = "#4aa0e0"; x.beginPath(); x.ellipse(205, 104, 36, 18, 0, 0, TAU); x.fill()
-	blob.call(405, 262, 72, 56, "#3f6a4c", "#2a4a34"); blob.call(565, 188, 88, 58, "#e0a84a", "#a8702e"); blob.call(650, 330, 62, 42, "#4a5a3a", "#2a3424")
-	for p in [[160, 240], [185, 290], [255, 235], [270, 290], [150, 275]]:
-		x.fillStyle = "#6e4428"; x.fillRect(p[0], p[1], 3, 8)
-		x.fillStyle = "#3f8f45" if p[0] % 2 else "#ec8fb0"
-		x.beginPath(); x.arc(p[0] + 1, p[1] - 2, 7, 0, TAU); x.fill()
-	for p in [[375, 250], [425, 245], [400, 285]]:
-		x.fillStyle = "#e8dcc0"; x.fillRect(p[0], p[1], 3, 8)
-		x.fillStyle = "#c24058"; x.beginPath(); x.ellipse(p[0] + 1, p[1] - 1, 8, 5, 0, PI, TAU); x.fill()
-	for p in [[530, 185], [590, 170], [610, 210]]:
-		x.fillStyle = "#c2562a"; x.beginPath(); x.moveTo(p[0] - 12, p[1] + 8); x.lineTo(p[0], p[1] - 10); x.lineTo(p[0] + 12, p[1] + 8); x.fill()
-	if crimsonOpen():
-		x.fillStyle = "#3a0c14"; x.beginPath(); x.moveTo(720, 400); x.bezierCurveTo(700, 300, 760, 40, 860, 50); x.bezierCurveTo(990, 60, 990, 330, 900, 400); x.closePath(); x.fill()
-		x.strokeStyle = "#1a0408"; x.lineWidth = 3; x.stroke()
-		x.fillStyle = "#6a1018"; x.beginPath(); x.ellipse(860, 230, 90, 140, 0.1, 0, TAU); x.fill()
-		for i in 14:
-			var tx = 790 + hsh(i + 3) * 150
-			var ty = 100 + hsh(i + 4) * 260
-			x.fillStyle = "#1a0408"; x.fillRect(tx, ty, 2, 9); x.fillRect(tx - 3, ty + 1, 8, 1)
-		x.fillStyle = "#c0282a"; x.beginPath(); x.arc(950, 40, 9, 0, TAU); x.fill()
 	if wmOpen("abyss1"):
-		# the Abyss: a black-violet trench cutting across the northern sea, red runes glinting in it
-		var tr = x.createLinearGradient(0, 0, 0, 96)
-		tr.addColorStop(0, "#08040e"); tr.addColorStop(0.7, "#2a0c3a"); tr.addColorStop(1, "rgba(58,20,80,0)")
-		x.fillStyle = tr
-		x.beginPath(); x.moveTo(60, 0); x.lineTo(730, 0); x.bezierCurveTo(740, 60, 700, 80, 620, 78); x.bezierCurveTo(480, 92, 300, 70, 170, 84); x.bezierCurveTo(90, 90, 50, 60, 60, 0); x.fill()
+		# red runes glinting in the Abyss trench
 		for i in 18:
 			var rx = 90 + hsh(i + 11) * 620
-			var ry = 8 + hsh(i + 12) * 50
+			var ry = 26 + hsh(i + 12) * 36
 			x.fillStyle = "rgba(255,50,80,%.2f)" % (0.35 + 0.35 * sin(t * 2 + i))
 			x.fillRect(rx, ry, 2, 5); x.fillRect(rx - 2, ry + 2, 6, 1)
 		if wmOpen("bubble"):
@@ -1531,37 +1647,33 @@ func drawWorldMap(x: Ctx, t: float) -> void:
 const WM_TOP := 210.0
 
 
-## the climb to the Abyssal Volcano: a rocky ridge turning to snow, up to the smoking summit
+var _wmTex := {}
+
+## one painted World Map layer (1500 × 960, covering map units x 0…1000, y -210…430), smoothly filtered
+func _wmLayer(x: Ctx, k: String, top: float) -> void:
+	if not _wmTex.has(k):
+		var tx = Assets.tex("worldmap/%s.webp" % k)
+		var ct = null
+		if tx:
+			ct = CanvasTexture.new()
+			ct.diffuse_texture = tx
+			ct.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		_wmTex[k] = ct
+	var ct = _wmTex[k]
+	if ct == null:
+		return
+	var k2 = 1.5   # pixels per map unit
+	x.drawImageRegion(ct, 0, (WM_TOP - top) * k2, 1000 * k2, (430 + top) * k2, 0, -top, 1000, 430 + top)
+
+
+## the volcano's live bits: the crater's pulse and its smoke
 func _wmVolcano(x: Ctx, t: float) -> void:
-	# the ridge
-	x.fillStyle = "#3a3e48"
-	x.beginPath(); x.moveTo(70, -2); x.bezierCurveTo(120, -60, 260, -80, 360, -110); x.bezierCurveTo(470, -140, 600, -150, 700, -160)
-	x.lineTo(760, -150); x.bezierCurveTo(860, -110, 950, -60, 970, -4); x.closePath(); x.fill()
-	x.strokeStyle = "#1e2028"; x.lineWidth = 3; x.stroke()
-	x.fillStyle = "#6a6e7a"
-	x.beginPath(); x.moveTo(90, -6); x.bezierCurveTo(140, -54, 260, -70, 360, -98); x.bezierCurveTo(470, -126, 600, -136, 690, -146)
-	x.lineTo(700, -120); x.bezierCurveTo(560, -100, 300, -40, 200, -6); x.closePath(); x.fill()
-	# snow from the second climb on
-	x.fillStyle = "#e8f4ff"
-	x.beginPath(); x.moveTo(250, -74); x.bezierCurveTo(330, -98, 470, -132, 600, -142); x.lineTo(690, -150)
-	x.lineTo(680, -132); x.bezierCurveTo(560, -122, 420, -104, 300, -60); x.closePath(); x.fill()
-	# the volcano cone (abyssal purple, like the opening cutscene) and its glowing crater
-	x.fillStyle = "#3a1450"
-	x.beginPath(); x.moveTo(700, -40); x.lineTo(790, -150); x.lineTo(850, -150); x.lineTo(940, -40); x.closePath(); x.fill()
-	x.fillStyle = "#5a2070"
-	x.beginPath(); x.moveTo(850, -150); x.lineTo(940, -40); x.lineTo(900, -40); x.lineTo(842, -146); x.closePath(); x.fill()
-	x.fillStyle = "rgba(255,90,230,%.2f)" % (0.7 + 0.25 * sin(t * 3))
-	x.beginPath(); x.ellipse(820, -150, 32, 7, 0, 0, TAU); x.fill()
+	x.fillStyle = "rgba(255,90,230,%.2f)" % (0.25 + 0.25 * sin(t * 3))
+	x.beginPath(); x.ellipse(820, -150, 34, 8, 0, 0, TAU); x.fill()
 	for i in 3:
 		var k = fmod(t * 0.25 + i / 3.0, 1.0)
 		x.fillStyle = "rgba(110,60,130,%.2f)" % (0.5 * (1 - k))
 		x.beginPath(); x.arc(820 + k * 30 + i * 6, -160 - k * 20, 8 + k * 10, 0, TAU); x.fill()
-	for i in 6:
-		x.fillStyle = "#ff3ad8"
-		var lx = 800 + i * 7
-		x.fillRect(lx, -146 + hsh(i + 40) * 30, 2, 10 + hsh(i + 41) * 20)
-	# the cave mouth on the snowy slope
-	x.fillStyle = "#141820"; x.beginPath(); x.ellipse(452, -112, 16, 9, 0, PI, TAU); x.fill()
 
 
 func _wmLabel(x: Ctx, from: Dictionary, to: Dictionary, text: String) -> void:

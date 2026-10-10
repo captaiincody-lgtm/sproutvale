@@ -136,7 +136,7 @@ func _drawFighter(x: Ctx, f: Dictionary, sx: float, sy: float) -> void:
 	if X < -60 or X > VW + 60:
 		return
 	var anim: String = f.anim
-	var anims: Dictionary = Assets.hero.looks.get(f.look, {}).get("anims", {})
+	var anims: Dictionary = Assets.hero_look(f.look).get("anims", {})
 	if not anims.has(anim):
 		anim = {"a_shoot": "slash", "j_throw": "slash", "j_push": "thrust", "m_staff": "heavy"}.get(anim, "idle")
 		if not anims.has(anim):

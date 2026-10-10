@@ -9,6 +9,7 @@ extends Node2D
 
 const S := preload("res://scripts/state.gd")
 const Ctx := preload("res://scripts/ctx.gd")
+const TREE := preload("res://scripts/attr_tree.gd")
 
 const VW := 384
 const VH := 216
@@ -179,6 +180,25 @@ const BOSS_SKILLS := [
 		"desc": ["Launch the Mk II's laser drone for 10s: it hovers over your shoulder and fires a laser at the nearest monster every 0.7s for 220% damage"]},
 ]
 
+# ---------------------------------------------------------------- monster loot bags and rare treasures
+## every monster has a 1% chance to drop a loot bag of its own (opened from the inventory), and a small
+## chance to drop its rare treasure: not used for crafting, only sold, and worth a lot (a shiny one, 5× more)
+const LOOT_BAG_RATE := 0.01
+const RARE_DROP_RATE := 0.004   # straight from the monster
+const BAG_RARE_RATE := 0.12     # inside a loot bag
+const SHINY_RARE_RATE := 0.08   # a rare from a bag (or a normal monster) is now and then the shiny kind
+const RARE_NAMES := {
+	"green": "Emerald Jelly Core", "blue": "Sapphire Jelly Core", "red": "Ruby Jelly Core", "silver": "Quicksilver Bead", "gold": "Gold Nugget Heart",
+	"rat": "Lucky Rat Whisker", "ferret": "Silken Ferret Pelt", "boar": "Golden Tusk", "tortoise": "Moss Pearl",
+	"evileye": "Seer's Iris", "hand": "Knuckle Signet Ring", "feet": "Wanderer's Compass", "head": "Golden Molar", "torso": "Beating Heartstone",
+	"hairball": "Spun-Gold Lock", "cknight": "Crimson Crest", "ccrusader": "Blood-Oath Medal",
+	"toad": "Abyssal Toadstone", "seagull": "Sunken Doubloon", "bass": "Glowing Lure", "crab": "Coral Crown", "shark": "Megalodon Fang",
+	"squid": "Midnight Ink Pearl", "orca": "Ambergris", "octopus": "Kraken Eye",
+	"boulder": "Runed Geode", "lizard": "Chieftain's Fetish", "golem": "Heart of Frost", "warlock": "Grimoire Page", "yeti": "Frost Opal", "sword": "Enchanted Hilt Gem",
+	"sentinel": "Prism Lens", "secgolem": "Overcharged Mana Cell", "sentgolem": "Golden Gear", "dog": "Gold Dog Tag", "ferro": "Living Mercury",
+}
+
+
 # ---------------------------------------------------------------- player + save
 var P: S.Player = S.Player.new()
 var PS: Dictionary = {}          # computed stats
@@ -220,6 +240,7 @@ func init_data() -> void:
 	CHARM_TIERS = D.charms
 	ARROW_TIERS = GEAR.archer.arrows
 	JOBS_BY = D.jobs
+	applyJobTitles()
 	JOBS = JOBS_BY.rock
 	SKILLS = D.skills
 	SKILL = {}
@@ -272,6 +293,9 @@ func init_data() -> void:
 	initTankData()
 	initClimbData()
 	initVolcanoData()
+	rebalanceCrafting()
+	CUR_TIPS.abyss = "Abyssal Coins: cold, faintly humming coins. Everything an Obelisk calls up drops them (the swarms and the elites), and they're mixed into its coin showers. Spent in the Abyssal Shop."
+	strengthenHouse()
 	STAT_TIPS["Boss Coins"] = "Found in the boxes bosses drop (1–5 each). Spend them in the Boss Shop."
 
 
@@ -394,12 +418,12 @@ func update_timers(rdt: float) -> void:
 # ================================================================ save
 
 func newChar() -> Dictionary:
-	return {"level": 1, "exp": 0, "ap": 0, "sp": 0, "attrs": {"STR": 1, "WIL": 1, "VIT": 1, "AGI": 1, "DEX": 1}, "skills": {}, "asc": {}, "binds": {}, "introSeen": false,
+	return {"level": 1, "exp": 0, "tp": 0, "tree": {}, "sp": 0, "attrs": {"STR": 1, "WIL": 1, "VIT": 1, "AGI": 1, "DEX": 1}, "skills": {}, "asc": {}, "binds": {}, "introSeen": false,
 		"charm": -1, "armor": 0, "weapon": 0, "arrows": 0, "staff": 0, "kills": 0, "nade": 0, "drone": 0, "nades": ["frag"], "nadeSel": "frag"}
 
 
 func newSave() -> Dictionary:
-	var s = {"coins": 0, "bossCoins": 0, "abyssCoins": 0, "boxes": {}, "parts": {}, "tankHouse": false, "house": {"owned": [], "placed": {}, "curios": [], "shelfItems": []}, "trophies": {}, "boons": {}, "mats": {}, "chars": {},
+	var s = {"coins": 0, "bossCoins": 0, "abyssCoins": 0, "boxes": {}, "parts": {}, "tankHouse": false, "house": {"owned": [], "placed": {}, "curios": [], "shelfItems": []}, "trophies": {}, "boons": {}, "mats": {}, "bags": {}, "rares": {}, "chars": {},
 		"quests": [], "qid": 0, "settings": {"vol": 0.5, "music": 0.5, "sfx": 0.8, "shake": 1.0, "timeSpeed": 1, "weather": "auto", "help": true, "map": "home", "mute": false, "god": false},
 		"bestRank": -1, "cards": {}, "bestiary": {}, "main": {"q": 0, "stage": 0, "claimed": false}}
 	for k in SLIME_KEYS:
@@ -466,17 +490,32 @@ func loadSave() -> Dictionary:
 	s.settings.merge(d.get("settings", {}), true)
 	for k in CLASSES:
 		var c = newChar()
-		c.merge(d.get("chars", {}).get(k, {}), true)
+		var raw: Dictionary = d.get("chars", {}).get(k, {})
+		c.merge(raw, true)
+		if not raw.is_empty() and not raw.has("tree"):
+			_refundAttrs(c)
 		var a: Dictionary = newChar().attrs
 		a.merge(c.attrs, true)
 		c.attrs = a
 		s.chars[k] = c
 		ensureLook(k, c)
-	for k in ["cards", "bestiary"]:
+	for k in ["cards", "bestiary", "bags", "rares", "boxes"]:
 		if not (s.get(k) is Dictionary):
 			s[k] = {}
 	_migrateBossRecords(s)
 	return s
+
+
+## Attribute points used to be spent straight on the five attributes (3 a level). They now go into the
+## Attribute Tree (1 a level, each node worth about three of the old points), so an older hero gets
+## back one tree point for every level they've gained and their attributes start again from 1.
+func _refundAttrs(c: Dictionary) -> void:
+	c.tree = {}
+	c.tp = maxi(0, int(c.get("level", 1)) - 1)
+	c.attrs = newChar().attrs
+	c.erase("ap")
+	if c.tp > 0:
+		c.treeNote = true
 
 
 ## older saves kept boss trophies and boss treasures per account and per hero the other way round:
@@ -558,13 +597,38 @@ static func expNeed(lv: int) -> int:
 
 # ================================================================ jobs, skills, buffs
 
-## Sorcerer / Sorceress follows the hero's chosen gender
+## Advancement titles, lowest to highest: each one should sound like a clear step up in power.
+## [male / default title, female title] by job id (Tank's live in tank.gd).
+const JOB_TITLES := {
+	"trainee": ["Squire"], "swordsman": ["Swordsman", "Swordswoman"], "knight": ["Knight"], "hero": ["Champion"],
+	"master": ["Blademaster"], "saint": ["Sword Saint"], "avatar": ["Sword God", "Sword Goddess"],
+	"a_trainee": ["Scout"], "bowman": ["Hunter", "Huntress"], "marksman": ["Ranger"], "sniper": ["Sharpshooter"],
+	"bowmaster": ["Bowmaster"], "bowsaint": ["Skypiercer"], "bowavatar": ["Celestial Archer"],
+	"m_trainee": ["Apprentice"], "caster": ["Mage"], "sorcerer": ["Sorcerer", "Sorceress"], "magician": ["Warlock"],
+	"archmage": ["Archmage"], "sage": ["Grand Magus"], "m_avatar": ["Arcane God", "Arcane Goddess"],
+	"s_trainee": ["Tamer"], "summoner": ["Summoner"], "commander": ["Beastmaster"], "dcommander": ["Dragon Tamer"],
+	"rider": ["Dragon Rider"], "dsage": ["Dragon Lord", "Dragon Queen"], "s_avatar": ["Dragon God", "Dragon Goddess"],
+}
+
+
+func applyJobTitles() -> void:
+	for cls in JOBS_BY:
+		for J in JOBS_BY[cls]:
+			if JOB_TITLES.has(J.id):
+				var T: Array = JOB_TITLES[J.id]
+				J.nameM = T[0]
+				J.nameF = T[1] if T.size() > 1 else T[0]
+
+
+## gendered titles (Swordsman / Swordswoman…) follow each hero's chosen gender
 func refreshJobNames() -> void:
-	for J in JOBS_BY.mage:
-		if J.has("nameF"):
-			if not J.has("nameM"):
-				J.nameM = J.name
-			J.name = J.nameF if save.chars.mage.look.gender == "f" else J.nameM
+	for cls in JOBS_BY:
+		var f: bool = save.get("chars", {}).get(cls, {}).get("look", {}).get("gender", "m") == "f"
+		for J in JOBS_BY[cls]:
+			if J.has("nameF"):
+				if not J.has("nameM"):
+					J.nameM = J.name
+				J.name = J.nameF if f else J.nameM
 
 
 func jobIndex(lv: int) -> int:
@@ -616,6 +680,62 @@ static func sv(s: Dictionary, key: String, r: int):
 	return a
 
 
+## the Attribute Tree's say in a hit on monster `e`: is it a certain crit (Phantom), and how much
+## harder it lands (Cruelty, Opening Blow, Berserker, Armor Breaker, Deathblow)
+func treeCrit() -> bool:
+	if P.sureCrit > 0:
+		P.sureCrit -= 1
+		return true
+	return false
+
+
+func treeDefMul(e) -> float:
+	return 100.0 / (100.0 + e.def * 4 * (1 - PS.get("pierce", 0.0))) / (100.0 / (100.0 + e.def * 4))
+
+
+func treeHitMul(e, crit: bool) -> float:
+	var m = treeDefMul(e)
+	if PS.get("execute", 0.0) > 0 and e.hp < e.maxHp * 0.3:
+		m *= 1 + PS.execute
+	if PS.get("first", 0.0) > 0 and e.hp >= e.maxHp:
+		m *= 1 + PS.first
+	if PS.get("berserk", 0.0) > 0 and PS.hp > 0:
+		m *= 1 + PS.berserk * clampf((1 - P.hp / PS.hp) / 0.7, 0, 1)
+	if crit and e.boss and PS.get("bossCrit", 0.0) > 0:
+		m *= 1 + PS.bossCrit
+	return m
+
+
+## after a hit lands: Lucky Star's energy, Executioner's finishing blow; returns the damage to deal
+func treeAfterHit(e, crit: bool, dmg: float) -> float:
+	if crit and PS.get("critEn", 0.0) > 0 and gameTime - P.critEnT > 0.25:
+		P.critEnT = gameTime
+		P.en = minf(PS.enMax, P.en + PS.critEn)
+	if PS.get("executioner") and not e.boss and not e.elite and e.hp - dmg > 0 and e.hp - dmg < e.maxHp * 0.12:
+		floatText(e.x, e.y - e.h - 18, "Executed!", "call")
+		return e.hp
+	return dmg
+
+
+## leech, with Vampire tripling it on crits
+func treeLeech(crit: bool) -> void:
+	if PS.get("leech") and P.hp > 0:
+		P.hp = minf(PS.hp, P.hp + PS.hp * PS.leech * (3 if crit and PS.get("vampire") else 1))
+
+
+## Second Breath and Battle Hunger: a defeated monster gives a little back
+func treeOnKill() -> void:
+	if PS.get("killEn", 0.0) > 0:
+		P.en = minf(PS.enMax, P.en + PS.killEn)
+	if PS.get("killHeal", 0.0) > 0 and P.hp > 0:
+		P.hp = minf(PS.hp, P.hp + PS.hp * PS.killHeal)
+
+
+## a skill's energy cost, after the Attribute Tree's Clarity and Spellweaver
+func skillCost(s: Dictionary, dflt := 0) -> int:
+	return roundi(float(s.get("cost", dflt)) * (1 - PS.get("enCost", 0.0)))
+
+
 func charmBonus(c: Dictionary) -> Dictionary:
 	return CHARM_TIERS[c.charm] if c.charm >= 0 else {"atk": 0, "crit": 0, "exp": 0, "coin": 0}
 
@@ -632,7 +752,9 @@ func calcStats() -> Dictionary:
 	var mage = classId == "mage"
 	var stf: Dictionary = G.staff[c.get("staff", 0)] if mage else {"atk": 0, "def": 0}
 	var extra: int = R.call("avatarBody") * 5 + R.call("avatarSight") * 5 + R.call("avatarMind") * 5 + R.call("avatarBond") * 5 + R.call("avatarEngine") * 5
-	var a = {"STR": c.attrs.STR + extra, "VIT": c.attrs.VIT + extra, "AGI": c.attrs.AGI + extra, "DEX": c.attrs.DEX + extra}
+	var T: Dictionary = TREE.totals(c.get("tree", {}))   # the Attribute Tree
+	var tv = func(k): return T.get(k, 0.0)
+	var a = {"STR": c.attrs.STR + extra + tv.call("STR"), "VIT": c.attrs.VIT + extra + tv.call("VIT"), "AGI": c.attrs.AGI + extra + tv.call("AGI"), "DEX": c.attrs.DEX + extra + tv.call("DEX")}
 	var AB: Dictionary = c.get("abyss", {"pot": {}, "eng": {}})
 	var ap = func(k): return AB.pot.get(k, 0)
 	var ae = func(k): return AB.eng.get(k, 0)
@@ -664,11 +786,12 @@ func calcStats() -> Dictionary:
 	var crit: float = 5 + a.DEX * 0.7 + ch.crit + ap.call("crit") * 0.5 + boon.crit + ae.call("crate") * 0.5 + cur.get("crit", 0) + R.call("wisdom") + R.call("tactics") \
 		+ ((8 + R.call("radiance")) if buffOn("radiance") else 0) + R.call("tranquilHeart") + R.call("eagleEye") + R.call("serenity") \
 		+ ((8 + R.call("keenEye")) if buffOn("keenEye") else 0) + (12 if buffOn("deadeye") else 0) + ((5 + R.call("rage") * 0.5) if buffOn("rage") else 0) + (10 if buffOn("enrage") else 0)
-	var critDmg: float = 1.5 + a.DEX * 0.012 + R.call("comboMastery") * 0.03 + R.call("eagleEye") * 0.04 + ae.call("cdmg") * 0.01 + bs.call("lens") * 0.04 + R.call("spellMastery") * 0.04
+	crit += tv.call("crit")
+	var critDmg: float = 1.5 + tv.call("critDmg") / 100.0 + a.DEX * 0.012 + R.call("comboMastery") * 0.03 + R.call("eagleEye") * 0.04 + ae.call("cdmg") * 0.01 + bs.call("lens") * 0.04 + R.call("spellMastery") * 0.04
 	var ff: int = R.call("fleetFoot")
-	var spd: float = furn.call("rug") + (1 if buffOn("shocked") else 0) + (1 + minf(0.5, a.AGI * 0.008) + R.call("swiftEdge") * 0.02) * ((1 + ((0.1 + (ff - 1) * 0.015) if ff else 0.1)) if arch else 1.0) \
+	var spd: float = tv.call("spd") / 100.0 + furn.call("rug") + (1 if buffOn("shocked") else 0) + (1 + minf(0.5, a.AGI * 0.008) + R.call("swiftEdge") * 0.02) * ((1 + ((0.1 + (ff - 1) * 0.015) if ff else 0.1)) if arch else 1.0) \
 		+ ((0.1 + R.call("haste") * 0.01) if buffOn("haste") else 0) + ((0.15 + R.call("windWalk") * 0.01) if buffOn("windWalk") else 0)
-	var aspd: float = ae.call("aspd") * 0.01 + cur.get("aspd", 0) + ((0.15 + R.call("timeWarp") * 0.01) if buffOn("timeWarp") else 0) + R.call("skyBond") * 0.03 + (1 if buffOn("shocked") else 0) \
+	var aspd: float = tv.call("aspd") / 100.0 + ae.call("aspd") * 0.01 + cur.get("aspd", 0) + ((0.15 + R.call("timeWarp") * 0.01) if buffOn("timeWarp") else 0) + R.call("skyBond") * 0.03 + (1 if buffOn("shocked") else 0) \
 		+ 1 + minf(0.45, a.AGI * 0.007) + R.call("swiftEdge") * 0.03 + R.call("bowMastery") * 0.02 + R.call("quickdraw") * 0.03 + ((0.08 + R.call("haste") * 0.01) if buffOn("haste") else 0)
 	var atkMul: float = 1 + R.call("basics") * 0.03 + R.call("avatarBody") * 0.02 + R.call("bowMastery") * 0.03 + R.call("steadyAim") * 0.04 + R.call("avatarSight") * 0.02
 	if buffOn("radiantQuiver"):
@@ -685,13 +808,13 @@ func calcStats() -> Dictionary:
 		atkMul += 0.2 + R.call("saintsAura") * 0.02
 	if buffOn("transcendence"):
 		atkMul += 0.6 + R.call("transcendence") * 0.03
-	atk *= atkMul + cur.get("atkPct", 0)
-	hp *= 1 + R.call("ironBody") * 0.04 + cur.get("hpPct", 0)
-	def *= 1 + furn.call("table") + R.call("ironBody") * 0.04 + R.call("shieldMastery") * 0.03 + (0.3 if buffOn("transcendence") else 0.0)
+	atk *= atkMul + cur.get("atkPct", 0) + tv.call("atkPct") / 100.0
+	hp *= 1 + R.call("ironBody") * 0.04 + cur.get("hpPct", 0) + tv.call("hpPct") / 100.0
+	def *= 1 + tv.call("defPct") / 100.0 + furn.call("table") + R.call("ironBody") * 0.04 + R.call("shieldMastery") * 0.03 + (0.3 if buffOn("transcendence") else 0.0)
 	# Energy: Willpower raises recovery on a curve that flattens out (≈2.3× base at most), so skills
 	# stay a burst resource at every level instead of becoming spammable.
-	var W: float = c.attrs.WIL + extra
-	var enMax = roundi(100 + minf(60, W * 0.6) + ap.call("en") * 4)
+	var W: float = c.attrs.WIL + extra + tv.call("WIL")
+	var enMax = roundi(100 + minf(60, W * 0.6) + ap.call("en") * 4 + tv.call("enMax"))
 	var enRegen = 6 * (1 + 1.3 * (1 - exp(-W / 55)))
 	var enHit: float = (3 + minf(2, W * 0.02)) * ((1.6 * (1 + R.call("quickdraw") * 0.05)) if arch else (0.5 if mage else 1.0))   # Focus builds from arrows; Mana mostly regenerates
 	var enRegenF: float = (0.6 * (2 if buffOn("radiantQuiver") else 1)) if arch else ((1.25 * (1 + R.call("manaFlow") * 0.06) * (2 if buffOn("overflow") else 1)) if mage else 1.0)
@@ -702,10 +825,16 @@ func calcStats() -> Dictionary:
 	if classId == "summoner":
 		atk *= 0.95; hp *= 1.05; def *= 1 + ((0.2 + R.call("sanctuary") * 0.02) if buffOn("sanctuary") else 0.0)
 	var arrowMul: float = (1 + ARROW_TIERS[c.get("arrows", 0)].dmg) if arch else 1.0
-	return {"hp": roundi(hp * (1 - P.abyssDrain)), "hpFull": roundi(hp), "atk": roundi(atk), "def": roundi(def), "crit": minf(80, crit), "critDmg": critDmg, "spd": spd, "aspd": aspd,
-		"exp": ch.exp + cur.get("exp", 0) + trophyExp + bs.call("notes") * 5, "coin": ch.coin + cur.get("coin", 0), "hpRegen": furn.call("chair"),
-		"enMax": enMax, "enRegen": enRegen * enRegenF * (1 + furn.call("bed")) / 2.5, "enHit": enHit, "arrowMul": arrowMul,   # regen is 2.5× slower than it was, so the potions matter
-		"hunt": ae.call("hunt") * 0.02 + bs.call("bane") * 0.05, "leech": ae.call("leech") * 0.003}
+	var o = {"hp": roundi(hp * (1 - P.abyssDrain)), "hpFull": roundi(hp), "atk": roundi(atk), "def": roundi(def), "crit": minf(80, crit), "critDmg": critDmg, "spd": spd, "aspd": aspd,
+		"exp": ch.exp + cur.get("exp", 0) + trophyExp + bs.call("notes") * 5 + tv.call("exp"), "coin": ch.coin + cur.get("coin", 0) + tv.call("coin"), "hpRegen": furn.call("chair") + tv.call("regen") / 100.0,
+		"enMax": enMax, "enRegen": enRegen * enRegenF * (1 + furn.call("bed")) * (1 + tv.call("enRegen") / 100.0) / 2.5, "enHit": enHit, "arrowMul": arrowMul,   # regen is 2.5× slower than it was, so the potions matter
+		"hunt": ae.call("hunt") * 0.02 + bs.call("bane") * 0.05 + tv.call("hunt") / 100.0, "leech": ae.call("leech") * 0.003 + tv.call("leech") / 100.0}
+	# the rest of the Attribute Tree: percentages become fractions, energy and dodge stay as they are
+	for k in TREE.PS_KEYS:
+		var v: float = tv.call(k)
+		o[k] = v if k in ["dodge", "critEn", "dodgeEn", "killEn"] or TREE.FLAGS.has(k) else v / 100.0
+	o.eshield = roundi(hp * tv.call("eshield") / 100.0)
+	return o
 
 
 ## has the hero you're playing beaten this boss? (every hero has to beat each boss once before its pedestal
@@ -726,13 +855,141 @@ func setClass(id: String) -> void:
 
 
 func matsForLevel(lv: int, small := false) -> Dictionary:
-	var band: Array = []
-	for b in D.matBands:
-		if lv < b[0]:
-			band = b[1]
-			break
-	var k = 0.4 if small else 1.0
-	return {band[0]: roundi((8 + lv * 0.35) * k), band[1]: roundi((5 + lv * 0.25) * k)}
+	return craftMats(lv, roundi((13 + lv * 0.6) * (0.4 if small else 1.0)))
+
+
+## crafting asks for the newest monster you can reach at the item's level (most of the cost), and early on
+## a few from the monster just ahead, so upgrades pull you forward instead of sending you back to the slimes
+func craftMats(lv: int, total: int) -> Dictionary:
+	var L: Array = _craftLadder()
+	var now = L.filter(func(k): return SLIME_TYPES[k].lv <= lv and int(SLIME_TYPES[k].get("unlock", SLIME_TYPES[k].lv)) <= lv)
+	var ahead = L.filter(func(k): return SLIME_TYPES[k].lv > lv and SLIME_TYPES[k].lv <= lv + 4 and int(SLIME_TYPES[k].get("unlock", SLIME_TYPES[k].lv)) <= lv)
+	var a: String = now[-1] if now.size() else L[0]
+	var b: String = ahead[0] if ahead.size() else (now[-2] if now.size() > 1 else a)
+	if a == b:
+		return {a: total}
+	var na = ceili(total * 0.6)
+	return {a: na, b: maxi(1, total - na)}
+
+
+var _ladder: Array = []
+## the monsters crafting can ask for, lowest level first (not the rare ones: gold slimes, the Sentinel-Golem)
+func _craftLadder() -> Array:
+	if _ladder.is_empty():
+		for k in SLIME_TYPES:
+			var T: Dictionary = SLIME_TYPES[k]
+			if k in ["gold", "sentgolem", "abyss"] or T.get("boss") or not (float(T.get("w", 1)) > 0 or T.get("critter", false)):
+				continue
+			_ladder.append(k)
+		_ladder.sort_custom(func(a, b): return SLIME_TYPES[a].lv < SLIME_TYPES[b].lv)
+	return _ladder
+
+
+## every gear tier and charm keeps its old amount of materials, but asks for the ones you're farming at its level
+func rebalanceCrafting() -> void:
+	_ladder = []
+	var lists: Array = [CHARM_TIERS]
+	for cls in GEAR:
+		for kind in GEAR[cls]:
+			lists.append(GEAR[cls][kind])
+	for tiers in lists:
+		for t in tiers:
+			var m: Dictionary = t.get("mats", {})
+			if m.is_empty():
+				continue
+			var tot = 0
+			for k in m:
+				tot += int(m[k])
+			t.mats = craftMats(int(t.lv), tot)
+
+
+## house furniture is expensive, so it's strong: 2.5–3× the old bonuses, bigger shelves, stronger curios
+const FURN_MUL := {"bed": 3.0, "table": 3.0, "chair": 2.5, "rug": 2.5}
+const SHELF_SLOTS := {"plank": 3, "bookcase": 4, "cabinet": 6}
+const CURIO_FX := {"eye": {"crit": 10}, "mandrake": {"hpPct": 0.15}, "ship": {"coin": 20}, "hourglass": {"aspd": 0.12}, "skull": {"atkPct": 0.12}, "lamp": {"exp": 20}}
+func strengthenHouse() -> void:
+	for k in FURN_MUL:
+		for it in FURNITURE.get(k, {}).get("items", []):
+			it.val = snappedf(float(it.val) * FURN_MUL[k], 0.0001)
+	for it in FURNITURE.get("shelf", {}).get("items", []):
+		it.val = SHELF_SLOTS.get(it.id, it.val)
+		it.desc = RegEx.create_from_string("Room for \\w+ curios").sub(it.desc, "Room for %s curios" % ["", "one", "two", "three", "four", "five", "six", "seven", "eight"][clampi(int(it.val), 0, 8)])
+	for it in CURIOS:
+		if CURIO_FX.has(it.id):
+			it.fx = CURIO_FX[it.id].duplicate()
+			var f: String = it.fx.keys()[0]
+			var v: float = it.fx[f]
+			var txt = {"crit": "+%d%% critical rate", "coin": "+%d%% coins", "exp": "+%d%% EXP", "hpPct": "+%d%% max HP", "aspd": "+%d%% attack speed", "atkPct": "+%d%% attack"}
+			it.desc = txt[f] % (roundi(v * 100) if f in ["hpPct", "aspd", "atkPct"] else roundi(v))
+
+
+# ---------------- loot bags and rare treasures
+
+func rareKey(type: String, shiny: bool) -> String:
+	return type + ("_shiny" if shiny else "")
+
+
+func rareType(key: String) -> String:
+	return key.trim_suffix("_shiny")
+
+
+func rareName(key: String) -> String:
+	var n: String = RARE_NAMES.get(rareType(key), monsterName(rareType(key)) + " Trinket")
+	return ("Shiny " + n) if key.ends_with("_shiny") else n
+
+
+## what a rare treasure sells for: about eighty kills' worth of that monster's coins (a shiny one, 5×)
+func rareValue(key: String) -> int:
+	var T: Dictionary = SLIME_TYPES.get(rareType(key), {"coins": [5, 5]})
+	var v: float = (T.coins[0] + T.coins[1]) * 0.5 * 80 * (5 if key.ends_with("_shiny") else 1)
+	var mag = pow(10, maxi(0, floori(log(v) / log(10)) - 1))
+	return roundi(roundf(v / mag) * mag)
+
+
+func bagCount(type: String) -> int:
+	return int(save.get("bags", {}).get(type, 0))
+
+
+## open loot bags: EXP, coins, a handful of the monster's material, and now and then its rare treasure
+func openBags(type: String, n := 1) -> Dictionary:
+	n = mini(n, bagCount(type))
+	var got = {"exp": 0, "coins": 0, "mats": 0, "rares": {}}
+	if n <= 0 or not SLIME_TYPES.has(type):
+		return got
+	var T: Dictionary = SLIME_TYPES[type]
+	for i in n:
+		got.exp += roundi(T.exp * minf(1.5, expScale(T.lv)) * rint(8, 15))
+		got.coins += roundi((T.coins[0] + T.coins[1]) * 0.5 * rint(15, 30) * (1 + cardBonus()) * (1 + PS.get("coin", 0) / 100.0))
+		got.mats += rint(4, 10)
+		if randf() < BAG_RARE_RATE:
+			var key = rareKey(type, randf() < SHINY_RARE_RATE)
+			got.rares[key] = int(got.rares.get(key, 0)) + 1
+	save.bags[type] = bagCount(type) - n
+	save.coins += got.coins
+	if not (save.mats is Dictionary):
+		save.mats = {}
+	save.mats[type] = int(save.mats.get(type, 0)) + got.mats
+	if not (save.get("rares") is Dictionary):
+		save.rares = {}
+	for key in got.rares:
+		save.rares[key] = int(save.rares.get(key, 0)) + got.rares[key]
+	gainExp(got.exp)
+	saveDirty = true
+	return got
+
+
+func sellRares(key: String, n := 1) -> int:
+	var have = int(save.get("rares", {}).get(key, 0))
+	n = mini(n, have)
+	if n <= 0:
+		return 0
+	var paid = rareValue(key) * n
+	save.rares[key] = have - n
+	if save.rares[key] <= 0:
+		save.rares.erase(key)
+	save.coins += paid
+	saveDirty = true
+	return paid
 
 
 func matName(k: String) -> String:
@@ -764,7 +1021,7 @@ func styleAdd(base: float, id: String) -> void:
 	Style.last.append(id)
 	if Style.last.size() > 6:
 		Style.last.pop_front()
-	Style.pts = minf(RANK_CAP, Style.pts + base * mult * (1 + skillRank("comboMastery") * 0.06))
+	Style.pts = minf(RANK_CAP, Style.pts + base * mult * (1 + skillRank("comboMastery") * 0.06 + PS.get("styleGain", 0.0)))
 	var r = rankOf(Style.pts)
 	if r > Style.rank:
 		Style.popped = 1.0
@@ -825,7 +1082,7 @@ func gainExp(n: float) -> void:
 		var oldJob = jobIndex(c.level)
 		c.exp -= expNeed(c.level)
 		c.level += 1
-		c.ap += 3
+		c.tp = int(c.get("tp", 0)) + 1
 		c.sp += 3
 		PS = calcStats()
 		P.hp = PS.hp
@@ -834,11 +1091,11 @@ func gainExp(n: float) -> void:
 			later(1.4, func():
 				banner("ASCENDENCY", "Past level %d your skill points can push your skills beyond their limits." % ASCEND_LV)
 				Sfx.rankUp(9))
-		banner("LEVEL UP!", "Level %d · 3 attribute points and 3 skill points" % c.level)
+		banner("LEVEL UP!", "Level %d · 1 attribute point and 3 skill points" % c.level)
 		if jobIndex(c.level) > oldJob:
 			var J = jobOf(c.level)
 			later(1.4, func():
-				banner("JOB ADVANCEMENT", "%s is now a %s! New skills in the Skills tab." % [CLASSES[classId].name, J.name])
+				banner("JOB ADVANCEMENT", "%s advanced to %s! New skills in the Skills tab." % [CLASSES[classId].name, J.name])
 				Sfx.rankUp(8))
 			fx.append({"type": "ring", "x": P.x, "y": P.y - 20, "t": 0.0, "life": 1.0, "r": 60, "col": J.color})
 		for i in 30:
@@ -919,14 +1176,81 @@ func mainQ() -> Dictionary:
 	if not (save.get("main") is Dictionary):
 		save.main = {"q": 0, "stage": 0, "claimed": false}
 	var mq: Dictionary = save.main
-	mq.q = mq.get("q", 0)
+	mq.q = mini(mq.get("q", 0), MAINQS.size() - 1)
 	if mq.claimed and mq.q + 1 < MAINQS.size():
 		mq.q += 1
 		mq.stage = 0
 		mq.claimed = false
-		if mq.q == 1 and save.trophies.get("warlord"):
-			mq.stage = 3
+	if not mq.claimed:
+		mq.stage = maxi(mq.stage, mainCatchUp(MAINQS[mq.q]))   # already did it (another hero, an older save): it counts
 	return mq
+
+
+## how far the story says this main quest already is: a boss that's already beaten finishes its quest
+func mainCatchUp(Q: Dictionary) -> int:
+	if save.get("trophies", {}).get(Q.on[Q.on.size() - 1]):
+		return Q.steps.size()
+	return 0
+
+
+func mainDone() -> bool:
+	var mq = mainQ()
+	return not mq.claimed and mq.stage >= MAINQS[mq.q].steps.size()
+
+
+func claimMainQuest() -> bool:
+	if not mainDone():
+		return false
+	var mq = mainQ()
+	var Q: Dictionary = MAINQS[mq.q]
+	mq.claimed = true
+	gainExp(Q.exp)
+	save.coins += Q.coins
+	toast("Main quest reward: +%s EXP, +%s coins" % [fmt(Q.exp), fmt(Q.coins)])
+	Sfx.levelUp()
+	mainQ()
+	saveDirty = true
+	return true
+
+
+func claimSideQuest(id) -> bool:
+	for i in save.quests.size():
+		var q = save.quests[i]
+		if q.id == id and q.done:
+			save.quests.remove_at(i)
+			save.coins += q.coins
+			gainExp(q.exp)
+			toast("%s: +%s EXP, +%s coins" % [q.title, fmt(q.exp), fmt(q.coins)])
+			Sfx.buy()
+			fillQuests()
+			return true
+	return false
+
+
+# ---------------- auto-complete: unlocked by a painting for the house
+
+const QUEST_PAINTING := {"id": "questPainting", "name": "The Errand Runner", "price": 75000,
+	"desc": "Unlocks Auto-complete in the Quests tab",
+	"flavor": "A little courier sprinting off with an armful of letters. Hang it up and your quests seem to finish themselves."}
+
+
+func autoQuestOwned() -> bool:
+	return save.get("house", {}).get("owned", []).has(QUEST_PAINTING.id)
+
+
+func autoQuestOn() -> bool:
+	return autoQuestOwned() and save.settings.get("autoQuests", false) == true
+
+
+## with Auto-complete on, finished quests hand over their rewards by themselves
+func autoClaimQuests() -> void:
+	if not autoQuestOn():
+		return
+	if mainDone():
+		claimMainQuest()
+	for q in save.quests.duplicate():
+		if q.done:
+			claimSideQuest(q.id)
 
 
 # ================================================================ cards, bestiary
@@ -1057,6 +1381,28 @@ func updateDrops(dt: float) -> void:
 				save.abyssCoins = save.get("abyssCoins", 0) + d.val
 				Sfx.tone(300, 0.2, "triangle", 0.08, 600)
 				pickupPop("abyss", "Abyssal Coins", d.val, "#ff9ef0")
+			elif d.kind == "exp":
+				gainExp(d.val)
+				Sfx.tone(700, 0.08, "triangle", 0.05, 1100)
+				pickupPop("exp", "EXP", d.val, "#5dff7a")
+			elif d.kind == "bag":
+				if not (save.get("bags") is Dictionary):
+					save.bags = {}
+				save.bags[d.type] = bagCount(d.type) + 1
+				Sfx.buy()
+				pickupPop("bag_" + d.type, "%s Loot Bag" % monsterName(d.type), 1, "#ffd27a")
+				toast("💰 %s Loot Bag! Open it from your inventory (Tab → Inventory)." % monsterName(d.type))
+			elif d.kind == "rare":
+				var key = rareKey(d.type, d.shiny)
+				if not (save.get("rares") is Dictionary):
+					save.rares = {}
+				save.rares[key] = int(save.rares.get(key, 0)) + 1
+				Sfx.rankUp(9 if d.shiny else 7)
+				Sfx.buy()
+				banner("SHINY RARE DROP!" if d.shiny else "RARE DROP!", "%s · sells for %s coins" % [rareName(key), fmt(rareValue(key))])
+				for k in 26:
+					var cols: Array = ["#fff6b0", "#ffffff", "#ff9ecf", "#9fe6ff"] if d.shiny else ["#ffe14d", "#ffffff", "#9fe6ff"]
+					part(P.x, P.y - 30, rand(-120, 120), rand(-200, -40), rand(0.6, 1.1), cols[k % cols.size()], 200, 2)
 			elif d.kind == "box":
 				collectBox(d.type)
 			elif d.kind == "part":
@@ -1082,7 +1428,7 @@ func updateDrops(dt: float) -> void:
 				pickupPop("m_" + d.type, matName(d.type), n, "#ffffff")
 			saveDirty = true
 			continue
-		if d.t > 60 and not (d.kind in ["box", "key", "pendant"]):
+		if d.t > 60 and not (d.kind in ["box", "key", "pendant", "bag", "rare"]):
 			drops.remove_at(i)
 
 
@@ -1352,4 +1698,16 @@ func lookOf(cls: String) -> String:
 		if classId == "tank" and inGame and buffOn("titanProtocol"):
 			return "tank_%s_5" % g
 		return "tank_%s_%d" % [g, exoStage(c)]
-	return "%s_%s" % [cls, c.get("look", {}).get("gender", "m")]
+	return gearLook(cls, int(c.get("armor", 0)), int(c.get("weapon", 0)), int(c.get("staff", 0)))
+
+
+## a layered hero's look in a given armor / weapon (and Remy's staff) tier — see Assets.hero_look
+const GEAR_SET := {"rock": "sword", "archer": "bow", "summoner": "ring"}
+func gearLook(cls: String, armor: int, weapon: int, staff := 0) -> String:
+	var g: String = save.get("chars", {}).get(cls, {}).get("look", {}).get("gender", "m")
+	var base := "%s_%s" % [cls, g]
+	if not Assets.hero.looks.get(base, {}).get("layered", false):
+		return base
+	var w := clampi(weapon, 0, 10)
+	var sets: String = "staff_%d,wand_%d" % [clampi(staff, 0, 10), w] if cls == "mage" else "%s_%d" % [GEAR_SET.get(cls, "sword"), w]
+	return "%s|%d|%s" % [base, clampi(armor, 0, int(Assets.hero_look(base).get("armor", 1)) - 1), sets]

@@ -123,9 +123,9 @@ func abyssBuild(n: float) -> void:
 		return
 	P.lastBuild = gameTime
 	if P.abyssT > 0:
-		P.abyssT = 30.0
+		P.abyssT = abyssDur()
 		return
-	P.abyssB += n
+	P.abyssB += n * (1 - PS.get("abyssRes", 0.0))
 	if P.abyssB >= 100:
 		applyAbyss()
 
@@ -134,7 +134,7 @@ func applyAbyss() -> void:
 	if P.state == "dead":
 		return
 	var fresh: bool = P.abyssT <= 0
-	P.abyssT = 30.0
+	P.abyssT = abyssDur()
 	P.abyssB = 0.0
 	P.lastBuild = gameTime
 	if fresh:
@@ -143,6 +143,11 @@ func applyAbyss() -> void:
 		Sfx.tone(140, 0.7, "sine", 0.06, 90)
 		for i in 24:
 			part(P.x + rand(-10, 10), P.y - rand(0, 40), rand(-40, 40), rand(-60, 10), rand(0.6, 1.1), "#2a0838" if i % 2 else "#c25cff", 0, 2)
+
+
+## how long the Abyss debuff lasts (shorter with the Attribute Tree's Abyss Walker)
+func abyssDur() -> float:
+	return 30.0 * (1 - PS.get("abyssDur", 0.0))
 
 
 func confusePlayer(t: float) -> void:
@@ -206,7 +211,7 @@ func abyssChip(src, mul: float, build := 0.0, dodgeable := true) -> bool:
 		if P.hp <= 0:
 			killPlayer()
 		return false
-	var d = maxi(1, roundi(src.atk * mul * defMul(src.lv) * rand(0.9, 1.1)))
+	var d = treeShield(maxi(1, roundi(src.atk * mul * defMul(src.lv) * rand(0.9, 1.1) * (1 - PS.get("dr", 0.0)))))
 	P.hp -= d
 	P.lastHurt = gameTime
 	P.flash = 0.08
@@ -240,7 +245,7 @@ func updateAbyss(dt: float) -> void:
 	var drain0 = P.abyssDrain
 	if P.abyssT > 0:
 		P.abyssT -= dt
-		P.abyssDrain = minf(0.5, P.abyssDrain + dt * 0.025)   # half your max HP over 20s
+		P.abyssDrain = minf(0.5 * (1 - PS.get("abyssRes", 0.0)), P.abyssDrain + dt * 0.025)   # half your max HP over 20s (less with Abyss resistance)
 		if randf() < dt * 10:
 			part(P.x + rand(-9, 9), P.y - rand(4, 42), rand(-8, 8), -rand(8, 26), rand(0.6, 1.0), "#1a0626" if randf() < 0.5 else "#8a3ac8", 0, 1 if randf() < 0.6 else 2)
 	elif P.abyssDrain > 0:
@@ -1219,8 +1224,8 @@ func damagePart(p, mv: Dictionary) -> void:
 		return
 	if not dreamerHitOk(e, mv):
 		return
-	var crit = randf() * 100 < PS.crit
-	var dmg: float = PS.atk * mv.get("dmg", 1.0) * rand(0.9, 1.1) * 100 / (100 + e.def * 4) * p.partMul
+	var crit = treeCrit() or randf() * 100 < PS.crit
+	var dmg: float = PS.atk * mv.get("dmg", 1.0) * rand(0.9, 1.1) * 100 / (100 + e.def * 4) * p.partMul * treeHitMul(e, crit)
 	if crit:
 		dmg *= PS.critDmg
 	if save.settings.get("god"):
@@ -1229,9 +1234,8 @@ func damagePart(p, mv: Dictionary) -> void:
 		dmg *= 1.25 + skillRank("enrage") * 0.02
 	if PS.get("hunt"):
 		dmg *= 1 + PS.hunt
-	if PS.get("leech") and P.hp > 0:
-		P.hp = minf(PS.hp, P.hp + PS.hp * PS.leech)
-	dmg = maxf(1, roundf(dmg))
+	treeLeech(crit)
+	dmg = treeAfterHit(e, crit, maxf(1, roundf(dmg)))
 	e.hp -= dmg
 	e.hurtFlash = 0.07
 	p.flash = 0.12

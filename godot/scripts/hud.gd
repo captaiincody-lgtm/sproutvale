@@ -374,6 +374,12 @@ func _bottomBar() -> void:
 		uci.draw_rect(Rect2(inner.end.x - cut, inner.position.y, 1, inner.size.y), css("#c25cff"))
 		var mr = Rect2(x, UH - 23, unit, 16)
 		uText("%d / %d" % [ceili(P.hp), PS.hp], mr.get_center().x, mr.get_center().y - 6, 9, Color.WHITE, UB, 1, EDGE)
+	if P.shield > 0.5 and PS.get("eshield", 0) > 0:
+		# the Attribute Tree's energy shield: a bright band along the top of the health bar
+		var sr = Rect2(x, UH - 23, unit, 16).grow(-2)
+		var sw = sr.size.x * clampf(P.shield / PS.eshield, 0, 1)
+		uci.draw_rect(Rect2(sr.position, Vector2(sw, 4)), Color(css("#7ff6ff"), 0.95))
+		uci.draw_rect(Rect2(sr.position + Vector2(0, 4), Vector2(sw, 1)), Color(css("#2fb3d6"), 0.9))
 	_abyssMeter(x, unit)
 	x += unit + 6
 	var sx = sin(enShake * 40) * 3 if enShake > 0.1 else 0.0
@@ -389,7 +395,7 @@ func _bottomBar() -> void:
 	uText(fmt(save.coins), x + 15, UH - 22, 11, Color.WHITE, UB)
 	var mb = Rect2(UW - menuW - 8, UH - 24, menuW, 18)
 	uButton(mb, "Menu · Tab", func(): toggleMenu(true), {"bg": GOLD, "border": EDGE, "size": 9})
-	if c.ap > 0 or c.sp > 0:
+	if int(c.get("tp", 0)) > 0 or c.sp > 0:
 		uci.draw_circle(Vector2(mb.end.x - 3, mb.position.y + 2), 4, PINK)
 
 
@@ -647,24 +653,32 @@ func _topRight(indoor: bool) -> void:
 	if indoor:
 		return
 	var y = _minimap(Rect2(UW - 8 - 168, r.end.y + 5, 168, 0)) + 5
-	# quest tracker
+	# quest tracker: finished quests turn green, with a Complete button right there
 	var mq = mainQ()
 	var MQ: Dictionary = MAINQS[mq.q]
 	var entries = []
 	if not mq.claimed:
-		entries.append({"text": "★ " + ("Claim your reward (Quests tab)" if mq.stage >= MQ.steps.size() else MQ.steps[mq.stage]), "main": true})
+		var md: bool = mq.stage >= MQ.steps.size()
+		entries.append({"text": "★ " + (MQ.title + " complete!" if md else MQ.steps[mq.stage]), "main": true, "done": md,
+			"cb": func(): claimMainQuest()})
 	for q in save.quests:
-		entries.append({"text": ("✔ " if q.done else "") + q.title, "done": q.done, "p": minf(1.0, float(q.have) / q.need)})
+		var qid = q.id
+		entries.append({"text": ("✔ " if q.done else "") + q.title, "done": q.done, "p": minf(1.0, float(q.have) / q.need),
+			"cb": func(): claimSideQuest(qid)})
 	for e in entries:
-		var tw = minf(uW(e.text, 8), 200.0)
-		var th = uPara(e.text, 0, 0, tw + 6, 8, INK, false, e.has("main"))
-		var hh2 = th + 6 + (5 if e.has("p") else 0)
+		var done: bool = e.done
+		var main: bool = e.has("main")
+		var tw = clampf(uW(e.text, 8), 64.0 if done else 0.0, 200.0)
+		var th = uPara(e.text, 0, 0, tw + 6, 8, INK, false, main)
+		var hh2 = th + 6 + (18 if done else (5 if e.has("p") else 0))
 		var er = Rect2(UW - 8 - tw - 14, y, tw + 14, hh2)
-		var bg = css("#fff2d6") if e.has("main") else (css("#e3fbec") if e.get("done", false) else Color(247 / 255.0, 251 / 255.0, 1, 0.92))
-		var bd = css("#c89418") if e.has("main") else (css("#2a8a55") if e.get("done", false) else INK)
+		var bg = css("#8ae6ae") if done else (css("#fff2d6") if main else Color(247 / 255.0, 251 / 255.0, 1, 0.92))
+		var bd = css("#1f7a48") if done else (css("#c89418") if main else INK)
 		uBox(er, bg, bd, 2, 6)
-		uPara(e.text, er.position.x + 7, y + 3, tw + 6, 8, css("#6a4a08") if e.has("main") else INK, true, e.has("main"))
-		if e.has("p"):
+		uPara(e.text, er.position.x + 7, y + 3, tw + 6, 8, css("#0f4a2a") if done else (css("#6a4a08") if main else INK), true, main)
+		if done:
+			uButton(Rect2(er.position.x + 6, er.end.y - 19, er.size.x - 12, 14), "Complete", e.cb, {"bg": css("#2fb565"), "fg": Color.WHITE, "border": css("#1f7a48"), "size": 8, "shadow": 0.0})
+		elif e.has("p"):
 			var pr = Rect2(er.position.x + 7, er.end.y - 6, tw, 3)
 			uBox(pr, css("#d6e6fb"), NONE, 0, 2)
 			if e.p > 0:

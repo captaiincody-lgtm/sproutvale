@@ -317,6 +317,13 @@ func startGame() -> void:
 		var m = save.settings.get("map", "home")
 		loadMap(m if prevLast == selClass and MAPS.has(m) else ("house" if selClass == "summoner" else "home"))
 	banner("%s · %s" % [CLASSES[classId].name, jobOf(CH().level).name], "Press Tab for the menu and controls")
+	P.shield = float(PS.get("eshield", 0))
+	if CH().get("treeNote"):   # an older save: the attribute points came back as tree points
+		CH().erase("treeNote")
+		var n = int(CH().get("tp", 0))
+		later(2.6, func():
+			banner("THE ATTRIBUTE TREE", "Your attributes were reset and refunded: %d points to spend. Tab → Attributes." % n)
+			Sfx.rankUp(8))
 	persist()
 
 

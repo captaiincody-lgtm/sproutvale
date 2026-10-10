@@ -284,6 +284,8 @@ func _process(delta: float) -> void:
 			updateDrops(dt)
 			updateParts(dt)
 			updateStyle(dt)
+			if intro == null:
+				autoClaimQuests()
 	elif not inGame:
 		P.animT += rdt
 		updateSlimes(rdt)
