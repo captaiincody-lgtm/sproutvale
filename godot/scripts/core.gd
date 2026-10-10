@@ -1176,14 +1176,81 @@ func mainQ() -> Dictionary:
 	if not (save.get("main") is Dictionary):
 		save.main = {"q": 0, "stage": 0, "claimed": false}
 	var mq: Dictionary = save.main
-	mq.q = mq.get("q", 0)
+	mq.q = mini(mq.get("q", 0), MAINQS.size() - 1)
 	if mq.claimed and mq.q + 1 < MAINQS.size():
 		mq.q += 1
 		mq.stage = 0
 		mq.claimed = false
-		if mq.q == 1 and save.trophies.get("warlord"):
-			mq.stage = 3
+	if not mq.claimed:
+		mq.stage = maxi(mq.stage, mainCatchUp(MAINQS[mq.q]))   # already did it (another hero, an older save): it counts
 	return mq
+
+
+## how far the story says this main quest already is: a boss that's already beaten finishes its quest
+func mainCatchUp(Q: Dictionary) -> int:
+	if save.get("trophies", {}).get(Q.on[Q.on.size() - 1]):
+		return Q.steps.size()
+	return 0
+
+
+func mainDone() -> bool:
+	var mq = mainQ()
+	return not mq.claimed and mq.stage >= MAINQS[mq.q].steps.size()
+
+
+func claimMainQuest() -> bool:
+	if not mainDone():
+		return false
+	var mq = mainQ()
+	var Q: Dictionary = MAINQS[mq.q]
+	mq.claimed = true
+	gainExp(Q.exp)
+	save.coins += Q.coins
+	toast("Main quest reward: +%s EXP, +%s coins" % [fmt(Q.exp), fmt(Q.coins)])
+	Sfx.levelUp()
+	mainQ()
+	saveDirty = true
+	return true
+
+
+func claimSideQuest(id) -> bool:
+	for i in save.quests.size():
+		var q = save.quests[i]
+		if q.id == id and q.done:
+			save.quests.remove_at(i)
+			save.coins += q.coins
+			gainExp(q.exp)
+			toast("%s: +%s EXP, +%s coins" % [q.title, fmt(q.exp), fmt(q.coins)])
+			Sfx.buy()
+			fillQuests()
+			return true
+	return false
+
+
+# ---------------- auto-complete: unlocked by a painting for the house
+
+const QUEST_PAINTING := {"id": "questPainting", "name": "The Errand Runner", "price": 75000,
+	"desc": "Unlocks Auto-complete in the Quests tab",
+	"flavor": "A little courier sprinting off with an armful of letters. Hang it up and your quests seem to finish themselves."}
+
+
+func autoQuestOwned() -> bool:
+	return save.get("house", {}).get("owned", []).has(QUEST_PAINTING.id)
+
+
+func autoQuestOn() -> bool:
+	return autoQuestOwned() and save.settings.get("autoQuests", false) == true
+
+
+## with Auto-complete on, finished quests hand over their rewards by themselves
+func autoClaimQuests() -> void:
+	if not autoQuestOn():
+		return
+	if mainDone():
+		claimMainQuest()
+	for q in save.quests.duplicate():
+		if q.done:
+			claimSideQuest(q.id)
 
 
 # ================================================================ cards, bestiary

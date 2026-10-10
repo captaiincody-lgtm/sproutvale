@@ -368,3 +368,21 @@ func _finishGame() -> void:
 func initVolcanoData() -> void:
 	super.initVolcanoData()
 	TROPHIES[5] = {"id": "glamrax", "name": "Glamrax Trophy"}
+	# the last main quest: everything after the false ending, right up to the real one
+	MAINQS.append({"title": "Glamrax, For Good", "exp": 400000, "coins": 250000,
+		"steps": ["Defeat Glamrax with every hero", "Hold the sanctum as Glamrax", "Break free and defeat Glamrax for good"],
+		"on": ["allSealed", "showdown", "glamraxFinal"],
+		"blurb": "Glamrax fell, and got straight back up. Whoever beats him ends up in one of his crystals. Five heroes, five crystals: it looks like that's what he wanted all along."})
+
+
+## the story after the false ending isn't a place you walk to: the save flags say how far it got
+func mainCatchUp(Q: Dictionary) -> int:
+	var fin = save.get("finaleDone", false) == true
+	var won = save.get("showdownWon", false) == true
+	match Q.on[Q.on.size() - 1]:
+		"glamrax":
+			if fin or won or (save.get("captured") is Dictionary and not save.captured.is_empty()):
+				return Q.steps.size()
+		"glamraxFinal":
+			return 3 if fin else (2 if won else (1 if capturedAll() else 0))
+	return super.mainCatchUp(Q)

@@ -1644,6 +1644,29 @@ func drawCurio(x: Ctx, id: String, X: float, Y: float) -> void:
 			R.call("#4ad8a8", -3, -9, 6, 3); R.call("#bfffe8", -2, -9, 2, 1)
 
 
+## "The Errand Runner": a little courier dashing down a country road with the post (centred on X, Y)
+func drawQuestPainting(x: Ctx, X: float, Y: float) -> void:
+	var R = func(c, a: float, b: float, w: float, h: float):
+		x.fillStyle = c
+		x.fillRect(X + a, Y + b, w, h)
+	R.call("#241410", -16, -12, 32, 24)                             # frame
+	R.call("#c8941e", -15, -11, 30, 22); R.call("#ffd86a", -15, -11, 30, 1.2); R.call("#8a5a10", -15, 9.8, 30, 1.2)
+	R.call("#7ec8f0", -12, -8, 24, 16)                              # sky
+	R.call("#bfe6ff", -12, -8, 24, 3)
+	R.call("#fff2a8", 6, -6, 3, 3)                                  # sun
+	R.call("#ffffff", -9, -5, 5, 1.5); R.call("#ffffff", -8, -6, 3, 1)
+	R.call("#5aa84a", -12, 1, 24, 7); R.call("#7cc860", -12, 0, 10, 2); R.call("#7cc860", 3, -1, 9, 3)   # hills
+	R.call("#e0c08a", -12, 5, 24, 3); R.call("#c8a070", -12, 7, 24, 1)                                    # the road
+	# the runner, mid-stride
+	R.call("#3a5ab8", -2, -1, 4, 4)                                 # tunic
+	R.call("#ffdcc2", -1.5, -4, 3, 3); R.call("#8a4a20", -1.5, -4.5, 3, 1.2)   # head and hair
+	R.call("#c0504a", -2.5, -5, 4, 1)                               # cap
+	R.call("#3a2a20", -3, 3, 1.5, 2.5); R.call("#3a2a20", 1.5, 3, 1.5, 2); R.call("#3a2a20", 2.5, 4.5, 1.5, 1)   # legs
+	R.call("#b8864a", -4.5, -1, 2.5, 3)                             # satchel
+	R.call("#ffffff", 2, -2, 3, 2); R.call("#ffffff", 4, -3.5, 2.5, 1.8); R.call("#f4e8c8", 5.5, -5, 2.5, 1.8)   # letters flying
+	R.call(rgba(255, 255, 255, 0.7), -9, 0, 4, 0.8); R.call(rgba(255, 255, 255, 0.7), -8, 2, 3, 0.8)          # speed lines
+
+
 ## one label at a time, for whichever spot you're standing closest to (on the ground floor)
 func nearestSlot():
 	if absf(P.y - M.floorY) > 4:
@@ -1685,6 +1708,8 @@ func drawHouse(x: Ctx, sx: float, sy: float) -> void:
 		x.restore()
 		x.fillStyle = rgba(110, 170, 255, 0.08 + 0.04 * sin(t * 7))
 		x.fillRect(X0 - 10, Y0 - sy - 6, 84, 8)   # its glow on the floor
+	if autoQuestOwned():
+		drawQuestPainting(x, 40 - sx, Y0 - 100 - sy)   # above the front door: a clear patch of wall in every home
 	var near = nearestSlot()
 	for s in M.slots:
 		var id: String = str(Hs.get("placed", {}).get(s.k, ""))

@@ -985,8 +985,34 @@ func houseCard(x: float, y: float, w: float) -> float:
 					else:
 						uButton(Rect2(bx, by, 64, 18), "Take down" if on else "Display", func(): _ctoggle(it.id), {"disabled": not on and Hs.shelfItems.size() >= slots, "size": 8}))
 		return yy - Y)
+	cards.append(func(X, Y, W):
+		var P_: Dictionary = QUEST_PAINTING
+		var own = autoQuestOwned()
+		uText("Painting", X, Y, 11)
+		uText("Hangs on the wall", X + uW("Painting", 11) + 6, Y + 2, 8, MUTED, UF)
+		var yy = Y + 18
+		yy += _fitem(X, yy, W, P_.name, P_.desc, P_.flavor, own, func(px, py): withCtx(Vector2(px, py), 1.0, func(cx): drawQuestPainting(cx, 21, 15)),
+			func(bx, by):
+				if own:
+					uPill("Hung", bx + 64, by + 2, GOLD, INK, 8, 2)
+				else:
+					_priceBtn(Rect2(bx, by, 64, 18), P_.price, func(): _paintBuy()))
+		return yy - Y)
 	y += uCards(x, y, w, 2, cards)
 	return y - y0
+
+
+func _paintBuy() -> void:
+	var Hs: Dictionary = save.house
+	if autoQuestOwned() or save.coins < QUEST_PAINTING.price:
+		return
+	save.coins -= QUEST_PAINTING.price
+	Hs.owned.append(QUEST_PAINTING.id)
+	save.settings.autoQuests = true
+	Sfx.buy()
+	Sfx.levelUp()
+	toast("%s hung in your house! Auto-complete is on (Quests tab)." % QUEST_PAINTING.name)
+	_changed()
 
 
 func _priceBtn(r: Rect2, price: int, cb: Callable) -> void:
@@ -1378,7 +1404,7 @@ func _pQuests(x: float, y: float, w: float) -> float:
 	y += uCards(x, y, w, 1, [func(X, Y, W):
 		uText("★ Main Quest %d · %s" % [mq.q + 1, Q.title], X, Y, 11, css("#8a5a08"))
 		if done and not mq.claimed:
-			uButton(Rect2(X + W - 56, Y - 2, 56, 18), "Claim", func(): _mainClaim(), {"bg": MINT})
+			uButton(Rect2(X + W - 64, Y - 2, 64, 18), "Complete", func(): _mainClaim(), {"bg": MINT})
 		elif mq.claimed:
 			uPill("Complete", X + W, Y, GOLD, INK, 8, 2)
 		var yy = Y + 18
@@ -1389,6 +1415,19 @@ func _pQuests(x: float, y: float, w: float) -> float:
 			yy += 14
 		yy += 3 + muted("Reward: %s EXP and %s coins" % [fmt(Q.exp), fmt(Q.coins)], X, yy + 3, W)
 		return yy - Y], [{"fill": css("#fff6e3"), "border": css("#c89418")}])
+	y += 12
+	y += uCards(x, y, w, 1, [func(X, Y, W):
+		var own = autoQuestOwned()
+		var on = autoQuestOn()
+		uText("Auto-complete", X, Y, 11)
+		if own:
+			uButton(Rect2(X + W - 64, Y - 2, 64, 18), "On" if on else "Off", func(): _autoQuests(not on), {"on": on, "size": 8})
+		else:
+			uPill("🔒 Locked", X + W, Y, css("#d8dcea"), INK, 8, 2)
+		var yy = Y + 17
+		yy += muted(("Finished quests hand over their rewards by themselves, main quest included." if own else
+			"Hang the painting \"%s\" in your house (Shop › House) to unlock this. Finished quests will then hand over their rewards by themselves." % QUEST_PAINTING.name), X, yy, W)
+		return yy - Y])
 	y += 12
 	y += h3("Side quests", x, y) + 2
 	var cards = []
@@ -1402,7 +1441,7 @@ func _pQuests(x: float, y: float, w: float) -> float:
 				uBox(Rect2(pr.position, Vector2(pr.size.x * p, 6)), MINT, NONE, 0, 3)
 			uText("Reward: %s EXP and %s coins" % [fmt(q.exp), fmt(q.coins)], X, Y + 27, 8, MUTED, UF)
 			if q.done:
-				uButton(Rect2(X + W - 58, Y + 10, 58, 19), "Claim", func(): _claim(q.id), {"bg": MINT})
+				uButton(Rect2(X + W - 64, Y + 10, 64, 19), "Complete", func(): _claim(q.id), {"bg": MINT})
 			else:
 				uButton(Rect2(X + W - 58, Y + 10, 58, 19), "Swap", func(): _swap(q.id))
 			return 38.0)
@@ -1411,30 +1450,20 @@ func _pQuests(x: float, y: float, w: float) -> float:
 
 
 func _mainClaim() -> void:
-	var mq = mainQ()
-	var Q = MAINQS[mq.q]
-	if mq.stage >= Q.steps.size() and not mq.claimed:
-		mq.claimed = true
-		gainExp(Q.exp)
-		save.coins += Q.coins
-		toast("Main quest reward: +%s EXP, +%s coins" % [fmt(Q.exp), fmt(Q.coins)])
-		Sfx.levelUp()
-		mainQ()
+	if claimMainQuest():
 		_changed()
 
 
 func _claim(id) -> void:
-	for i in save.quests.size():
-		var q = save.quests[i]
-		if q.id == id and q.done:
-			save.quests.remove_at(i)
-			save.coins += q.coins
-			gainExp(q.exp)
-			toast("+%s EXP, +%s coins" % [fmt(q.exp), fmt(q.coins)])
-			Sfx.buy()
-			fillQuests()
-			_changed()
-			return
+	if claimSideQuest(id):
+		_changed()
+
+
+func _autoQuests(on: bool) -> void:
+	save.settings.autoQuests = on
+	Sfx.ui()
+	toast("Auto-complete is %s." % ("on: finished quests complete themselves" if on else "off"))
+	_changed()
 
 
 func _swap(id) -> void:
