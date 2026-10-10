@@ -180,6 +180,25 @@ const BOSS_SKILLS := [
 		"desc": ["Launch the Mk II's laser drone for 10s: it hovers over your shoulder and fires a laser at the nearest monster every 0.7s for 220% damage"]},
 ]
 
+# ---------------------------------------------------------------- monster loot bags and rare treasures
+## every monster has a 1% chance to drop a loot bag of its own (opened from the inventory), and a small
+## chance to drop its rare treasure: not used for crafting, only sold, and worth a lot (a shiny one, 5× more)
+const LOOT_BAG_RATE := 0.01
+const RARE_DROP_RATE := 0.004   # straight from the monster
+const BAG_RARE_RATE := 0.12     # inside a loot bag
+const SHINY_RARE_RATE := 0.08   # a rare from a bag (or a normal monster) is now and then the shiny kind
+const RARE_NAMES := {
+	"green": "Emerald Jelly Core", "blue": "Sapphire Jelly Core", "red": "Ruby Jelly Core", "silver": "Quicksilver Bead", "gold": "Gold Nugget Heart",
+	"rat": "Lucky Rat Whisker", "ferret": "Silken Ferret Pelt", "boar": "Golden Tusk", "tortoise": "Moss Pearl",
+	"evileye": "Seer's Iris", "hand": "Knuckle Signet Ring", "feet": "Wanderer's Compass", "head": "Golden Molar", "torso": "Beating Heartstone",
+	"hairball": "Spun-Gold Lock", "cknight": "Crimson Crest", "ccrusader": "Blood-Oath Medal",
+	"toad": "Abyssal Toadstone", "seagull": "Sunken Doubloon", "bass": "Glowing Lure", "crab": "Coral Crown", "shark": "Megalodon Fang",
+	"squid": "Midnight Ink Pearl", "orca": "Ambergris", "octopus": "Kraken Eye",
+	"boulder": "Runed Geode", "lizard": "Chieftain's Fetish", "golem": "Heart of Frost", "warlock": "Grimoire Page", "yeti": "Frost Opal", "sword": "Enchanted Hilt Gem",
+	"sentinel": "Prism Lens", "secgolem": "Overcharged Mana Cell", "sentgolem": "Golden Gear", "dog": "Gold Dog Tag", "ferro": "Living Mercury",
+}
+
+
 # ---------------------------------------------------------------- player + save
 var P: S.Player = S.Player.new()
 var PS: Dictionary = {}          # computed stats
@@ -274,6 +293,9 @@ func init_data() -> void:
 	initTankData()
 	initClimbData()
 	initVolcanoData()
+	rebalanceCrafting()
+	CUR_TIPS.abyss = "Abyssal Coins: cold, faintly humming coins. Everything an Obelisk calls up drops them (the swarms and the elites), and they're mixed into its coin showers. Spent in the Abyssal Shop."
+	strengthenHouse()
 	STAT_TIPS["Boss Coins"] = "Found in the boxes bosses drop (1–5 each). Spend them in the Boss Shop."
 
 
@@ -401,7 +423,7 @@ func newChar() -> Dictionary:
 
 
 func newSave() -> Dictionary:
-	var s = {"coins": 0, "bossCoins": 0, "abyssCoins": 0, "boxes": {}, "parts": {}, "tankHouse": false, "house": {"owned": [], "placed": {}, "curios": [], "shelfItems": []}, "trophies": {}, "boons": {}, "mats": {}, "chars": {},
+	var s = {"coins": 0, "bossCoins": 0, "abyssCoins": 0, "boxes": {}, "parts": {}, "tankHouse": false, "house": {"owned": [], "placed": {}, "curios": [], "shelfItems": []}, "trophies": {}, "boons": {}, "mats": {}, "bags": {}, "rares": {}, "chars": {},
 		"quests": [], "qid": 0, "settings": {"vol": 0.5, "music": 0.5, "sfx": 0.8, "shake": 1.0, "timeSpeed": 1, "weather": "auto", "help": true, "map": "home", "mute": false, "god": false},
 		"bestRank": -1, "cards": {}, "bestiary": {}, "main": {"q": 0, "stage": 0, "claimed": false}}
 	for k in SLIME_KEYS:
@@ -477,7 +499,7 @@ func loadSave() -> Dictionary:
 		c.attrs = a
 		s.chars[k] = c
 		ensureLook(k, c)
-	for k in ["cards", "bestiary"]:
+	for k in ["cards", "bestiary", "bags", "rares", "boxes"]:
 		if not (s.get(k) is Dictionary):
 			s[k] = {}
 	_migrateBossRecords(s)
@@ -833,13 +855,141 @@ func setClass(id: String) -> void:
 
 
 func matsForLevel(lv: int, small := false) -> Dictionary:
-	var band: Array = []
-	for b in D.matBands:
-		if lv < b[0]:
-			band = b[1]
-			break
-	var k = 0.4 if small else 1.0
-	return {band[0]: roundi((8 + lv * 0.35) * k), band[1]: roundi((5 + lv * 0.25) * k)}
+	return craftMats(lv, roundi((13 + lv * 0.6) * (0.4 if small else 1.0)))
+
+
+## crafting asks for the newest monster you can reach at the item's level (most of the cost), and early on
+## a few from the monster just ahead, so upgrades pull you forward instead of sending you back to the slimes
+func craftMats(lv: int, total: int) -> Dictionary:
+	var L: Array = _craftLadder()
+	var now = L.filter(func(k): return SLIME_TYPES[k].lv <= lv and int(SLIME_TYPES[k].get("unlock", SLIME_TYPES[k].lv)) <= lv)
+	var ahead = L.filter(func(k): return SLIME_TYPES[k].lv > lv and SLIME_TYPES[k].lv <= lv + 4 and int(SLIME_TYPES[k].get("unlock", SLIME_TYPES[k].lv)) <= lv)
+	var a: String = now[-1] if now.size() else L[0]
+	var b: String = ahead[0] if ahead.size() else (now[-2] if now.size() > 1 else a)
+	if a == b:
+		return {a: total}
+	var na = ceili(total * 0.6)
+	return {a: na, b: maxi(1, total - na)}
+
+
+var _ladder: Array = []
+## the monsters crafting can ask for, lowest level first (not the rare ones: gold slimes, the Sentinel-Golem)
+func _craftLadder() -> Array:
+	if _ladder.is_empty():
+		for k in SLIME_TYPES:
+			var T: Dictionary = SLIME_TYPES[k]
+			if k in ["gold", "sentgolem", "abyss"] or T.get("boss") or not (float(T.get("w", 1)) > 0 or T.get("critter", false)):
+				continue
+			_ladder.append(k)
+		_ladder.sort_custom(func(a, b): return SLIME_TYPES[a].lv < SLIME_TYPES[b].lv)
+	return _ladder
+
+
+## every gear tier and charm keeps its old amount of materials, but asks for the ones you're farming at its level
+func rebalanceCrafting() -> void:
+	_ladder = []
+	var lists: Array = [CHARM_TIERS]
+	for cls in GEAR:
+		for kind in GEAR[cls]:
+			lists.append(GEAR[cls][kind])
+	for tiers in lists:
+		for t in tiers:
+			var m: Dictionary = t.get("mats", {})
+			if m.is_empty():
+				continue
+			var tot = 0
+			for k in m:
+				tot += int(m[k])
+			t.mats = craftMats(int(t.lv), tot)
+
+
+## house furniture is expensive, so it's strong: 2.5–3× the old bonuses, bigger shelves, stronger curios
+const FURN_MUL := {"bed": 3.0, "table": 3.0, "chair": 2.5, "rug": 2.5}
+const SHELF_SLOTS := {"plank": 3, "bookcase": 4, "cabinet": 6}
+const CURIO_FX := {"eye": {"crit": 10}, "mandrake": {"hpPct": 0.15}, "ship": {"coin": 20}, "hourglass": {"aspd": 0.12}, "skull": {"atkPct": 0.12}, "lamp": {"exp": 20}}
+func strengthenHouse() -> void:
+	for k in FURN_MUL:
+		for it in FURNITURE.get(k, {}).get("items", []):
+			it.val = snappedf(float(it.val) * FURN_MUL[k], 0.0001)
+	for it in FURNITURE.get("shelf", {}).get("items", []):
+		it.val = SHELF_SLOTS.get(it.id, it.val)
+		it.desc = RegEx.create_from_string("Room for \\w+ curios").sub(it.desc, "Room for %s curios" % ["", "one", "two", "three", "four", "five", "six", "seven", "eight"][clampi(int(it.val), 0, 8)])
+	for it in CURIOS:
+		if CURIO_FX.has(it.id):
+			it.fx = CURIO_FX[it.id].duplicate()
+			var f: String = it.fx.keys()[0]
+			var v: float = it.fx[f]
+			var txt = {"crit": "+%d%% critical rate", "coin": "+%d%% coins", "exp": "+%d%% EXP", "hpPct": "+%d%% max HP", "aspd": "+%d%% attack speed", "atkPct": "+%d%% attack"}
+			it.desc = txt[f] % (roundi(v * 100) if f in ["hpPct", "aspd", "atkPct"] else roundi(v))
+
+
+# ---------------- loot bags and rare treasures
+
+func rareKey(type: String, shiny: bool) -> String:
+	return type + ("_shiny" if shiny else "")
+
+
+func rareType(key: String) -> String:
+	return key.trim_suffix("_shiny")
+
+
+func rareName(key: String) -> String:
+	var n: String = RARE_NAMES.get(rareType(key), monsterName(rareType(key)) + " Trinket")
+	return ("Shiny " + n) if key.ends_with("_shiny") else n
+
+
+## what a rare treasure sells for: about eighty kills' worth of that monster's coins (a shiny one, 5×)
+func rareValue(key: String) -> int:
+	var T: Dictionary = SLIME_TYPES.get(rareType(key), {"coins": [5, 5]})
+	var v: float = (T.coins[0] + T.coins[1]) * 0.5 * 80 * (5 if key.ends_with("_shiny") else 1)
+	var mag = pow(10, maxi(0, floori(log(v) / log(10)) - 1))
+	return roundi(roundf(v / mag) * mag)
+
+
+func bagCount(type: String) -> int:
+	return int(save.get("bags", {}).get(type, 0))
+
+
+## open loot bags: EXP, coins, a handful of the monster's material, and now and then its rare treasure
+func openBags(type: String, n := 1) -> Dictionary:
+	n = mini(n, bagCount(type))
+	var got = {"exp": 0, "coins": 0, "mats": 0, "rares": {}}
+	if n <= 0 or not SLIME_TYPES.has(type):
+		return got
+	var T: Dictionary = SLIME_TYPES[type]
+	for i in n:
+		got.exp += roundi(T.exp * minf(1.5, expScale(T.lv)) * rint(8, 15))
+		got.coins += roundi((T.coins[0] + T.coins[1]) * 0.5 * rint(15, 30) * (1 + cardBonus()) * (1 + PS.get("coin", 0) / 100.0))
+		got.mats += rint(4, 10)
+		if randf() < BAG_RARE_RATE:
+			var key = rareKey(type, randf() < SHINY_RARE_RATE)
+			got.rares[key] = int(got.rares.get(key, 0)) + 1
+	save.bags[type] = bagCount(type) - n
+	save.coins += got.coins
+	if not (save.mats is Dictionary):
+		save.mats = {}
+	save.mats[type] = int(save.mats.get(type, 0)) + got.mats
+	if not (save.get("rares") is Dictionary):
+		save.rares = {}
+	for key in got.rares:
+		save.rares[key] = int(save.rares.get(key, 0)) + got.rares[key]
+	gainExp(got.exp)
+	saveDirty = true
+	return got
+
+
+func sellRares(key: String, n := 1) -> int:
+	var have = int(save.get("rares", {}).get(key, 0))
+	n = mini(n, have)
+	if n <= 0:
+		return 0
+	var paid = rareValue(key) * n
+	save.rares[key] = have - n
+	if save.rares[key] <= 0:
+		save.rares.erase(key)
+	save.coins += paid
+	saveDirty = true
+	return paid
 
 
 func matName(k: String) -> String:
@@ -1164,6 +1314,28 @@ func updateDrops(dt: float) -> void:
 				save.abyssCoins = save.get("abyssCoins", 0) + d.val
 				Sfx.tone(300, 0.2, "triangle", 0.08, 600)
 				pickupPop("abyss", "Abyssal Coins", d.val, "#ff9ef0")
+			elif d.kind == "exp":
+				gainExp(d.val)
+				Sfx.tone(700, 0.08, "triangle", 0.05, 1100)
+				pickupPop("exp", "EXP", d.val, "#5dff7a")
+			elif d.kind == "bag":
+				if not (save.get("bags") is Dictionary):
+					save.bags = {}
+				save.bags[d.type] = bagCount(d.type) + 1
+				Sfx.buy()
+				pickupPop("bag_" + d.type, "%s Loot Bag" % monsterName(d.type), 1, "#ffd27a")
+				toast("💰 %s Loot Bag! Open it from your inventory (Tab → Inventory)." % monsterName(d.type))
+			elif d.kind == "rare":
+				var key = rareKey(d.type, d.shiny)
+				if not (save.get("rares") is Dictionary):
+					save.rares = {}
+				save.rares[key] = int(save.rares.get(key, 0)) + 1
+				Sfx.rankUp(9 if d.shiny else 7)
+				Sfx.buy()
+				banner("SHINY RARE DROP!" if d.shiny else "RARE DROP!", "%s · sells for %s coins" % [rareName(key), fmt(rareValue(key))])
+				for k in 26:
+					var cols: Array = ["#fff6b0", "#ffffff", "#ff9ecf", "#9fe6ff"] if d.shiny else ["#ffe14d", "#ffffff", "#9fe6ff"]
+					part(P.x, P.y - 30, rand(-120, 120), rand(-200, -40), rand(0.6, 1.1), cols[k % cols.size()], 200, 2)
 			elif d.kind == "box":
 				collectBox(d.type)
 			elif d.kind == "part":
@@ -1189,7 +1361,7 @@ func updateDrops(dt: float) -> void:
 				pickupPop("m_" + d.type, matName(d.type), n, "#ffffff")
 			saveDirty = true
 			continue
-		if d.t > 60 and not (d.kind in ["box", "key", "pendant"]):
+		if d.t > 60 and not (d.kind in ["box", "key", "pendant", "bag", "rare"]):
 			drops.remove_at(i)
 
 

@@ -232,6 +232,13 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 				drawPendantDrop(x, X, Y, tt)
 			"part":
 				drawPartDrop(x, d, X, Y, tt)
+			"exp":
+				var bob = roundf(sin(tt * 4 + d.spin)) if d.vy == 0 else 0.0
+				drawExpDrop(x, X, Y + bob)
+			"bag":
+				drawLootBag(x, d.type, X, Y + (roundf(sin(tt * 3 + d.spin)) if d.vy == 0 else 0.0), tt)
+			"rare":
+				drawRare(x, d.type, d.shiny, X, Y + (roundf(sin(tt * 3 + d.spin) * 1.5) - 1 if d.vy == 0 else 0.0), tt)
 			"abyss":
 				var gl = 0.5 + 0.5 * sin(tt * 5 + d.x)
 				x.fillStyle = rgba(255, 58, 216, 0.3 * gl)
@@ -1374,6 +1381,80 @@ func drawBossSkills(x: Ctx, sx: float, sy: float) -> void:
 			x.moveTo(X, Y)
 			x.lineTo(X - 1.5, Y + 7)
 		x.stroke()
+
+
+## a monster's loot bag: a burlap sack tied with a band of the monster's colour, a coin peeking out.
+## (X, Y) is the bottom centre; about 12×12
+func drawLootBag(x: Ctx, type: String, X: float, Y: float, tt: float) -> void:
+	var col: Color = hexc(int(SLIME_TYPES[type].color)) if SLIME_TYPES.has(type) else css("#8fff6a")
+	x.fillStyle = "#3a2410"   # outline
+	x.fillRect(X - 3, Y - 13, 6, 3); x.fillRect(X - 5, Y - 10, 10, 2); x.fillRect(X - 6, Y - 8, 12, 2)
+	x.fillRect(X - 7, Y - 6, 14, 5); x.fillRect(X - 6, Y - 1, 12, 1)
+	x.fillStyle = "#c9965a"   # burlap
+	x.fillRect(X - 2, Y - 12, 4, 2); x.fillRect(X - 5, Y - 7, 10, 1); x.fillRect(X - 6, Y - 6, 12, 4); x.fillRect(X - 5, Y - 2, 10, 1)
+	x.fillStyle = "#a0703a"
+	x.fillRect(X + 2, Y - 6, 3, 4); x.fillRect(X - 5, Y - 2, 10, 1)
+	x.fillStyle = "#e8c28a"
+	x.fillRect(X - 4, Y - 6, 2, 2); x.fillRect(X - 1, Y - 12, 1, 1)
+	x.fillStyle = col   # the tie
+	x.fillRect(X - 4, Y - 10, 8, 2)
+	x.fillStyle = col.lightened(0.45)
+	x.fillRect(X - 3, Y - 10, 2, 1)
+	x.fillStyle = "#ffe14d"   # a coin peeking out of the neck
+	x.fillRect(X - 1, Y - 14, 3, 2)
+	x.fillStyle = "#fff6b0"
+	x.fillRect(X - 1, Y - 14, 1, 1)
+
+
+## a rare treasure: a cut gem in the monster's colour with a travelling glint (a shiny one shimmers
+## through the rainbow and throws sparkles). (X, Y) is the bottom centre; about 12×10
+const GEM_ROWS := [[-3, 6], [-5, 10], [-6, 12], [-5, 10], [-4, 8], [-3, 6], [-2, 4], [-1, 2]]
+func drawRare(x: Ctx, type: String, shiny: bool, X: float, Y: float, tt: float) -> void:
+	var col: Color = hexc(int(SLIME_TYPES[type].color)) if SLIME_TYPES.has(type) else css("#9fe6ff")
+	if shiny:
+		col = Color.from_hsv(fmod(tt * 0.35, 1.0), 0.45, 1.0)
+	var top = Y - 10
+	x.fillStyle = "#1a1030"   # outline
+	for i in GEM_ROWS.size():
+		x.fillRect(X + GEM_ROWS[i][0] - 1, top + i - 1, GEM_ROWS[i][1] + 2, 3)
+	for i in GEM_ROWS.size():
+		var r: Array = GEM_ROWS[i]
+		x.fillStyle = col.lightened(0.35) if i == 0 else (col if i < 3 else col.darkened(0.25))
+		x.fillRect(X + r[0], top + i, r[1], 1)
+	x.fillStyle = col.darkened(0.45)   # facets
+	x.fillRect(X - 6, top + 2, 12, 1)
+	x.fillRect(X + 1, top + 3, 1, 4)
+	x.fillStyle = col.lightened(0.7)
+	x.fillRect(X - 3, top + 1, 2, 1); x.fillRect(X - 4, top + 3, 1, 2)
+	var g = int(fmod(tt * 1.5 + X * 0.05, 3.0) * 5)   # a glint that runs over it now and then
+	if g < 6:
+		x.fillStyle = "#ffffff"
+		x.fillRect(X - 3 + g, top + 1, 1, 1)
+	if shiny or fmod(tt * 1.3 + X * 0.07, 2.0) < 0.35:   # a sparkle (always twinkling on a shiny)
+		x.fillStyle = "#ffffff"
+		var on = fmod(tt * 2.0 + X, 1.0) < 0.5
+		var sx = X + (6 if on else -7)
+		var sy = top + (-3 if on else 4)
+		x.fillRect(sx, sy - 1, 1, 3); x.fillRect(sx - 1, sy, 3, 1)
+
+
+## "EXP" in a tiny 3×5 pixel font, green with a dark outline (the EXP that rains from an Obelisk)
+const EXP_GLYPHS := ["111100110100111", "101101010101101", "110101110100100"]
+func drawExpDrop(x: Ctx, X: float, Y: float) -> void:
+	var x0 = X - 5
+	var y0 = Y - 6
+	for pass_ in 2:
+		x.fillStyle = "#0a3a14" if pass_ == 0 else "#5dff7a"
+		for l in 3:
+			var gl: String = EXP_GLYPHS[l]
+			for k in 15:
+				if gl[k] == "1":
+					var px = x0 + l * 4 + k % 3
+					var py = y0 + floori(k / 3.0)
+					if pass_ == 0:
+						x.fillRect(px - 1, py - 1, 3, 3)
+					else:
+						x.fillRect(px, py, 1, 1)
 
 
 ## a boss's loot box: Crocbox (swamp green, gold bands), Crimsonbox (blood red, black iron) or Dreambox (abyss purple, red runes)

@@ -440,10 +440,11 @@ func killSlime(e) -> void:
 		cheer()
 		banner("Elite defeated!", "%s · huge rewards" % e.T.name)
 		shake = 6
-	if e.type == "abyss":
-		var n = rint(1, 3) if randf() < 0.6 else 0   # they're five levels above you now: more coins
+	if e.type == "abyss" or e.elite:   # everything an Obelisk calls up pays in Abyssal Coins
+		var n = rint(5, 9) if e.elite else rint(1, 3)
 		for k in n:
 			_drop("abyss", e, rand(-60, 60), rand(-240, -160))
+	dropLoot(e)
 	rollCards(e)
 	gainExp(gained)
 	var xs = ""
@@ -467,6 +468,18 @@ func killSlime(e) -> void:
 				Sfx.buy()
 	styleAdd(40.0 if e.T.get("metal") else 16.0, "kill")
 	saveDirty = true
+
+
+## the rare stuff: a loot bag (1%) and the monster's rare treasure (shinies and elites are luckier)
+func dropLoot(e) -> void:
+	if not SLIME_TYPES.has(e.type) or e.type == "abyss":
+		return
+	var luck: float = (5.0 if e.shiny else 1.0) * (3.0 if e.elite else 1.0)
+	if randf() < LOOT_BAG_RATE * luck:
+		_drop("bag", e, rand(-40, 40), rand(-260, -200), 1, e.type)
+	if randf() < RARE_DROP_RATE * luck:
+		var d = _drop("rare", e, rand(-30, 30), rand(-280, -220), 1, e.type)
+		d.shiny = e.shiny or randf() < SHINY_RARE_RATE
 
 
 # ================================================================ the Crimson Wastes
