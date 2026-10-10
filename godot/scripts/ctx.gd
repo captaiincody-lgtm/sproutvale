@@ -15,6 +15,7 @@ var globalCompositeOperation := "source-over"
 var lineDashOffset := 0.0
 var lineJoin := "miter"
 var imageSmoothingEnabled := false
+var tint := Color.WHITE                 # multiplied into every image drawn (not part of Canvas2D: a Lunar monster's glow)
 var xf := Transform2D.IDENTITY          # the current transform, relative to `base`
 var base := Transform2D.IDENTITY        # what setTransform resets to
 var _font_size := 8.0
@@ -65,6 +66,7 @@ func begin(item: CanvasItem, base_xf := Transform2D.IDENTITY) -> void:
 	_stack.clear()
 	_paths.clear()
 	globalAlpha = 1.0
+	tint = Color.WHITE
 	lineWidth = 1.0
 	_fill = Color.WHITE
 	_stroke = Color.BLACK
@@ -569,7 +571,7 @@ func drawImage(tex: Texture2D, dx: float, dy: float, dw: float = -1, dh: float =
 		dw = tex.get_width()
 		dh = tex.get_height()
 	_use(xf)
-	ci.draw_texture_rect(tex, Rect2(dx, dy, dw, dh), false, Color(1, 1, 1, globalAlpha))
+	ci.draw_texture_rect(tex, Rect2(dx, dy, dw, dh), false, Color(tint, globalAlpha))
 
 
 ## the nine-argument drawImage: a source rectangle of `tex` into a destination rectangle
@@ -577,7 +579,7 @@ func drawImageRegion(tex: Texture2D, sx: float, sy: float, sw: float, sh: float,
 	if tex == null:
 		return
 	_use(xf)
-	ci.draw_texture_rect_region(tex, Rect2(dx, dy, dw, dh), Rect2(sx, sy, sw, sh), Color(1, 1, 1, globalAlpha))
+	ci.draw_texture_rect_region(tex, Rect2(dx, dy, dw, dh), Rect2(sx, sy, sw, sh), Color(tint, globalAlpha))
 
 
 ## frame `f` of a horizontal strip of `n` frames
@@ -586,4 +588,4 @@ func drawFrame(tex: Texture2D, n: int, f: int, dx: float, dy: float, dw: float, 
 		return
 	_use(xf)
 	var fw = tex.get_width() / float(maxi(1, n))
-	ci.draw_texture_rect_region(tex, Rect2(dx, dy, dw, dh), Rect2(fw * clampi(f, 0, n - 1), 0, fw, tex.get_height()), Color(mod.r, mod.g, mod.b, mod.a * globalAlpha))
+	ci.draw_texture_rect_region(tex, Rect2(dx, dy, dw, dh), Rect2(fw * clampi(f, 0, n - 1), 0, fw, tex.get_height()), Color(mod.r * tint.r, mod.g * tint.g, mod.b * tint.b, mod.a * globalAlpha))

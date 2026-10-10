@@ -172,7 +172,7 @@ func flow(x: float, y: float, w: float, items: Array, h := 16.0, gap := 5.0) -> 
 func currencyBag(x: float, y: float, w: float, extra := "", cards := -1) -> float:
 	var items = [[uW("CURRENCY", 6, PX) + 4, func(X, Y): uText("CURRENCY", X, Y + 5, 6, css("#8a5a08"), PX)]]
 	var cur = [["coin", fmt(save.coins), "Coins", CUR_TIPS.coin], ["boss", fmt(save.get("bossCoins", 0)), "Boss Coins", CUR_TIPS.boss],
-		["abyss", fmt(save.get("abyssCoins", 0)), "Abyssal Coins", CUR_TIPS.abyss]]
+		["abyss", fmt(save.get("abyssCoins", 0)), "Abyssal Coins", CUR_TIPS.abyss], ["luna", fmt(save.get("lunaCoins", 0)), "Luna Coins", CUR_TIPS.luna]]
 	if cards >= 0:
 		cur.append(["cards", fmt(cards), "Monster Cards", CUR_TIPS.get("cards", "")])
 	for c in cur:
@@ -642,7 +642,7 @@ func _sellRares(keys: Array, n: int) -> void:
 func _pShop(x: float, y: float, w: float) -> float:
 	var y0 = y
 	var sx = x
-	var tabs = [["gear", "Gear"], ["abyss", "Abyssal Shop"], ["boss", "Boss Shop"], ["house", "House"]]
+	var tabs = [["gear", "Gear"], ["abyss", "Abyssal Shop"], ["boss", "Boss Shop"], ["house", "House"], ["lunar", "Lunar Shop"]]
 	if classId == "tank":
 		tabs.insert(1, ["workshop", "Workshop"])
 	elif shopTab == "workshop":
@@ -661,6 +661,7 @@ func _pShop(x: float, y: float, w: float) -> float:
 		"boss": y += bossCard(x, y, w)
 		"house": y += houseCard(x, y, w)
 		"workshop": y += workshopCard(x, y, w)
+		"lunar": y += lunarCard(x, y, w)
 		_: y += gearCards(x, y, w)
 	return y - y0
 
