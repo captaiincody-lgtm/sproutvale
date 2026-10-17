@@ -183,14 +183,19 @@ func drawTerrain(x: Ctx, mt: Texture2D, sx: float, sy: float) -> void:
 
 func painted_hero_pose() -> Dictionary:
 	var anim: String = P.anim
+	if not cycles.has_cycle("hero", anim):
+		return {}
+	# Combat poses follow the actual move's active frames, including aerial and multi-hit moves.
 	if P.state == "attack":
-		var key := "heavy" if P.move.get("heavy", false) else "slash"
 		var old_frame := playerFrame()
 		var hits: Array = P.move.get("hits", [2])
 		var first_hit := int(hits[0])
 		var last_hit := int(hits[-1])
 		var frame := 0 if old_frame < first_hit - 1 else (1 if old_frame < first_hit else (2 if old_frame <= last_hit else 3))
-		return {"anim": key, "frame": frame}
+		# Revisit windup/strike for each extra hit instead of freezing throughout a multi-hit attack.
+		if hits.size() > 1 and old_frame >= first_hit and old_frame <= last_hit:
+			frame = 2 if old_frame in hits else 1
+		return {"anim": anim, "frame": frame}
 	if P.state == "block":
 		var frame := 2 if guard_flash > 0 or hitstop > 0 else (0 if P.animT < 0.10 else (1 if P.animT < 0.25 else 3))
 		return {"anim": "block", "frame": frame}
@@ -199,13 +204,18 @@ func painted_hero_pose() -> Dictionary:
 	if anim == "jump":
 		var frame := 0 if P.animT < 0.06 else (1 if P.vy < -100 else (2 if P.vy < 80 else 3))
 		return {"anim": "jump", "frame": frame}
-	if anim == "land":
-		return {"anim": "jump", "frame": 0}
-	if anim == "rest":
-		anim = "idle"
-	if anim in ["idle", "walk", "run"]:
-		return {"anim": anim, "frame": cycles.frame_at("hero", anim, P.animT)}
-	return {}
+	if P.state == "flinch":
+		return {"anim": "hurt", "frame": 0}
+	if P.state == "knocked":
+		return {"anim": "down", "frame": 0 if not P.kdBack else (1 if P.kdPhase == "air" else 3)}
+	# Remap the original action timeline to four painted poses. This preserves animation
+	# completion and skill-speed changes without changing the controller's state durations.
+	var timing: Dictionary = ANIM_BY_ID.get(anim, ANIM_BY_ID.idle)
+	var original_count := int(timing.get("frames", 4))
+	var phase: float = P.animT * float(timing.fps) / maxf(1, original_count)
+	var frame := maxi(0, int(phase * 4))
+	frame = frame % 4 if timing.loop else mini(frame, 3)
+	return {"anim": anim, "frame": frame}
 
 func drawPlayer(x: Ctx, sx: float, sy: float, dt: float) -> void:
 	if not painted:

@@ -19,9 +19,14 @@ const BATCH := [
 ]
 
 func _initialize() -> void:
-	var manifest := {"version":1,"hero":{},"slime":{}}
-	for sheet in BATCH:
-		var image := Image.load_from_file(ROOT + "sources/" + sheet.file + ".png")
+	var args := OS.get_cmdline_user_args()
+	var source_dir: String = args[0] if args.size() > 0 else ROOT + "sources/"
+	var batches: Array = BATCH
+	if args.size() > 1:
+		batches = JSON.parse_string(FileAccess.get_file_as_string(args[1]))
+	var manifest: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(ROOT + "animations.json")) if FileAccess.file_exists(ROOT + "animations.json") else {"version":1,"hero":{},"slime":{}}
+	for sheet in batches:
+		var image := Image.load_from_file(source_dir.path_join(sheet.file + ".png"))
 		if image == null:
 			push_error("Missing animation source: " + sheet.file)
 			quit(1)
@@ -29,7 +34,9 @@ func _initialize() -> void:
 		var frame_w := 336 if sheet.kind == "hero" else 176
 		var frame_h := 304 if sheet.kind == "hero" else 144
 		var foot := Vector2i(160,264) if sheet.kind == "hero" else Vector2i(88,132)
-		for row in 4:
+		if not manifest.has(sheet.kind):
+			manifest[sheet.kind] = {}
+		for row in sheet.rows.size():
 			var spec: Dictionary = sheet.rows[row]
 			var strip := Image.create_empty(frame_w * 4, frame_h, false, Image.FORMAT_RGBA8)
 			var regions := []
@@ -38,6 +45,16 @@ func _initialize() -> void:
 				var y0: int = sheet.ys[row]
 				var x1: int = sheet.xs[column + 1]
 				var y1: int = sheet.ys[row + 1]
+				if sheet.has("row_regions"):
+					y0 = int(sheet.row_regions[row][0])
+					y1 = int(sheet.row_regions[row][1])
+				# Some generated weapons cross the nominal cell boundary. Expand the crop,
+				# then retain its largest connected silhouette to reject neighboring fragments.
+				var padding: int = sheet.get("padding", 0)
+				x0 = maxi(0, x0 - padding)
+				y0 = maxi(0, y0 - padding)
+				x1 = mini(image.get_width(), x1 + padding)
+				y1 = mini(image.get_height(), y1 + padding)
 				var cell := image.get_region(Rect2i(x0,y0,x1-x0,y1-y0))
 				cell.convert(Image.FORMAT_RGBA8)
 				# Remove nearly transparent fringe before deriving the bounds and foot anchor.
@@ -47,6 +64,8 @@ func _initialize() -> void:
 						if pixel.a < 0.08:
 							pixel.a = 0
 							cell.set_pixel(x,y,pixel)
+				if sheet.get("isolate", false):
+					cell = isolate_silhouette(cell)
 				var bounds := cell.get_used_rect()
 				if bounds.size.x < 4 or bounds.size.y < 2:
 					push_error("Empty animation cell: %s %d %d" % [sheet.file,row,column])
@@ -72,7 +91,7 @@ func _initialize() -> void:
 				var dy := foot.y - height
 				strip.blend_rect(cropped,Rect2i(0,0,width,height),Vector2i(column*frame_w+dx,dy))
 				regions.append([x0+bounds.position.x,y0+bounds.position.y,bounds.size.x,bounds.size.y])
-			var folder: String = "rock" if sheet.kind == "hero" else "green"
+			var folder: String = sheet.get("folder", "rock" if sheet.kind == "hero" else "green")
 			DirAccess.make_dir_recursive_absolute(ROOT + "animations/" + folder)
 			var relative: String = "animations/" + folder + "/" + spec.name + ".webp"
 			var result := strip.save_webp(ROOT + relative,true,0.9)
@@ -86,6 +105,43 @@ func _initialize() -> void:
 	var output := FileAccess.open(ROOT + "animations.json",FileAccess.WRITE)
 	output.store_string(JSON.stringify(manifest,"\t"))
 	quit()
+
+func isolate_silhouette(cell: Image) -> Image:
+	var width := cell.get_width()
+	var height := cell.get_height()
+	var visited := PackedByteArray()
+	visited.resize(width * height)
+	var largest := PackedInt32Array()
+	for y in height:
+		for x in width:
+			var index := y * width + x
+			if visited[index] or cell.get_pixel(x,y).a < 0.08:
+				continue
+			var component := PackedInt32Array([index])
+			visited[index] = 1
+			var cursor := 0
+			while cursor < component.size():
+				var at := component[cursor]
+				cursor += 1
+				var px := at % width
+				var py := at / width
+				for delta in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+					var nx: int = px + delta.x
+					var ny: int = py + delta.y
+					if nx < 0 or nx >= width or ny < 0 or ny >= height:
+						continue
+					var next := ny * width + nx
+					if not visited[next] and cell.get_pixel(nx,ny).a >= 0.08:
+						visited[next] = 1
+						component.append(next)
+			if component.size() > largest.size():
+				largest = component
+	var clean := Image.create_empty(width,height,false,Image.FORMAT_RGBA8)
+	for index in largest:
+		var px := index % width
+		var py := index / width
+		clean.set_pixel(px,py,cell.get_pixel(px,py))
+	return clean
 
 
 

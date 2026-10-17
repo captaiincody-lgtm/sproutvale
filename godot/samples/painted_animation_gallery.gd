@@ -7,10 +7,17 @@ var x = Ctx.new()
 var elapsed := 0.0
 var paused := false
 var step_frame := 0
-const CELLS := [
-	["hero","idle"],["hero","walk"],["hero","run"],["hero","jump"],
-	["hero","slash"],["hero","heavy"],["hero","dash"],["hero","block"],
-	["slime","idle"],["slime","hop"],["slime","hurt"],["slime","dead"]]
+var cells: Array = []
+var page := 0
+const PAGE_SIZE := 12
+
+func _ready() -> void:
+	for kind in ["hero", "slime"]:
+		for anim in cycles.data[kind]:
+			cells.append([kind, anim])
+
+func pages() -> int:
+	return maxi(1, ceili(float(cells.size()) / PAGE_SIZE))
 
 func _process(delta: float) -> void:
 	if not paused:
@@ -26,6 +33,8 @@ func _input(event: InputEvent) -> void:
 			KEY_LEFT, KEY_RIGHT:
 				paused = true
 				step_frame = posmod(step_frame + (-1 if event.keycode == KEY_LEFT else 1),4)
+			KEY_PAGEUP, KEY_PAGEDOWN:
+				page = posmod(page + (-1 if event.keycode == KEY_PAGEUP else 1), pages())
 			KEY_ESCAPE:
 				get_tree().change_scene_to_file("res://samples/painted_meadow.tscn")
 
@@ -35,9 +44,9 @@ func _draw() -> void:
 	x.fillRect(0,0,768,432)
 	x.font = '18px "Fredoka"'
 	x.fillStyle = "#f7e9bd"
-	x.fillText("SPROUTVALE � Animation batch 1",16,25)
-	for i in CELLS.size():
-		var cell: Array = CELLS[i]
+	x.fillText("SPROUTVALE - Animation review   " + str(page+1) + "/" + str(pages()),16,25)
+	for i in mini(PAGE_SIZE, cells.size() - page*PAGE_SIZE):
+		var cell: Array = cells[page*PAGE_SIZE+i]
 		var col := i % 4
 		var row := i / 4
 		var at := Vector2(col*192+7,row*120+38)
@@ -51,7 +60,7 @@ func _draw() -> void:
 		x.fillRect(at.x+8,at.y+98,162,1)
 		x.save()
 		x.translate(at.x+89,at.y+97)
-		var preview_scale := 1.3 if cell[1] == "heavy" else 1.65
+		var preview_scale := 1.25
 		x.scale(preview_scale,preview_scale)
 		cycles.paint(x,cell[0],cell[1],frame,Vector2.ZERO)
 		x.restore()
@@ -60,6 +69,6 @@ func _draw() -> void:
 		x.fillText(str(frame+1)+"/4",at.x+146,at.y+16)
 	x.font = '12px "Fredoka"'
 	x.fillStyle = "#d6ded0"
-	x.fillText("Space: pause/play  �  Left/Right: step frames  �  Esc: return to meadow",16,420)
+	x.fillText("Space: play/pause   Left/Right: frame   PgUp/PgDn: page   Esc: meadow",16,420)
 
 

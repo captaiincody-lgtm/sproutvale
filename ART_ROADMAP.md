@@ -19,9 +19,21 @@ Review: run `godot/samples/painted_meadow.tscn` with F6. Press V for the animati
 
 Verified with Godot 4.7.2: controller smoke checks; twelve valid strips; forty-eight nonempty frames with pose changes; slash/heavy strike timing; gallery playback and four captured review frames.
 
+## Batch 2 - complete starter Rock action coverage
+
+Added 96 frames across 24 distinct strips: rising, thrust, spin, air, climb, swim, crouch, slide, rest, hurt, down, cheer, air2, air3, plungeStart, plungeLand, aegis, whirl, flip, plunge, prone, crawl, proneStab and land. Starter male Rock now has a dedicated painted strip for each of his 32 animation states, totaling 128 hero frames. Green slime adds another 16 frames.
+
+Attacks select their own strip and revisit the strike pose on every active hit of multi-hit moves. Movement and reaction playback preserve the original controller's action durations. The gallery now has pages (PgUp/PgDn); four poses remain intentionally limited animation rather than matching the original per-action frame counts.
+
+Godot 4.7.2 validation: 36 strips, 144 nonempty frames with distinct poses, all 32 Rock state selections, and eleven Rock attack timelines including their extra active hits. Review captured all four frames on each gallery page. Visual review replaced an overlapping knockout source with a separate isolated strip and adjusted rising's startup scale. Local source checkout is partial; unrelated missing original card portraits produce warnings and are not removed from the repository.
+
+![Batch 2 animation review](docs/art/animation-batch2.webp)
+
+Equipment is still baked into these starter poses. Armor tiers, weapon replacement, female Rock, other heroes and full-game integration remain unfinished; this batch does not claim those features.
+
 ## Remaining batches
 
-1. Rock's specialized moves: rising/thrust/spin attacks, aerial combos, plunge, climbing, swimming, prone/crawl, reactions, knockout and celebration; then equipment-compatible layers and armor tiers.
+1. Rock equipment-compatible layers, armor tiers and appearance variants. The starter action set is covered by batch 2.
 2. Archer, Remy, Jojo and Tank: approve their painted silhouettes, then movement, combat, skills, variants and equipment progression.
 3. Monster families and their animation cycles, followed by shiny, elite and lunar variants. The original base monster table contains 61 sprite sets including variants; expansion folders add more.
 4. World art by region: homes and interiors, ridge/hollow/pond, Crimson, Abyss, mountain/volcano, lunar areas and map screens. Preserve all collision geometry and parallax behavior.
@@ -32,4 +44,6 @@ These are work groups, not claims that the remaining assets are finished. Large 
 ## Animation files
 
 `godot/art/painted/animations.json` describes every published strip, scale, foot anchor and source crop. `godot/samples/painted_animation_library.gd` handles reusable playback. Generated source PNGs from the chat can be normalized with `tools/art/prepare_painted_animations.gd` after placing them in `godot/art/painted/sources/`.
+
+Batch 2 sources can be rebuilt with the same importer, passing the source directory and `tools/art/batch2.json` as two user arguments after `--`. The importer merges new strips into the existing manifest. The final knockout repair entry deliberately replaces the original overlapping source.
 

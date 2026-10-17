@@ -1,0 +1,379 @@
+[
+  {
+    "file": "rock_special_attacks",
+    "kind": "hero",
+    "xs": [
+      0,
+      384,
+      768,
+      1152,
+      1536
+    ],
+    "ys": [
+      0,
+      256,
+      512,
+      768,
+      1024
+    ],
+    "rows": [
+      {
+        "name": "rising",
+        "heights": [
+          36,
+          50,
+          56,
+          44
+        ]
+      },
+      {
+        "name": "thrust",
+        "heights": [
+          44,
+          44,
+          44,
+          44
+        ]
+      },
+      {
+        "name": "spin",
+        "heights": [
+          44,
+          44,
+          44,
+          44
+        ]
+      },
+      {
+        "name": "air",
+        "heights": [
+          43,
+          43,
+          43,
+          43
+        ]
+      }
+    ],
+    "padding": 56,
+    "isolate": true
+  },
+  {
+    "file": "rock_traversal",
+    "kind": "hero",
+    "xs": [
+      0,
+      384,
+      768,
+      1152,
+      1536
+    ],
+    "ys": [
+      0,
+      350,
+      560,
+      805,
+      1024
+    ],
+    "rows": [
+      {
+        "name": "climb",
+        "heights": [
+          50,
+          50,
+          50,
+          50
+        ]
+      },
+      {
+        "name": "swim",
+        "heights": [
+          22,
+          22,
+          22,
+          22
+        ]
+      },
+      {
+        "name": "crouch",
+        "heights": [
+          30,
+          30,
+          30,
+          30
+        ]
+      },
+      {
+        "name": "slide",
+        "heights": [
+          24,
+          24,
+          24,
+          30
+        ]
+      }
+    ],
+    "padding": 56,
+    "isolate": true
+  },
+  {
+    "file": "rock_reactions",
+    "kind": "hero",
+    "xs": [
+      0,
+      384,
+      768,
+      1152,
+      1536
+    ],
+    "ys": [
+      0,
+      256,
+      512,
+      768,
+      1024
+    ],
+    "rows": [
+      {
+        "name": "rest",
+        "heights": [
+          44,
+          44,
+          44,
+          44
+        ]
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          44,
+          44,
+          44,
+          44
+        ]
+      },
+      {
+        "name": "down",
+        "heights": [
+          38,
+          27,
+          14,
+          14
+        ]
+      },
+      {
+        "name": "cheer",
+        "heights": [
+          44,
+          56,
+          56,
+          44
+        ]
+      }
+    ],
+    "padding": 56,
+    "isolate": true
+  },
+  {
+    "file": "rock_aerial_combo",
+    "kind": "hero",
+    "xs": [
+      0,
+      384,
+      768,
+      1152,
+      1536
+    ],
+    "ys": [
+      0,
+      256,
+      512,
+      768,
+      1024
+    ],
+    "rows": [
+      {
+        "name": "air2",
+        "heights": [
+          44,
+          44,
+          44,
+          44
+        ]
+      },
+      {
+        "name": "air3",
+        "heights": [
+          50,
+          50,
+          50,
+          50
+        ]
+      },
+      {
+        "name": "plungeStart",
+        "heights": [
+          44,
+          44,
+          50,
+          54
+        ]
+      },
+      {
+        "name": "plungeLand",
+        "heights": [
+          30,
+          30,
+          36,
+          44
+        ]
+      }
+    ],
+    "padding": 56,
+    "isolate": true
+  },
+  {
+    "file": "rock_advanced",
+    "kind": "hero",
+    "xs": [
+      0,
+      384,
+      768,
+      1152,
+      1536
+    ],
+    "ys": [
+      0,
+      256,
+      512,
+      768,
+      1024
+    ],
+    "rows": [
+      {
+        "name": "aegis",
+        "heights": [
+          44,
+          44,
+          44,
+          44
+        ]
+      },
+      {
+        "name": "whirl",
+        "heights": [
+          44,
+          44,
+          44,
+          44
+        ]
+      },
+      {
+        "name": "flip",
+        "heights": [
+          38,
+          38,
+          38,
+          38
+        ]
+      },
+      {
+        "name": "plunge",
+        "heights": [
+          56,
+          56,
+          56,
+          56
+        ]
+      }
+    ],
+    "padding": 56,
+    "isolate": true
+  },
+  {
+    "file": "rock_ground_moves",
+    "kind": "hero",
+    "xs": [
+      0,
+      384,
+      768,
+      1152,
+      1536
+    ],
+    "ys": [
+      0,
+      256,
+      512,
+      768,
+      1024
+    ],
+    "rows": [
+      {
+        "name": "prone",
+        "heights": [
+          17,
+          17,
+          17,
+          17
+        ]
+      },
+      {
+        "name": "crawl",
+        "heights": [
+          20,
+          20,
+          20,
+          20
+        ]
+      },
+      {
+        "name": "proneStab",
+        "heights": [
+          17,
+          17,
+          17,
+          17
+        ]
+      },
+      {
+        "name": "land",
+        "heights": [
+          44,
+          28,
+          36,
+          44
+        ]
+      }
+    ],
+    "padding": 56,
+    "isolate": true
+  },
+  {
+    "file": "rock_down_repair",
+    "kind": "hero",
+    "xs": [
+      0,
+      485,
+      1055,
+      1615,
+      2172
+    ],
+    "ys": [
+      0,
+      724
+    ],
+    "rows": [
+      {
+        "name": "down",
+        "heights": [
+          38,
+          38,
+          22,
+          21
+        ]
+      }
+    ],
+    "padding": 0,
+    "isolate": true
+  }
+]
+
