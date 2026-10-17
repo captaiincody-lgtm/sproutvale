@@ -37,6 +37,9 @@ func _ready() -> void:
 	if not check(game.painted and game.P.hp > 0, "Painted hero did not initialize"):
 		return
 	await shot("01_painted_idle")
+	# Isolate controller checks from random enemy hits cancelling attacks or dodges.
+	game.slimes.clear()
+	game.M.target = 0
 	var start_x: float = game.P.x
 	key(KEY_RIGHT, true)
 	await pause(0.7)
