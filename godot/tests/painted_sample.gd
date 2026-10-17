@@ -32,6 +32,8 @@ func _ready() -> void:
 	game = load("res://samples/painted_meadow.tscn").instantiate()
 	add_child(game)
 	await pause(0.6)
+	if not check(game.has_method("painted_hero_pose"), "Painted scene script failed to load"):
+		return
 	if not check(game.inGame and game.mapId == "meadow", "Sample did not enter meadow"):
 		return
 	if not check(game.painted and game.P.hp > 0, "Painted hero did not initialize"):

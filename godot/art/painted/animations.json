@@ -1,0 +1,475 @@
+{
+	"hero": {
+		"block": {
+			"foot": [
+				160,
+				264
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 304,
+			"path": "animations/rock/block.webp",
+			"regions": [
+				[
+					32,
+					785,
+					270,
+					224
+				],
+				[
+					430,
+					796,
+					264,
+					213
+				],
+				[
+					807,
+					785,
+					336,
+					224
+				],
+				[
+					1223,
+					793,
+					271,
+					216
+				]
+			],
+			"scale": 4,
+			"source": "rock_combat",
+			"width": 336
+		},
+		"dash": {
+			"foot": [
+				160,
+				264
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 304,
+			"path": "animations/rock/dash.webp",
+			"regions": [
+				[
+					48,
+					575,
+					268,
+					210
+				],
+				[
+					423,
+					593,
+					289,
+					187
+				],
+				[
+					815,
+					568,
+					330,
+					217
+				],
+				[
+					1243,
+					560,
+					248,
+					221
+				]
+			],
+			"scale": 4,
+			"source": "rock_combat",
+			"width": 336
+		},
+		"heavy": {
+			"foot": [
+				160,
+				264
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 304,
+			"path": "animations/rock/heavy.webp",
+			"regions": [
+				[
+					47,
+					275,
+					285,
+					284
+				],
+				[
+					443,
+					310,
+					257,
+					249
+				],
+				[
+					799,
+					281,
+					384,
+					276
+				],
+				[
+					1243,
+					357,
+					255,
+					203
+				]
+			],
+			"scale": 4,
+			"source": "rock_combat",
+			"width": 336
+		},
+		"idle": {
+			"foot": [
+				160,
+				264
+			],
+			"fps": 6.0,
+			"frames": 4,
+			"height": 304,
+			"path": "animations/rock/idle.webp",
+			"regions": [
+				[
+					24,
+					26,
+					252,
+					302
+				],
+				[
+					336,
+					25,
+					253,
+					303
+				],
+				[
+					650,
+					39,
+					257,
+					289
+				],
+				[
+					961,
+					31,
+					254,
+					297
+				]
+			],
+			"scale": 4,
+			"source": "rock_locomotion",
+			"width": 336
+		},
+		"jump": {
+			"foot": [
+				160,
+				264
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 304,
+			"path": "animations/rock/jump.webp",
+			"regions": [
+				[
+					24,
+					1006,
+					271,
+					215
+				],
+				[
+					353,
+					940,
+					250,
+					225
+				],
+				[
+					655,
+					940,
+					265,
+					237
+				],
+				[
+					980,
+					949,
+					249,
+					271
+				]
+			],
+			"scale": 4,
+			"source": "rock_locomotion",
+			"width": 336
+		},
+		"run": {
+			"foot": [
+				160,
+				264
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 304,
+			"path": "animations/rock/run.webp",
+			"regions": [
+				[
+					15,
+					672,
+					304,
+					261
+				],
+				[
+					373,
+					664,
+					262,
+					276
+				],
+				[
+					635,
+					674,
+					315,
+					266
+				],
+				[
+					950,
+					666,
+					298,
+					264
+				]
+			],
+			"scale": 4,
+			"source": "rock_locomotion",
+			"width": 336
+		},
+		"slash": {
+			"foot": [
+				160,
+				264
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 304,
+			"path": "animations/rock/slash.webp",
+			"regions": [
+				[
+					13,
+					18,
+					299,
+					257
+				],
+				[
+					421,
+					30,
+					347,
+					242
+				],
+				[
+					768,
+					29,
+					433,
+					243
+				],
+				[
+					1225,
+					65,
+					285,
+					208
+				]
+			],
+			"scale": 4,
+			"source": "rock_combat",
+			"width": 336
+		},
+		"walk": {
+			"foot": [
+				160,
+				264
+			],
+			"fps": 10.0,
+			"frames": 4,
+			"height": 304,
+			"path": "animations/rock/walk.webp",
+			"regions": [
+				[
+					29,
+					357,
+					262,
+					287
+				],
+				[
+					360,
+					358,
+					248,
+					285
+				],
+				[
+					667,
+					357,
+					250,
+					286
+				],
+				[
+					971,
+					358,
+					257,
+					285
+				]
+			],
+			"scale": 4,
+			"source": "rock_locomotion",
+			"width": 336
+		}
+	},
+	"slime": {
+		"dead": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/green/dead.webp",
+			"regions": [
+				[
+					46,
+					1075,
+					267,
+					126
+				],
+				[
+					340,
+					1106,
+					288,
+					95
+				],
+				[
+					657,
+					1017,
+					267,
+					187
+				],
+				[
+					981,
+					1017,
+					216,
+					189
+				]
+			],
+			"scale": 4,
+			"source": "green_slime_cycles",
+			"width": 176
+		},
+		"hop": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/green/hop.webp",
+			"regions": [
+				[
+					50,
+					493,
+					249,
+					122
+				],
+				[
+					380,
+					340,
+					195,
+					271
+				],
+				[
+					661,
+					391,
+					289,
+					205
+				],
+				[
+					950,
+					501,
+					278,
+					114
+				]
+			],
+			"scale": 4,
+			"source": "green_slime_cycles",
+			"width": 176
+		},
+		"hurt": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/green/hurt.webp",
+			"regions": [
+				[
+					54,
+					742,
+					238,
+					177
+				],
+				[
+					339,
+					793,
+					279,
+					126
+				],
+				[
+					659,
+					777,
+					254,
+					140
+				],
+				[
+					969,
+					734,
+					238,
+					184
+				]
+			],
+			"scale": 4,
+			"source": "green_slime_cycles",
+			"width": 176
+		},
+		"idle": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 6.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/green/idle.webp",
+			"regions": [
+				[
+					61,
+					123,
+					236,
+					173
+				],
+				[
+					373,
+					88,
+					229,
+					206
+				],
+				[
+					659,
+					125,
+					237,
+					171
+				],
+				[
+					956,
+					157,
+					259,
+					138
+				]
+			],
+			"scale": 4,
+			"source": "green_slime_cycles",
+			"width": 176
+		}
+	},
+	"version": 1
+}

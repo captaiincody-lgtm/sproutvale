@@ -12,7 +12,7 @@ Arrow keys move; Space jumps; Z attacks; X heavy attacks; C dodges; Shift blocks
 This scene creates a fresh session and overrides saving. It does not read or write your normal save. The preview stays inside the meadow, with green slimes; other areas and heroes keep their original artwork.
 
 ## Scope
-The hero currently has eight key poses rather than fully drawn multi-frame animation cycles. Walking alternates two poses, and attacks use windup and swing poses. This is a playable check of scale, readability and style, not a completed graphics overhaul. Equipment changes in the menu do not change the painted hero yet.
+Animation batch 1 adds 48 frames: eight four-frame Rock cycles and four four-frame green-slime cycles. Press V to open the animation gallery, Space to pause, Left/Right to step, and Esc to return. Specialized Rock moves still use the earlier key-pose fallback. Equipment changes in the menu do not change the painted hero yet. See ART_ROADMAP.md for completed and remaining work.
 
 The existing map geometry and physics are preserved. The world is rendered at 1536 x 864 and displayed at the existing logical size so painted textures retain detail. The HUD and many existing effects remain unchanged.
 

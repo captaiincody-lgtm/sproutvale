@@ -3,6 +3,10 @@ extends "res://scripts/game.gd"
 ## This scene never reads or writes the player's normal save.
 const ATLAS: Texture2D = preload("res://art/painted/atlas.webp")
 const BACKDROP: Texture2D = preload("res://art/painted/backdrop.webp")
+const PaintedCycles := preload("res://samples/painted_animation_library.gd")
+var cycles = PaintedCycles.new()
+var guard_flash := 0.0
+var previous_hp := 0.0
 var painted := true
 var original_meadow: Texture2D
 var original_far: Texture2D
@@ -93,7 +97,7 @@ func _make_sample_label() -> void:
 	_update_sample_label()
 
 func _update_sample_label() -> void:
-	sample_label.text = "%s  |  B compare  �  R reset  �  Arrows move  �  Space jump  �  Z/X attack  �  C dodge  �  Shift block" % ("PAINTED MEADOW" if painted else "ORIGINAL ART")
+	sample_label.text = "%s | B compare � V cycles � R reset � Arrows move � Space jump � Z/X attack � C dodge � Shift block" % ("PAINTED MEADOW" if painted else "ORIGINAL ART")
 
 func _apply_art_cache() -> void:
 	Assets._tex["maps/meadow.png"] = ATLAS if painted else original_meadow
@@ -102,6 +106,9 @@ func _apply_art_cache() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_V:
+			get_tree().change_scene_to_file("res://samples/painted_animation_gallery.tscn")
+			return
 		if event.keycode == KEY_B:
 			painted = not painted
 			_apply_art_cache()
@@ -122,6 +129,10 @@ func _input(event: InputEvent) -> void:
 
 func _process(delta: float) -> void:
 	super._process(delta)
+	guard_flash = maxf(0, guard_flash - delta)
+	if P.state == "block" and P.hp < previous_hp:
+		guard_flash = 0.14
+	previous_hp = P.hp
 	World.t = 0.32
 
 func drawSky(x: Ctx, D: Dictionary) -> void:
@@ -170,9 +181,42 @@ func drawTerrain(x: Ctx, mt: Texture2D, sx: float, sy: float) -> void:
 			x.lineTo(rx, rope[2] - sy)
 			x.stroke()
 
+func painted_hero_pose() -> Dictionary:
+	var anim: String = P.anim
+	if P.state == "attack":
+		var key := "heavy" if P.move.get("heavy", false) else "slash"
+		var old_frame := playerFrame()
+		var hits: Array = P.move.get("hits", [2])
+		var first_hit := int(hits[0])
+		var last_hit := int(hits[-1])
+		var frame := 0 if old_frame < first_hit - 1 else (1 if old_frame < first_hit else (2 if old_frame <= last_hit else 3))
+		return {"anim": key, "frame": frame}
+	if P.state == "block":
+		var frame := 2 if guard_flash > 0 or hitstop > 0 else (0 if P.animT < 0.10 else (1 if P.animT < 0.25 else 3))
+		return {"anim": "block", "frame": frame}
+	if P.state == "dash":
+		return {"anim": "dash", "frame": clampi(int(P.dashT / 0.3 * 4), 0, 3)}
+	if anim == "jump":
+		var frame := 0 if P.animT < 0.06 else (1 if P.vy < -100 else (2 if P.vy < 80 else 3))
+		return {"anim": "jump", "frame": frame}
+	if anim == "land":
+		return {"anim": "jump", "frame": 0}
+	if anim == "rest":
+		anim = "idle"
+	if anim in ["idle", "walk", "run"]:
+		return {"anim": anim, "frame": cycles.frame_at("hero", anim, P.animT)}
+	return {}
+
 func drawPlayer(x: Ctx, sx: float, sy: float, dt: float) -> void:
 	if not painted:
 		super.drawPlayer(x, sx, sy, dt)
+		return
+	var cycle: Dictionary = painted_hero_pose()
+	if not cycle.is_empty():
+		heroHead = Vector2(P.x, P.y - 39)
+		if P.iframes > 0 and P.iframes < 0.9 and int(gameTime * 18) % 2 == 0:
+			return
+		cycles.paint(x,"hero",cycle.anim,cycle.frame,Vector2(P.x-sx,P.y-sy),P.face,1,P.spin)
 		return
 	var pose := 0
 	if not P.grounded:
@@ -206,6 +250,28 @@ func drawPlayer(x: Ctx, sx: float, sy: float, dt: float) -> void:
 func drawMob(x: Ctx, e, sx: float, sy: float) -> void:
 	if not painted or e.boss:
 		super.drawMob(x, e, sx, sy)
+		return
+	if e.type == "green":
+		var anim := "idle"
+		var frame := cycles.frame_at("slime", "idle", e.t)
+		if e.state == "dead":
+			anim = "dead"
+			frame = clampi(int(e.deadT / 0.45 * 4),0,3)
+		elif e.state == "hurt" or e.flash > 0:
+			anim = "hurt"
+			frame = clampi(int((1 - e.flash / 0.18) * 4),0,3)
+		elif e.y < e.surf.y - 1:
+			anim = "hop"
+			frame = 1 if e.vy < -40 else (2 if e.vy < 40 else 3)
+		elif e.sq > 0.2 or e.state == "wind":
+			anim = "hop"
+			frame = 0 if e.state == "wind" else 3
+		cycles.paint(x,"slime",anim,frame,Vector2(e.x-sx,e.y-sy),e.face,maxf(0,1-e.deadT/0.45) if e.state == "dead" else 1)
+		if e.state != "dead" and (e.showBar > 0 or e.aggro):
+			x.fillStyle = "#173c36"
+			x.fillRect(e.x-sx-12,e.y-sy-36,24,3)
+			x.fillStyle = "#e97b72"
+			x.fillRect(e.x-sx-11,e.y-sy-35,22*maxf(0,e.hp/e.maxHp),1)
 		return
 	var pose := 0
 	if e.y < e.surf.y - 1:
