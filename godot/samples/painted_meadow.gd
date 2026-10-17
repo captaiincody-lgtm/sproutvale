@@ -8,6 +8,8 @@ var cycles = PaintedCycles.new()
 var guard_flash := 0.0
 var previous_hp := 0.0
 var painted := true
+var preview_spawn_index := 0
+const PREVIEW_FAMILIES := ["green", "blue", "red", "silver", "gold"]
 var original_meadow: Texture2D
 var original_far: Texture2D
 var original_mid: Texture2D
@@ -49,13 +51,37 @@ func _ready() -> void:
 	# Keep the art sample inside the meadow; the normal game and its portals are untouched.
 	MAPS.meadow = MAPS.meadow.duplicate(true)
 	MAPS.meadow.portals = []
-	MAPS.meadow.spawn = {"green": 1.0}
+	MAPS.meadow.spawn = {"green": 1.0, "blue": 1.0, "red": 1.0, "silver": 1.0, "gold": 1.0}
+	MAPS.meadow.ignoreUnlock = true
+	# This isolated art encounter uses starter combat stats for every family.
+	# Their identities and sizes remain intact; production progression data is untouched.
+	SLIME_TYPES = SLIME_TYPES.duplicate(true)
+	for family in PREVIEW_FAMILIES:
+		for stat in ["lv", "hp", "atk", "def", "exp"]:
+			SLIME_TYPES[family][stat] = SLIME_TYPES.green[stat]
 	MAPS.meadow.target = 8
 	startGame()
 	World.t = 0.32
 	clouds.clear()
 	wclouds.clear()
 	_make_sample_label()
+
+func spawnSlime(initial := false) -> void:
+	if mapId != "meadow":
+		super.spawnSlime(initial)
+		return
+	# Round robin makes all five new families available in each fresh art encounter.
+	var original_spawn: Dictionary = M.spawn
+	var family: String = PREVIEW_FAMILIES[preview_spawn_index % PREVIEW_FAMILIES.size()]
+	preview_spawn_index += 1
+	M.spawn = {family: 1.0}
+	super.spawnSlime(initial)
+	M.spawn = original_spawn
+
+func makeShiny(e) -> void:
+	# Rare variants need their own painted assets in a later batch.
+	if mapId != "meadow":
+		super.makeShiny(e)
 
 func _buildLayers() -> void:
 	super._buildLayers()
@@ -103,6 +129,14 @@ func _apply_art_cache() -> void:
 	Assets._tex["maps/meadow.png"] = ATLAS if painted else original_meadow
 	Assets._tex["sky/meadow_far.png"] = empty_art if painted else original_far
 	Assets._tex["sky/meadow_mid.png"] = empty_art if painted else original_mid
+
+func _exit_tree() -> void:
+	# The cache belongs to the autoload, which outlives this sample and the gallery.
+	# Restore it so a second sample's B comparison still has genuine original art.
+	if original_meadow != null:
+		Assets._tex["maps/meadow.png"] = original_meadow
+		Assets._tex["sky/meadow_far.png"] = original_far
+		Assets._tex["sky/meadow_mid.png"] = original_mid
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -217,8 +251,11 @@ func painted_hero_pose() -> Dictionary:
 	frame = frame % 4 if timing.loop else mini(frame, 3)
 	return {"anim": anim, "frame": frame}
 
+func uses_painted_hero() -> bool:
+	return painted and classId == "rock" and CH().get("look", {}).get("gender", "m") == "m" and int(CH().get("armor", 0)) == 0 and int(CH().get("weapon", 0)) == 0
+
 func drawPlayer(x: Ctx, sx: float, sy: float, dt: float) -> void:
-	if not painted:
+	if not uses_painted_hero():
 		super.drawPlayer(x, sx, sy, dt)
 		return
 	var cycle: Dictionary = painted_hero_pose()
@@ -257,54 +294,40 @@ func drawPlayer(x: Ctx, sx: float, sy: float, dt: float) -> void:
 		region.size.x * unit, region.size.y * unit)
 	x.restore()
 
-func drawMob(x: Ctx, e, sx: float, sy: float) -> void:
-	if not painted or e.boss:
-		super.drawMob(x, e, sx, sy)
-		return
-	if e.type == "green":
-		var anim := "idle"
-		var frame := cycles.frame_at("slime", "idle", e.t)
-		if e.state == "dead":
-			anim = "dead"
-			frame = clampi(int(e.deadT / 0.45 * 4),0,3)
-		elif e.state == "hurt" or e.flash > 0:
-			anim = "hurt"
-			frame = clampi(int((1 - e.flash / 0.18) * 4),0,3)
-		elif e.y < e.surf.y - 1:
-			anim = "hop"
-			frame = 1 if e.vy < -40 else (2 if e.vy < 40 else 3)
-		elif e.sq > 0.2 or e.state == "wind":
-			anim = "hop"
-			frame = 0 if e.state == "wind" else 3
-		cycles.paint(x,"slime",anim,frame,Vector2(e.x-sx,e.y-sy),e.face,maxf(0,1-e.deadT/0.45) if e.state == "dead" else 1)
-		if e.state != "dead" and (e.showBar > 0 or e.aggro):
-			x.fillStyle = "#173c36"
-			x.fillRect(e.x-sx-12,e.y-sy-36,24,3)
-			x.fillStyle = "#e97b72"
-			x.fillRect(e.x-sx-11,e.y-sy-35,22*maxf(0,e.hp/e.maxHp),1)
-		return
-	var pose := 0
-	if e.y < e.surf.y - 1:
-		pose = 2
-	elif e.sq > 0.2:
-		pose = 1
-	if e.state in ["hurt", "dead"] or e.flash > 0:
-		pose = 3
-	var cell_x: float = [0.0, 315.0, 650.0, 965.0][pose]
-	var base_x: float = [155.0, 477.0, 795.0, 1112.0][pose]
-	var ratio := 0.12
-	x.save()
-	x.translate(e.x - sx, e.y - sy)
+func painted_mob_pose(e) -> Dictionary:
+	var kind: String = "slime" if e.type == "green" else e.type
+	if e.boss or e.shiny or e.elite or not cycles.has_cycle(kind, "idle"):
+		return {}
+	var anim := "idle"
+	var frame := cycles.frame_at(kind, "idle", e.t)
 	if e.state == "dead":
-		x.globalAlpha = maxf(0, 1 - e.deadT / 0.45)
-	x.scale(e.face, 1)
-	x.drawImageRegion(ATLAS, cell_x, 690, 300, 245,
-		(cell_x - base_x) * ratio, (690 - 924) * ratio, 300 * ratio, 245 * ratio)
+		anim = "dead"
+		frame = clampi(int(e.deadT / 0.45 * 4),0,3)
+	elif e.state == "hurt" or e.flash > 0:
+		anim = "hurt"
+		frame = clampi(int((1 - e.flash / 0.18) * 4),0,3)
+	elif e.y < e.surf.y - 1:
+		anim = "hop"
+		frame = 1 if e.vy < -40 else (2 if e.vy < 40 else 3)
+	elif e.sq > 0.2 or e.state == "wind":
+		anim = "hop"
+		frame = 0 if e.state == "wind" else 3
+	return {"kind":kind,"anim":anim,"frame":frame}
+
+func drawMob(x: Ctx, e, sx: float, sy: float) -> void:
+	var pose: Dictionary = painted_mob_pose(e) if painted else {}
+	if pose.is_empty():
+		super.drawMob(x,e,sx,sy)
+		return
+	var size: float = e.T.get("size", 1.0)
+	x.save()
+	x.translate(e.x-sx,e.y-sy)
+	x.scale(size,size)
+	cycles.paint(x,pose.kind,pose.anim,pose.frame,Vector2.ZERO,e.face,maxf(0,1-e.deadT/0.45) if e.state == "dead" else 1)
 	x.restore()
 	if e.state != "dead" and (e.showBar > 0 or e.aggro):
 		x.fillStyle = "#173c36"
-		x.fillRect(e.x - sx - 12, e.y - sy - 32, 24, 3)
+		x.fillRect(e.x-sx-12,e.y-sy-36*size,24,3)
 		x.fillStyle = "#e97b72"
-		x.fillRect(e.x - sx - 11, e.y - sy - 31, 22 * maxf(0, e.hp / e.maxHp), 1)
-
+		x.fillRect(e.x-sx-11,e.y-sy-36*size+1,22*maxf(0,e.hp/e.maxHp),1)
 

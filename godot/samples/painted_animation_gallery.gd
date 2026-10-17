@@ -12,7 +12,9 @@ var page := 0
 const PAGE_SIZE := 12
 
 func _ready() -> void:
-	for kind in ["hero", "slime"]:
+	for kind in cycles.data:
+		if kind == "version":
+			continue
 		for anim in cycles.data[kind]:
 			cells.append([kind, anim])
 
@@ -54,7 +56,7 @@ func _draw() -> void:
 		x.fillRect(at.x,at.y,178,112)
 		x.fillStyle = "#eddcb1"
 		x.font = '12px "Fredoka"'
-		x.fillText(("ROCK" if cell[0] == "hero" else "SLIME") + " � " + cell[1],at.x+8,at.y+16)
+		x.fillText(("ROCK" if cell[0] == "hero" else ("GREEN" if cell[0] == "slime" else str(cell[0]).to_upper())) + " � " + cell[1],at.x+8,at.y+16)
 		var frame: int = step_frame if paused else int(elapsed*6)%4
 		x.fillStyle = "#547571"
 		x.fillRect(at.x+8,at.y+98,162,1)

@@ -1,4 +1,320 @@
 {
+	"blue": {
+		"dead": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/blue/dead.webp",
+			"regions": [
+				[
+					46,
+					1078,
+					273,
+					126
+				],
+				[
+					345,
+					1108,
+					285,
+					97
+				],
+				[
+					659,
+					1021,
+					275,
+					188
+				],
+				[
+					993,
+					1017,
+					215,
+					191
+				]
+			],
+			"scale": 4,
+			"source": "blue_slime_cycles",
+			"width": 176
+		},
+		"hop": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/blue/hop.webp",
+			"regions": [
+				[
+					50,
+					502,
+					254,
+					122
+				],
+				[
+					379,
+					349,
+					198,
+					269
+				],
+				[
+					661,
+					399,
+					289,
+					211
+				],
+				[
+					950,
+					508,
+					278,
+					119
+				]
+			],
+			"scale": 4,
+			"source": "blue_slime_cycles",
+			"width": 176
+		},
+		"hurt": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/blue/hurt.webp",
+			"regions": [
+				[
+					51,
+					745,
+					246,
+					179
+				],
+				[
+					340,
+					809,
+					283,
+					117
+				],
+				[
+					656,
+					787,
+					259,
+					135
+				],
+				[
+					966,
+					737,
+					242,
+					187
+				]
+			],
+			"scale": 4,
+			"source": "blue_slime_cycles",
+			"width": 176
+		},
+		"idle": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 6.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/blue/idle.webp",
+			"regions": [
+				[
+					57,
+					128,
+					243,
+					172
+				],
+				[
+					372,
+					94,
+					229,
+					206
+				],
+				[
+					659,
+					130,
+					241,
+					172
+				],
+				[
+					954,
+					165,
+					267,
+					137
+				]
+			],
+			"scale": 4,
+			"source": "blue_slime_cycles",
+			"width": 176
+		}
+	},
+	"gold": {
+		"dead": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/gold/dead.webp",
+			"regions": [
+				[
+					46,
+					1091,
+					238,
+					115
+				],
+				[
+					338,
+					1117,
+					275,
+					92
+				],
+				[
+					661,
+					1034,
+					266,
+					178
+				],
+				[
+					999,
+					1045,
+					197,
+					168
+				]
+			],
+			"scale": 4,
+			"source": "gold_slime_cycles",
+			"width": 176
+		},
+		"hop": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/gold/hop.webp",
+			"regions": [
+				[
+					48,
+					504,
+					244,
+					136
+				],
+				[
+					378,
+					355,
+					189,
+					286
+				],
+				[
+					665,
+					407,
+					285,
+					216
+				],
+				[
+					950,
+					511,
+					261,
+					131
+				]
+			],
+			"scale": 4,
+			"source": "gold_slime_cycles",
+			"width": 176
+		},
+		"hurt": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/gold/hurt.webp",
+			"regions": [
+				[
+					50,
+					749,
+					230,
+					196
+				],
+				[
+					335,
+					823,
+					267,
+					125
+				],
+				[
+					653,
+					810,
+					253,
+					138
+				],
+				[
+					972,
+					739,
+					232,
+					210
+				]
+			],
+			"scale": 4,
+			"source": "gold_slime_cycles",
+			"width": 176
+		},
+		"idle": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 6.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/gold/idle.webp",
+			"regions": [
+				[
+					53,
+					118,
+					230,
+					187
+				],
+				[
+					365,
+					71,
+					220,
+					235
+				],
+				[
+					661,
+					115,
+					228,
+					191
+				],
+				[
+					956,
+					165,
+					252,
+					143
+				]
+			],
+			"scale": 4,
+			"source": "gold_slime_cycles",
+			"width": 176
+		}
+	},
 	"hero": {
 		"aegis": {
 			"foot": [
@@ -392,42 +708,42 @@
 		},
 		"down": {
 			"foot": [
-				160,
-				264
+				160.0,
+				264.0
 			],
 			"fps": 12.0,
-			"frames": 4,
-			"height": 304,
+			"frames": 4.0,
+			"height": 304.0,
 			"path": "animations/rock/down.webp",
 			"regions": [
 				[
-					42,
-					207,
-					363,
-					318
+					42.0,
+					207.0,
+					363.0,
+					318.0
 				],
 				[
-					524,
-					209,
-					507,
-					320
+					524.0,
+					209.0,
+					507.0,
+					320.0
 				],
 				[
-					1056,
-					339,
-					530,
-					177
+					1056.0,
+					339.0,
+					530.0,
+					177.0
 				],
 				[
-					1615,
-					357,
-					533,
-					167
+					1615.0,
+					357.0,
+					533.0,
+					167.0
 				]
 			],
-			"scale": 4,
+			"scale": 4.0,
 			"source": "rock_down_repair",
-			"width": 336
+			"width": 336.0
 		},
 		"flip": {
 			"foot": [
@@ -1247,6 +1563,322 @@
 			"scale": 4.0,
 			"source": "rock_advanced",
 			"width": 336.0
+		}
+	},
+	"red": {
+		"dead": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/red/dead.webp",
+			"regions": [
+				[
+					74,
+					884,
+					256,
+					109
+				],
+				[
+					445,
+					915,
+					278,
+					77
+				],
+				[
+					813,
+					882,
+					276,
+					111
+				],
+				[
+					1268,
+					948,
+					195,
+					43
+				]
+			],
+			"scale": 4,
+			"source": "red_slime_cycles",
+			"width": 176
+		},
+		"hop": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/red/hop.webp",
+			"regions": [
+				[
+					101,
+					412,
+					185,
+					118
+				],
+				[
+					490,
+					288,
+					175,
+					240
+				],
+				[
+					865,
+					332,
+					194,
+					179
+				],
+				[
+					1203,
+					410,
+					283,
+					125
+				]
+			],
+			"scale": 4,
+			"source": "red_slime_cycles",
+			"width": 176
+		},
+		"hurt": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/red/hurt.webp",
+			"regions": [
+				[
+					101,
+					562,
+					213,
+					185
+				],
+				[
+					454,
+					643,
+					263,
+					117
+				],
+				[
+					849,
+					629,
+					248,
+					127
+				],
+				[
+					1264,
+					595,
+					172,
+					163
+				]
+			],
+			"scale": 4,
+			"source": "red_slime_cycles",
+			"width": 176
+		},
+		"idle": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 6.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/red/idle.webp",
+			"regions": [
+				[
+					102,
+					97,
+					170,
+					159
+				],
+				[
+					499,
+					57,
+					162,
+					195
+				],
+				[
+					870,
+					96,
+					170,
+					159
+				],
+				[
+					1250,
+					130,
+					195,
+					126
+				]
+			],
+			"scale": 4,
+			"source": "red_slime_cycles",
+			"width": 176
+		}
+	},
+	"silver": {
+		"dead": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/silver/dead.webp",
+			"regions": [
+				[
+					56,
+					869,
+					278,
+					109
+				],
+				[
+					423,
+					891,
+					319,
+					100
+				],
+				[
+					812,
+					867,
+					303,
+					119
+				],
+				[
+					1251,
+					918,
+					208,
+					63
+				]
+			],
+			"scale": 4,
+			"source": "silver_slime_cycles",
+			"width": 176
+		},
+		"hop": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/silver/hop.webp",
+			"regions": [
+				[
+					77,
+					408,
+					223,
+					110
+				],
+				[
+					490,
+					280,
+					183,
+					234
+				],
+				[
+					846,
+					315,
+					230,
+					164
+				],
+				[
+					1194,
+					404,
+					309,
+					114
+				]
+			],
+			"scale": 4,
+			"source": "silver_slime_cycles",
+			"width": 176
+		},
+		"hurt": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 12.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/silver/hurt.webp",
+			"regions": [
+				[
+					85,
+					569,
+					219,
+					184
+				],
+				[
+					452,
+					662,
+					248,
+					92
+				],
+				[
+					838,
+					656,
+					234,
+					98
+				],
+				[
+					1241,
+					590,
+					198,
+					163
+				]
+			],
+			"scale": 4,
+			"source": "silver_slime_cycles",
+			"width": 176
+		},
+		"idle": {
+			"foot": [
+				88,
+				132
+			],
+			"fps": 6.0,
+			"frames": 4,
+			"height": 144,
+			"path": "animations/silver/idle.webp",
+			"regions": [
+				[
+					98,
+					83,
+					191,
+					168
+				],
+				[
+					485,
+					42,
+					176,
+					206
+				],
+				[
+					862,
+					87,
+					198,
+					160
+				],
+				[
+					1242,
+					119,
+					213,
+					129
+				]
+			],
+			"scale": 4,
+			"source": "silver_slime_cycles",
+			"width": 176
 		}
 	},
 	"slime": {

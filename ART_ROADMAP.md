@@ -31,11 +31,25 @@ Godot 4.7.2 validation: 36 strips, 144 nonempty frames with distinct poses, all 
 
 Equipment is still baked into these starter poses. Armor tiers, weapon replacement, female Rock, other heroes and full-game integration remain unfinished; this batch does not claim those features.
 
+## Batch 3 - five meadow slime families
+
+Added 64 frames for blue, red, silver and gold slimes: idle, hop, hurt and death for each. These are separately generated designs with crystal, ember, pearl-star and treasure details, respectively. Together with green slime and Rock, the published library contains 52 strips and 208 frames.
+
+The meadow art sample now cycles through all five families when spawning. This isolated encounter uses green-slime level/HP/attack/defense/EXP for every family, retains each family's size and behavior, and disables random shiny conversion. Normal game data and production encounter balance are unchanged. Shiny and elite mobs use original art until their own painted variants exist. Unsupported families also use the original renderer rather than an unrelated painted slime.
+
+Verified in Godot 4.7.2: all 52 strips and 208 nonempty frames; fresh encounter includes every family; real damage selects hurt art and lethal damage selects death art for each family; death reaches its final pose; eleven Rock move timelines; paginated gallery capture. Movement/jump/attack/dodge/block/reset/comparison checks cover the expanded sample. Original mob textures were restored into the partial local checkout to verify the B comparison. Original unrelated card portrait warnings remain.
+
+The sample now restores its texture-cache changes when leaving for the gallery, so returning does not overwrite the original-art comparison reference.
+
+Switching away from male starter Rock or equipping upgraded armor/weapons restores the original hero renderer. The painted starter does not conceal class, gender or equipment changes while their replacement assets are unfinished.
+
+![Batch 3 slime review](docs/art/animation-batch3.webp)
+
 ## Remaining batches
 
 1. Rock equipment-compatible layers, armor tiers and appearance variants. The starter action set is covered by batch 2.
 2. Archer, Remy, Jojo and Tank: approve their painted silhouettes, then movement, combat, skills, variants and equipment progression.
-3. Monster families and their animation cycles, followed by shiny, elite and lunar variants. The original base monster table contains 61 sprite sets including variants; expansion folders add more.
+3. Remaining monster families and their animation cycles, followed by shiny, elite and lunar variants. The five base meadow slime families are covered by batches 1 and 3. The original base monster table contains 61 sprite sets including variants; expansion folders add more.
 4. World art by region: homes and interiors, ridge/hollow/pond, Crimson, Abyss, mountain/volcano, lunar areas and map screens. Preserve all collision geometry and parallax behavior.
 5. Bosses and live-drawn body parts, NPCs, pets, drops, skill effects and remaining interface assets; final consistency and performance pass.
 

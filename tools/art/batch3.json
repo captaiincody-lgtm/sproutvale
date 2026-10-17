@@ -1,0 +1,239 @@
+[
+  {
+    "file": "blue_slime_cycles",
+    "kind": "blue",
+    "folder": "blue",
+    "xs": [
+      0,
+      320,
+      640,
+      950,
+      1254
+    ],
+    "ys": [
+      0,
+      320,
+      650,
+      950,
+      1254
+    ],
+    "padding": 0,
+    "isolate": false,
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          22,
+          24,
+          22,
+          20
+        ]
+      },
+      {
+        "name": "hop",
+        "heights": [
+          12,
+          32,
+          24,
+          12
+        ]
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          22,
+          16,
+          20,
+          22
+        ]
+      },
+      {
+        "name": "dead",
+        "heights": [
+          12,
+          8,
+          5,
+          2
+        ]
+      }
+    ]
+  },
+  {
+    "file": "red_slime_cycles",
+    "kind": "red",
+    "folder": "red",
+    "xs": [
+      0,
+      384,
+      768,
+      1152,
+      1536
+    ],
+    "ys": [
+      0,
+      270,
+      540,
+      800,
+      1024
+    ],
+    "padding": 0,
+    "isolate": false,
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          22,
+          24,
+          22,
+          20
+        ]
+      },
+      {
+        "name": "hop",
+        "heights": [
+          12,
+          32,
+          24,
+          12
+        ]
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          22,
+          16,
+          20,
+          22
+        ]
+      },
+      {
+        "name": "dead",
+        "heights": [
+          12,
+          8,
+          5,
+          2
+        ]
+      }
+    ]
+  },
+  {
+    "file": "silver_slime_cycles",
+    "kind": "silver",
+    "folder": "silver",
+    "xs": [
+      0,
+      384,
+      768,
+      1152,
+      1536
+    ],
+    "ys": [
+      0,
+      270,
+      530,
+      790,
+      1024
+    ],
+    "padding": 0,
+    "isolate": false,
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          22,
+          24,
+          22,
+          20
+        ]
+      },
+      {
+        "name": "hop",
+        "heights": [
+          12,
+          32,
+          24,
+          12
+        ]
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          22,
+          16,
+          20,
+          22
+        ]
+      },
+      {
+        "name": "dead",
+        "heights": [
+          12,
+          8,
+          5,
+          2
+        ]
+      }
+    ]
+  },
+  {
+    "file": "gold_slime_cycles",
+    "kind": "gold",
+    "folder": "gold",
+    "xs": [
+      0,
+      320,
+      640,
+      950,
+      1254
+    ],
+    "ys": [
+      0,
+      330,
+      700,
+      980,
+      1254
+    ],
+    "padding": 0,
+    "isolate": false,
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          22,
+          24,
+          22,
+          20
+        ]
+      },
+      {
+        "name": "hop",
+        "heights": [
+          12,
+          32,
+          24,
+          12
+        ]
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          22,
+          16,
+          20,
+          22
+        ]
+      },
+      {
+        "name": "dead",
+        "heights": [
+          12,
+          8,
+          5,
+          2
+        ]
+      }
+    ]
+  }
+]
+
