@@ -144,18 +144,16 @@ func drawTerrain(x: Ctx, mt: Texture2D, sx: float, sy: float) -> void:
 		var width: float = surface.x1 - surface.x0
 		if left > VW or left + width < 0:
 			continue
-		x.fillStyle = "#34452f"
-		x.fillRect(maxf(0, left), top + 3, minf(VW, left + width) - maxf(0, left), 31)
 		if surface.floor:
 			x.fillStyle = "#354337"
 			x.fillRect(maxf(0, left), top + 20, minf(VW, left + width) - maxf(0, left), maxf(0, VH - top))
-		var start := maxf(0, floorf(-left / 64.0) * 64.0)
+		var start := maxf(0, floorf(-left / 60.0) * 60.0)
 		var at := start
 		while at < width:
 			var tile_width := minf(64, width - at)
 			x.drawImageRegion(ATLAS, 8, 1038, 333 * tile_width / 64.0, 207,
 				left + at, top - 7, tile_width, 42)
-			at += 64
+			at += 60
 	# Decorative trees sit on the floor and never change collision or jump clearance.
 	for tx in [55.0, 375.0, 755.0, 1155.0, 1635.0]:
 		var screen_x: float = tx - sx
