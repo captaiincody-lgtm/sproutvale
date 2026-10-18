@@ -10,13 +10,33 @@ var step_frame := 0
 var cells: Array = []
 var page := 0
 const PAGE_SIZE := 12
+const FILTERS := ["All", "Rock", "Slimes", "Forest"]
+const FOREST_KINDS := ["rat", "boar", "tortoise", "ferret"]
+var filter_mode := 0
 
 func _ready() -> void:
-	for kind in cycles.data:
-		if kind == "version":
+	rebuild_cells()
+
+func rebuild_cells() -> void:
+	cells.clear()
+	var kinds: Array = cycles.data.keys()
+	kinds.erase("version")
+	kinds.sort()
+	kinds.erase("hero")
+	kinds.push_front("hero")
+	for kind in kinds:
+		if filter_mode == 1 and kind != "hero":
 			continue
-		for anim in cycles.data[kind]:
+		if filter_mode == 2 and kind not in ["slime", "blue", "red", "silver", "gold"]:
+			continue
+		if filter_mode == 3 and kind not in FOREST_KINDS:
+			continue
+		var animations: Array = cycles.data[kind].keys()
+		if kind in FOREST_KINDS:
+			animations = ["idle", "run", "hop", "attack", "hurt", "dead", "shell", "spin"].filter(func(anim): return cycles.has_cycle(kind, anim))
+		for anim in animations:
 			cells.append([kind, anim])
+	page = clampi(page, 0, pages()-1)
 
 func pages() -> int:
 	return maxi(1, ceili(float(cells.size()) / PAGE_SIZE))
@@ -29,6 +49,10 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
+			KEY_TAB:
+				filter_mode = (filter_mode + 1) % FILTERS.size()
+				page = 0
+				rebuild_cells()
 			KEY_SPACE:
 				paused = not paused
 				step_frame = int(elapsed * 6) % 4
@@ -46,7 +70,7 @@ func _draw() -> void:
 	x.fillRect(0,0,768,432)
 	x.font = '18px "Fredoka"'
 	x.fillStyle = "#f7e9bd"
-	x.fillText("SPROUTVALE - Animation review   " + str(page+1) + "/" + str(pages()),16,25)
+	x.fillText("SPROUTVALE - Animation review   " + str(page+1) + "/" + str(pages()) + "   [" + FILTERS[filter_mode] + "]",16,25)
 	for i in mini(PAGE_SIZE, cells.size() - page*PAGE_SIZE):
 		var cell: Array = cells[page*PAGE_SIZE+i]
 		var col := i % 4
@@ -62,7 +86,7 @@ func _draw() -> void:
 		x.fillRect(at.x+8,at.y+98,162,1)
 		x.save()
 		x.translate(at.x+89,at.y+97)
-		var preview_scale := 1.25
+		var preview_scale := 1.25 if cell[0] == "hero" else 2.25
 		x.scale(preview_scale,preview_scale)
 		cycles.paint(x,cell[0],cell[1],frame,Vector2.ZERO)
 		x.restore()
@@ -71,6 +95,6 @@ func _draw() -> void:
 		x.fillText(str(frame+1)+"/4",at.x+146,at.y+16)
 	x.font = '12px "Fredoka"'
 	x.fillStyle = "#d6ded0"
-	x.fillText("Space: play/pause   Left/Right: frame   PgUp/PgDn: page   Esc: meadow",16,420)
+	x.fillText("Tab: filter   Space: play/pause   Left/Right: frame   PgUp/PgDn: page   Esc: game",16,420)
 
 

@@ -8,8 +8,10 @@ var cycles = PaintedCycles.new()
 var guard_flash := 0.0
 var previous_hp := 0.0
 var painted := true
+@export_enum("Slimes", "Forest creatures") var encounter := 0
 var preview_spawn_index := 0
 const PREVIEW_FAMILIES := ["green", "blue", "red", "silver", "gold"]
+const FOREST_FAMILIES := ["rat", "boar", "tortoise", "ferret"]
 var original_meadow: Texture2D
 var original_far: Texture2D
 var original_mid: Texture2D
@@ -35,6 +37,9 @@ func persist() -> void:
 	saveDirty = false
 
 func _ready() -> void:
+	if get_tree().has_meta("painted_return_encounter"):
+		encounter = int(get_tree().get_meta("painted_return_encounter"))
+		get_tree().remove_meta("painted_return_encounter")
 	original_meadow = Assets.tex("maps/meadow.png")
 	original_far = Assets.tex("sky/meadow_far.png")
 	original_mid = Assets.tex("sky/meadow_mid.png")
@@ -51,12 +56,12 @@ func _ready() -> void:
 	# Keep the art sample inside the meadow; the normal game and its portals are untouched.
 	MAPS.meadow = MAPS.meadow.duplicate(true)
 	MAPS.meadow.portals = []
-	MAPS.meadow.spawn = {"green": 1.0, "blue": 1.0, "red": 1.0, "silver": 1.0, "gold": 1.0}
+	configure_preview_encounter()
 	MAPS.meadow.ignoreUnlock = true
 	# This isolated art encounter uses starter combat stats for every family.
 	# Their identities and sizes remain intact; production progression data is untouched.
 	SLIME_TYPES = SLIME_TYPES.duplicate(true)
-	for family in PREVIEW_FAMILIES:
+	for family in PREVIEW_FAMILIES + FOREST_FAMILIES:
 		for stat in ["lv", "hp", "atk", "def", "exp"]:
 			SLIME_TYPES[family][stat] = SLIME_TYPES.green[stat]
 	MAPS.meadow.target = 8
@@ -66,13 +71,35 @@ func _ready() -> void:
 	wclouds.clear()
 	_make_sample_label()
 
+func preview_families() -> Array:
+	return PREVIEW_FAMILIES if encounter == 0 else FOREST_FAMILIES
+
+func configure_preview_encounter() -> void:
+	var spawn := {}
+	for family in preview_families():
+		spawn[family] = 1.0
+	MAPS.meadow.spawn = spawn
+	preview_spawn_index = 0
+
+func reset_preview() -> void:
+	menuOpen = false
+	overlay = ""
+	intro = null
+	PS = calcStats()
+	P.hp = PS.hp
+	P.en = PS.enMax
+	P.iframes = 1.2
+	loadMap("meadow", 90, 380)
+	setAnim("idle")
+
 func spawnSlime(initial := false) -> void:
 	if mapId != "meadow":
 		super.spawnSlime(initial)
 		return
-	# Round robin makes all five new families available in each fresh art encounter.
+	# Round robin makes every family available in each fresh art encounter.
 	var original_spawn: Dictionary = M.spawn
-	var family: String = PREVIEW_FAMILIES[preview_spawn_index % PREVIEW_FAMILIES.size()]
+	var families: Array = preview_families()
+	var family: String = families[preview_spawn_index % families.size()]
 	preview_spawn_index += 1
 	M.spawn = {family: 1.0}
 	super.spawnSlime(initial)
@@ -123,7 +150,7 @@ func _make_sample_label() -> void:
 	_update_sample_label()
 
 func _update_sample_label() -> void:
-	sample_label.text = "%s | B compare � V cycles � R reset � Arrows move � Space jump � Z/X attack � C dodge � Shift block" % ("PAINTED MEADOW" if painted else "ORIGINAL ART")
+	sample_label.text = "%s | F2 enemies - V cycles - B compare - R reset | Arrows/Space move - Z/X attack - C dodge - Shift block" % (("PAINTED " if painted else "ORIGINAL ") + ("MEADOW" if encounter == 0 else "FOREST"))
 
 func _apply_art_cache() -> void:
 	Assets._tex["maps/meadow.png"] = ATLAS if painted else original_meadow
@@ -140,7 +167,14 @@ func _exit_tree() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F2:
+			encounter = 1 - encounter
+			configure_preview_encounter()
+			reset_preview()
+			_update_sample_label()
+			return
 		if event.keycode == KEY_V:
+			get_tree().set_meta("painted_return_encounter", encounter)
 			get_tree().change_scene_to_file("res://samples/painted_animation_gallery.tscn")
 			return
 		if event.keycode == KEY_B:
@@ -149,16 +183,9 @@ func _input(event: InputEvent) -> void:
 			_update_sample_label()
 			return
 		if event.keycode == KEY_R:
-			menuOpen = false
-			overlay = ""
-			intro = null
-			PS = calcStats()
-			P.hp = PS.hp
-			P.en = PS.enMax
-			P.iframes = 1.2
-			loadMap("meadow", 90, 380)
-			setAnim("idle")
+			reset_preview()
 			return
+
 	super._input(event)
 
 func _process(delta: float) -> void:
@@ -305,13 +332,28 @@ func painted_mob_pose(e) -> Dictionary:
 		frame = clampi(int(e.deadT / 0.45 * 4),0,3)
 	elif e.state == "hurt" or e.flash > 0:
 		anim = "hurt"
-		frame = clampi(int((1 - e.flash / 0.18) * 4),0,3)
+		frame = clampi(int((1 - e.flash / 0.1) * 4),0,3)
+	elif kind == "tortoise" and e.state in ["shell", "spin", "wind"]:
+		anim = "spin" if e.state == "spin" else "shell"
+		frame = cycles.frame_at(kind, anim, e.t) if anim == "spin" else clampi(int(e.t / (0.5 if e.state == "wind" else 0.3) * 4),0,3)
+	elif cycles.has_cycle(kind, "attack") and e.state in ["wind", "lunge", "charge", "recover"]:
+		anim = "attack"
+		if e.state == "charge":
+			anim = "run"
+			frame = int(e.t * 22) % 4
+		elif e.state == "wind":
+			frame = 0 if e.t < (0.225 if kind == "boar" else 0.15) else 1
+		else:
+			frame = 3 if e.state == "recover" else 2
 	elif e.y < e.surf.y - 1:
 		anim = "hop"
 		frame = 1 if e.vy < -40 else (2 if e.vy < 40 else 3)
 	elif e.sq > 0.2 or e.state == "wind":
 		anim = "hop"
 		frame = 0 if e.state == "wind" else 3
+	elif cycles.has_cycle(kind, "run") and absf(e.walk) + absf(e.vx) > 3:
+		anim = "run"
+		frame = cycles.frame_at(kind, anim, e.t)
 	return {"kind":kind,"anim":anim,"frame":frame}
 
 func drawMob(x: Ctx, e, sx: float, sy: float) -> void:
@@ -320,9 +362,10 @@ func drawMob(x: Ctx, e, sx: float, sy: float) -> void:
 		super.drawMob(x,e,sx,sy)
 		return
 	var size: float = e.T.get("size", 1.0)
+	var spawn_scale := clampf(1.0 - e.spawnT / 0.5, 0.001, 1.0)
 	x.save()
 	x.translate(e.x-sx,e.y-sy)
-	x.scale(size,size)
+	x.scale(size*spawn_scale,size*spawn_scale)
 	cycles.paint(x,pose.kind,pose.anim,pose.frame,Vector2.ZERO,e.face,maxf(0,1-e.deadT/0.45) if e.state == "dead" else 1)
 	x.restore()
 	if e.state != "dead" and (e.showBar > 0 or e.aggro):

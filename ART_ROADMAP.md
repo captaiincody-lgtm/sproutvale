@@ -45,11 +45,35 @@ Switching away from male starter Rock or equipping upgraded armor/weapons restor
 
 ![Batch 3 slime review](docs/art/animation-batch3.webp)
 
+## Batch 4 - forest creature encounters
+
+Added 104 painted frames in 26 strips:
+
+| Family | Strips |
+| --- | --- |
+| Meadow rat | Idle, run, hop, attack, hurt, death |
+| Tusk boar | Idle, run, hop, attack, hurt, death |
+| Ferret | Idle, run, hop, attack, hurt, death |
+| Moss tortoise | Idle, run, hop, snap, hurt, death, shell withdrawal, shell spin |
+
+The tortoise snap strip is an extra review animation; its existing combat AI uses withdrawal and spin. Rats and ferrets use windup/lunge/recovery poses, boars switch from anticipation into a running charge, and tortoises hold their closed shell and animate the spin. The existing AI, hitboxes, collision surfaces and attack windows own all combat behavior. Hurt playback now starts at its first pose during the existing 0.1-second damage flash. Newly spawned creatures retain the original scale-in effect.
+
+Run `godot/samples/painted_forest.tscn` with F6, or press F2 inside either painted sample to switch encounter families. These forest creatures currently use the existing painted meadow scenery and geometry; this does not complete a new regional map. Preview encounters use starter combat stats and disable shiny conversion, with production data unchanged.
+
+The gallery supports Tab filters for All / Rock / Slimes / Forest. Creature previews are enlarged for inspection. Leaving and returning through the gallery preserves the selected encounter and the original-art comparison cache.
+
+Godot 4.7.2 checks: 78 strips and 312 nonempty frames with pose changes; four creature families spawning; real AI windup-to-attack transitions, animated boar charge and tortoise spin, damage reactions and death poses; F2 encounter switching; gallery filtering and return; B original-art comparison; existing controller checks. Captured four frames on every forest review page. The partial local checkout still lacks unrelated original card portraits, which can generate warnings.
+
+![Forest encounter](docs/art/forest-encounter.webp)
+![Forest animation review](docs/art/animation-batch4.webp)
+
+Seven generated source sheets are normalized by `tools/art/batch4.json` using the shared importer. The published WebP strips are directly usable assets; no art-generation step runs during gameplay.
+
 ## Remaining batches
 
 1. Rock equipment-compatible layers, armor tiers and appearance variants. The starter action set is covered by batch 2.
 2. Archer, Remy, Jojo and Tank: approve their painted silhouettes, then movement, combat, skills, variants and equipment progression.
-3. Remaining monster families and their animation cycles, followed by shiny, elite and lunar variants. The five base meadow slime families are covered by batches 1 and 3. The original base monster table contains 61 sprite sets including variants; expansion folders add more.
+3. Remaining monster families and their animation cycles, followed by shiny, elite and lunar variants. The five base meadow slime families are covered by batches 1 and 3; rat, boar, tortoise and ferret base art is covered by batch 4. The original base monster table contains 61 sprite sets including variants; expansion folders add more.
 4. World art by region: homes and interiors, ridge/hollow/pond, Crimson, Abyss, mountain/volcano, lunar areas and map screens. Preserve all collision geometry and parallax behavior.
 5. Bosses and live-drawn body parts, NPCs, pets, drops, skill effects and remaining interface assets; final consistency and performance pass.
 

@@ -1,0 +1,536 @@
+[
+  {
+    "file": "rat_forest",
+    "kind": "rat",
+    "folder": "rat",
+    "xs": [
+      0,
+      390,
+      700,
+      1100,
+      1402
+    ],
+    "ys": [
+      0,
+      300,
+      560,
+      840,
+      1122
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          14,
+          18,
+          15,
+          14
+        ],
+        "fps": 6
+      },
+      {
+        "name": "run",
+        "heights": [
+          12,
+          14,
+          12,
+          14
+        ],
+        "fps": 12
+      },
+      {
+        "name": "attack",
+        "heights": [
+          12,
+          18,
+          13,
+          15
+        ],
+        "fps": 12
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          18,
+          17,
+          14,
+          16
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "boar_forest",
+    "kind": "boar",
+    "folder": "boar",
+    "xs": [
+      0,
+      355,
+      675,
+      1025,
+      1312
+    ],
+    "ys": [
+      0,
+      300,
+      600,
+      900,
+      1199
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          22,
+          24,
+          22,
+          22
+        ],
+        "fps": 6
+      },
+      {
+        "name": "run",
+        "heights": [
+          21,
+          23,
+          21,
+          23
+        ],
+        "fps": 12
+      },
+      {
+        "name": "attack",
+        "heights": [
+          22,
+          24,
+          23,
+          22
+        ],
+        "fps": 12
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          22,
+          23,
+          22,
+          22
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "tortoise_forest",
+    "kind": "tortoise",
+    "folder": "tortoise",
+    "xs": [
+      0,
+      390,
+      710,
+      1080,
+      1402
+    ],
+    "ys": [
+      0,
+      300,
+      570,
+      840,
+      1122
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          20,
+          22,
+          20,
+          20
+        ],
+        "fps": 6
+      },
+      {
+        "name": "run",
+        "heights": [
+          19,
+          20,
+          19,
+          20
+        ],
+        "fps": 12
+      },
+      {
+        "name": "attack",
+        "heights": [
+          18,
+          23,
+          20,
+          20
+        ],
+        "fps": 12
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          22,
+          22,
+          18,
+          22
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "ferret_forest",
+    "kind": "ferret",
+    "folder": "ferret",
+    "xs": [
+      0,
+      385,
+      700,
+      1075,
+      1402
+    ],
+    "ys": [
+      0,
+      320,
+      580,
+      840,
+      1122
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          14,
+          22,
+          18,
+          14
+        ],
+        "fps": 6
+      },
+      {
+        "name": "run",
+        "heights": [
+          14,
+          16,
+          14,
+          16
+        ],
+        "fps": 12
+      },
+      {
+        "name": "attack",
+        "heights": [
+          13,
+          19,
+          14,
+          18
+        ],
+        "fps": 12
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          20,
+          18,
+          14,
+          18
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "forest_deaths",
+    "kind": "rat",
+    "folder": "rat",
+    "xs": [
+      0,
+      385,
+      715,
+      1085,
+      1402
+    ],
+    "ys": [
+      0,
+      310
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "dead",
+        "heights": [
+          13,
+          19,
+          10,
+          10
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "forest_deaths",
+    "kind": "boar",
+    "folder": "boar",
+    "xs": [
+      0,
+      385,
+      715,
+      1085,
+      1402
+    ],
+    "ys": [
+      310,
+      600
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "dead",
+        "heights": [
+          23,
+          26,
+          18,
+          18
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "forest_deaths",
+    "kind": "tortoise",
+    "folder": "tortoise",
+    "xs": [
+      0,
+      385,
+      715,
+      1085,
+      1402
+    ],
+    "ys": [
+      600,
+      865
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "dead",
+        "heights": [
+          20,
+          25,
+          18,
+          18
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "forest_deaths",
+    "kind": "ferret",
+    "folder": "ferret",
+    "xs": [
+      0,
+      385,
+      715,
+      1085,
+      1402
+    ],
+    "ys": [
+      865,
+      1122
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "dead",
+        "heights": [
+          14,
+          20,
+          12,
+          12
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "forest_hops",
+    "kind": "rat",
+    "folder": "rat",
+    "xs": [
+      0,
+      380,
+      735,
+      1075,
+      1402
+    ],
+    "ys": [
+      0,
+      300
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "hop",
+        "heights": [
+          13,
+          16,
+          16,
+          13
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "forest_hops",
+    "kind": "boar",
+    "folder": "boar",
+    "xs": [
+      0,
+      380,
+      735,
+      1075,
+      1402
+    ],
+    "ys": [
+      300,
+      580
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "hop",
+        "heights": [
+          22,
+          23,
+          23,
+          22
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "forest_hops",
+    "kind": "tortoise",
+    "folder": "tortoise",
+    "xs": [
+      0,
+      380,
+      735,
+      1075,
+      1402
+    ],
+    "ys": [
+      580,
+      850
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "hop",
+        "heights": [
+          20,
+          22,
+          20,
+          20
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "forest_hops",
+    "kind": "ferret",
+    "folder": "ferret",
+    "xs": [
+      0,
+      380,
+      735,
+      1075,
+      1402
+    ],
+    "ys": [
+      850,
+      1122
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "hop",
+        "heights": [
+          14,
+          16,
+          16,
+          14
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "tortoise_defense",
+    "kind": "tortoise",
+    "folder": "tortoise",
+    "xs": [
+      0,
+      460,
+      900,
+      1350,
+      1774
+    ],
+    "ys": [
+      0,
+      445,
+      887
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "shell",
+        "heights": [
+          22,
+          22,
+          22,
+          22
+        ],
+        "fps": 12
+      },
+      {
+        "name": "spin",
+        "heights": [
+          22,
+          22,
+          22,
+          22
+        ],
+        "fps": 18
+      }
+    ]
+  }
+]
+

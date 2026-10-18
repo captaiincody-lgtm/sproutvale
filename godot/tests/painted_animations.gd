@@ -31,7 +31,7 @@ func _ready() -> void:
 				seen[cell.get_data().hex_encode().sha256_text()] = true
 			require(seen.size() >= 2,kind + "/" + anim + " contains no pose changes")
 			count += 1
-	require(count == 52,"Expected 32 Rock and twenty slime strips")
+	require(count == 78,"Expected 32 Rock, twenty slime and 26 forest strips")
 	var game = load("res://samples/painted_meadow.tscn").instantiate()
 	add_child(game)
 	await get_tree().create_timer(0.2).timeout
@@ -94,7 +94,7 @@ func _ready() -> void:
 			gallery.queue_redraw()
 			await RenderingServer.frame_post_draw
 			require(get_viewport().get_texture().get_image().save_png(out.path_join("gallery_" + str(page) + "_" + str(frame) + ".png")) == OK,"Could not capture gallery")
-	print("PAINTED_ANIMATIONS_PASS: 52 strips, 208 nonempty frames, 32 Rock states, eleven move timelines, gallery pages" if failures == 0 else "PAINTED_ANIMATIONS_FAILED")
+	print("PAINTED_ANIMATIONS_PASS: 78 strips, 312 nonempty frames, 32 Rock states, eleven move timelines, gallery pages" if failures == 0 else "PAINTED_ANIMATIONS_FAILED")
 	get_tree().quit(0 if failures == 0 else 1)
 
 

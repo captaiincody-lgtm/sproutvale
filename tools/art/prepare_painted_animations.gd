@@ -99,7 +99,7 @@ func _initialize() -> void:
 				push_error("Could not save " + relative)
 				quit(1)
 				return
-			var fps: float = 6 if spec.name == "idle" else (10 if spec.name == "walk" else 12)
+			var fps: float = spec.get("fps", 6 if spec.name == "idle" else (10 if spec.name == "walk" else 12))
 			manifest[sheet.kind][spec.name] = {"path":relative,"frames":4,"fps":fps,"width":frame_w,"height":frame_h,"scale":4,"foot":[foot.x,foot.y],"source":sheet.file,"regions":regions}
 			print("Prepared ",relative)
 	var output := FileAccess.open(ROOT + "animations.json",FileAccess.WRITE)
