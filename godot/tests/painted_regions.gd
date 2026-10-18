@@ -111,7 +111,7 @@ func _ready() -> void:
 		enemy.deadT = 0.44
 		require(game.painted_mob_pose(enemy).get("frame") == 3,kind + " death lacks settled pose")
 	game.M.target = target
-	for turn in 4:
+	for turn in game.REGION_IDS.size():
 		game.set_process(true)
 		tap(KEY_F3)
 		await get_tree().process_frame
@@ -137,7 +137,7 @@ func _ready() -> void:
 	for step in 4:
 		tap(KEY_TAB)
 		await get_tree().process_frame
-	require(gallery.filter_mode == 4 and gallery.cells.size() == 31,"Crimson review filter lacks its 31 strips")
+	require(gallery.filter_mode == 4 and gallery.cells.size() == 36,"Crimson review filter lacks its 36 strips")
 	gallery.paused = true
 	for page in gallery.pages():
 		gallery.page = page
@@ -153,5 +153,5 @@ func _ready() -> void:
 	get_tree().current_scene = self
 	returned.queue_free()
 	await get_tree().process_frame
-	print("PAINTED_REGIONS_PASS: five dark AI families, paired Travelers, four real maps, original comparison, gallery filter/return" if failures == 0 else "PAINTED_REGIONS_FAILED")
+	print("PAINTED_REGIONS_PASS: five dark AI families, paired Travelers, six real maps, original comparison, gallery filter/return" if failures == 0 else "PAINTED_REGIONS_FAILED")
 	get_tree().quit(0 if failures == 0 else 1)

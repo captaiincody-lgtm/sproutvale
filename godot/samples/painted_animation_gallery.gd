@@ -13,7 +13,7 @@ const PAGE_SIZE := 12
 const FILTERS := ["All", "Rock", "Slimes", "Forest", "Crimson", "Armor"]
 const FOREST_KINDS := ["rat", "boar", "tortoise", "ferret"]
 const ARMORED_KINDS := ["cknight", "ccrusader"]
-const DARK_KINDS := ["evileye", "hand", "feet", "torso", "hairball"]
+const DARK_KINDS := ["evileye", "hand", "feet", "torso", "hairball", "head"]
 var filter_mode := 0
 
 func _ready() -> void:

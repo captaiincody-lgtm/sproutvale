@@ -11,19 +11,18 @@ var guard_flash := 0.0
 var previous_hp := 0.0
 var painted := true
 @export_enum("Slimes", "Forest creatures", "Crimson creatures", "Crimson armor") var encounter := 0
-@export_enum("Meadow", "Mossy Hollow", "Tusk Ridge", "Crimson Wastes") var region := 0
-const REGION_IDS := ["meadow", "hollow", "ridge", "crimson1"]
-const REGION_THEMES := ["meadow", "hollow", "ridge", "crimson"]
+@export_enum("Meadow", "Mossy Hollow", "Tusk Ridge", "Crimson Wastes", "Willow Pond", "Bone Hollow") var region := 0
+const REGION_IDS := ["meadow", "hollow", "ridge", "crimson1", "pond", "crimson2"]
+const REGION_THEMES := ["meadow", "hollow", "ridge", "crimson", "meadow", "crimson"]
 var original_region_art := {}
 var preview_spawn_index := 0
 const PREVIEW_FAMILIES := ["green", "blue", "red", "silver", "gold"]
 const FOREST_FAMILIES := ["rat", "boar", "tortoise", "ferret"]
 const ARMORED_FAMILIES := ["cknight", "ccrusader"]
-const DARK_FAMILIES := ["evileye", "hand", "feet", "torso", "hairball"]
+const DARK_FAMILIES := ["evileye", "hand", "feet", "torso", "hairball", "head"]
 var original_meadow: Texture2D
 var original_far: Texture2D
 var original_mid: Texture2D
-var empty_art: Texture2D
 var sample_label: Label
 # Regions and foot anchors are measured from the generated atlas; they are not uniform cells.
 const HERO_REGIONS := [
@@ -54,7 +53,6 @@ func _ready() -> void:
 	original_meadow = Assets.tex("maps/meadow.png")
 	original_far = Assets.tex("sky/meadow_far.png")
 	original_mid = Assets.tex("sky/meadow_mid.png")
-	empty_art = ImageTexture.create_from_image(Image.create_empty(1, 1, false, Image.FORMAT_RGBA8))
 	for i in REGION_IDS.size():
 		for path in ["maps/"+REGION_IDS[i]+".png", "sky/"+REGION_THEMES[i]+"_far.png", "sky/"+REGION_THEMES[i]+"_mid.png"]:
 			original_region_art[path] = Assets.tex(path)
@@ -175,10 +173,11 @@ func _update_sample_label() -> void:
 
 func _apply_art_cache() -> void:
 	for path in original_region_art:
-		Assets._tex[path] = (ATLAS if str(path).begins_with("maps/") else empty_art) if painted else original_region_art[path]
+		# Null sky textures suppress the original parallax layers.
+		Assets._tex[path] = (ATLAS if str(path).begins_with("maps/") else null) if painted else original_region_art[path]
 	Assets._tex["maps/meadow.png"] = ATLAS if painted else original_meadow
-	Assets._tex["sky/meadow_far.png"] = empty_art if painted else original_far
-	Assets._tex["sky/meadow_mid.png"] = empty_art if painted else original_mid
+	Assets._tex["sky/meadow_far.png"] = null if painted else original_far
+	Assets._tex["sky/meadow_mid.png"] = null if painted else original_mid
 
 func _exit_tree() -> void:
 	for path in original_region_art:
@@ -194,7 +193,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_F3:
 			region = (region + 1) % REGION_IDS.size()
-			encounter = [0, 0, 1, 2][region]
+			encounter = [0, 0, 1, 2, 1, 2][region]
 			configure_preview_encounter()
 			reset_preview()
 			_update_sample_label()
@@ -229,8 +228,12 @@ func _process(delta: float) -> void:
 	previous_hp = P.hp
 	World.t = 0.32
 
+func drawSkyFloor(x: Ctx, mid_y: float, theme: String) -> void:
+	if not painted or mapId not in REGION_IDS:
+		super.drawSkyFloor(x, mid_y, theme)
+
 func drawCrimsonSky(x: Ctx) -> void:
-	if painted and mapId == "crimson1":
+	if painted and mapId in ["crimson1", "crimson2"]:
 		drawSky(x, dayInfo())
 	else:
 		super.drawCrimsonSky(x)

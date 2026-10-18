@@ -1,6 +1,13 @@
 {
 	"crimson1": {
 		"backdrop": "environments/crimson_backdrop.webp",
+		"ground_offset": 7.0,
+		"soil": "#39242f",
+		"tile": "environments/crimson_tile.webp",
+		"tile_width": 128.0
+	},
+	"crimson2": {
+		"backdrop": "environments/bone_backdrop.webp",
 		"ground_offset": 7,
 		"soil": "#39242f",
 		"tile": "environments/crimson_tile.webp",
@@ -8,16 +15,23 @@
 	},
 	"hollow": {
 		"backdrop": "environments/hollow_backdrop.webp",
-		"ground_offset": 7,
+		"ground_offset": 7.0,
 		"soil": "#26392e",
 		"tile": "environments/hollow_tile.webp",
+		"tile_width": 128.0
+	},
+	"pond": {
+		"backdrop": "environments/pond_backdrop.webp",
+		"ground_offset": 7,
+		"soil": "#344a3b",
+		"tile": "environments/pond_tile.webp",
 		"tile_width": 128
 	},
 	"ridge": {
 		"backdrop": "environments/ridge_backdrop.webp",
-		"ground_offset": 7,
+		"ground_offset": 7.0,
 		"soil": "#66513a",
 		"tile": "environments/ridge_tile.webp",
-		"tile_width": 128
+		"tile_width": 128.0
 	}
 }

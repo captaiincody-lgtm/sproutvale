@@ -123,9 +123,7 @@ func renderWorld(ci: CanvasItem, dt: float) -> void:
 		if mid != null:
 			x.drawImage(mid, mo, midY, mid.get_width() / 2.0, mid.get_height() / 2.0)
 			x.drawImage(mid, mo + VW * 2, midY, mid.get_width() / 2.0, mid.get_height() / 2.0)
-		if midY + 90 < VH:
-			x.fillStyle = "#1e060c" if crimson else ("#2f4a3c" if theme in ["hollow", "lair"] else ("#b89448" if theme == "ridge" else "#6fb86a"))
-			x.fillRect(0, midY + 90, VW, VH)
+		drawSkyFloor(x, midY, theme)
 	# terrain
 	var mt = Assets.tex(mapArt())
 	if mt != null:
@@ -937,6 +935,11 @@ func cardArt(x: Ctx, type: String, gold: bool, shiny: bool, small: bool, X: floa
 
 
 # ================================================================ sky
+
+func drawSkyFloor(x: Ctx, mid_y: float, theme: String) -> void:
+	if mid_y + 90 < VH:
+		x.fillStyle = "#1e060c" if theme == "crimson" else ("#2f4a3c" if theme in ["hollow", "lair"] else ("#b89448" if theme == "ridge" else "#6fb86a"))
+		x.fillRect(0, mid_y + 90, VW, VH)
 
 func drawSky(x: Ctx, D: Dictionary) -> void:
 	var g = x.createLinearGradient(0, 0, 0, VH)
@@ -2199,3 +2202,4 @@ func drawElemSpirit(x: Ctx, sx: float, sy: float) -> void:
 		x.fillRect(roundf(X + cos(a) * 6), roundf(Y + sin(a) * 4), 2, 2)
 	x.fillStyle = "#ffffff"; x.fillRect(X - 2, Y - 2, 4, 4)
 	x.fillStyle = E2.glow; x.fillRect(X - 1, Y - 1, 2, 2)
+

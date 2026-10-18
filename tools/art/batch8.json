@@ -1,0 +1,107 @@
+[
+  {
+    "file": "head_painted",
+    "kind": "head",
+    "folder": "head",
+    "xs": [
+      0,
+      384,
+      768,
+      1180,
+      1536
+    ],
+    "ys": [
+      0,
+      256,
+      500,
+      740,
+      1024
+    ],
+    "padding": 0,
+    "isolate": true,
+    "frame_width": 256,
+    "frame_height": 192,
+    "foot": [
+      128,
+      176
+    ],
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          22,
+          22,
+          22,
+          22
+        ],
+        "fps": 6
+      },
+      {
+        "name": "run",
+        "heights": [
+          20,
+          20,
+          20,
+          20
+        ],
+        "fps": 12
+      },
+      {
+        "name": "attack",
+        "heights": [
+          22,
+          23,
+          24,
+          22
+        ],
+        "fps": 12
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          23,
+          22,
+          21,
+          22
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "head_death",
+    "kind": "head",
+    "folder": "head",
+    "xs": [
+      0,
+      543,
+      1100,
+      1655,
+      2172
+    ],
+    "ys": [
+      0,
+      724
+    ],
+    "padding": 0,
+    "isolate": true,
+    "frame_width": 256,
+    "frame_height": 192,
+    "foot": [
+      128,
+      176
+    ],
+    "rows": [
+      {
+        "name": "dead",
+        "heights": [
+          22,
+          19,
+          15,
+          12
+        ],
+        "fps": 12
+      }
+    ]
+  }
+]

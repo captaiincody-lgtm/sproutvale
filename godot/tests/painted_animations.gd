@@ -31,7 +31,12 @@ func _ready() -> void:
 				seen[cell.get_data().hex_encode().sha256_text()] = true
 			require(seen.size() >= 2,kind + "/" + anim + " contains no pose changes")
 			count += 1
-	require(count == 123,"Expected 123 reviewed painted strips")
+	require(count == 128,"Expected 128 reviewed painted strips")
+	# The base data table is distinct from Abyss, mountain and lunar expansions.
+	for family in Assets.data.mobs:
+		var painted_kind: String = "slime" if family == "green" else family
+		for action in ["idle","hurt","dead"]:
+			require(library.has_cycle(painted_kind,action),"Base family lacks painted " + action + ": " + family)
 	var game = load("res://samples/painted_meadow.tscn").instantiate()
 	add_child(game)
 	await get_tree().create_timer(0.2).timeout
@@ -94,5 +99,5 @@ func _ready() -> void:
 			gallery.queue_redraw()
 			await RenderingServer.frame_post_draw
 			require(get_viewport().get_texture().get_image().save_png(out.path_join("gallery_" + str(page) + "_" + str(frame) + ".png")) == OK,"Could not capture gallery")
-	print("PAINTED_ANIMATIONS_PASS: 123 strips, 492 nonempty frames, 32 Rock states, eleven move timelines, gallery pages" if failures == 0 else "PAINTED_ANIMATIONS_FAILED")
+	print("PAINTED_ANIMATIONS_PASS: 128 strips, 512 nonempty frames, 32 Rock states, eleven move timelines, gallery pages" if failures == 0 else "PAINTED_ANIMATIONS_FAILED")
 	get_tree().quit(0 if failures == 0 else 1)

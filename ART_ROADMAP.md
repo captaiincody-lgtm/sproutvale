@@ -104,12 +104,28 @@ Validation in Godot 4.7.2: 123 strips and 492 nonempty frames with pose changes;
 ![Armored Crimson encounter](docs/art/armor-encounter.webp)
 ![Armored animation review](docs/art/animation-batch7.webp)
 
+## Batch 8 - Floating Head, Willow Pond and Bone Hollow
+
+Adds **5 strips / 20 frames** for Floating Head hover, flight, bite, hurt and death. This completes painted action sets for all **17 enemy families in the original `game_data.json` base table**, bringing the total to **128 strips / 512 frames**. This coverage excludes shiny/elite/lunar variants, expansion families and bosses. Six base Crimson creature families now share the existing encounter; the Armor encounter remains separate.
+
+Willow Pond has a new painted willow-glade backdrop and river-stone bank tile. The existing pond dimensions, bank walls, bottom, platforms, ropes, live water mesh, splash simulation and swimming remain intact. Bone Hollow has a new fossil-arch dusk backdrop, paired with the existing painted Crimson terrain. The sample now offers six regions through F3, including direct `painted_pond.tscn` and `painted_bone_hollow.tscn` scenes. Preview portals remain disabled and normal saves remain untouched.
+
+The legacy sky-ground fill now has a renderer hook; the default implementation preserves original behavior, while the painted preview suppresses it so the pond backdrop remains visible below the waterline. Original parallax textures are cached and restored for B comparison and gallery transitions.
+
+Authoring sources: `tools/art/batch8.json` and `tools/art/prepare_painted_batch8_environments.gd`. The final death crops use the actual 2172x724 source dimensions. Bone Hollow reuses the Crimson tile rather than adding a duplicate asset.
+
+Godot 4.7.2 verification: 128 strips / 512 nonempty frames, pose changes and coverage for every base-table family; six map geometries and original-art comparisons; swimming movement, upward strokes, bank collision and splash ripples; underwater scenery remains detailed; actual Floating Head windup, biting hit, recovery, hurt/death art; region and encounter return through the gallery; controller regression. Unrelated missing-art warnings from the partial local checkout and existing teardown warnings remain.
+
+![Willow Pond swimming](docs/art/pond-swimming.webp)
+![Bone Hollow](docs/art/bone-hollow.webp)
+![Floating Head animation review](docs/art/animation-batch8.webp)
+
 ## Remaining batches
 
 1. Rock equipment-compatible layers, armor tiers and appearance variants. The starter action set is covered by batch 2.
 2. Archer, Remy, Jojo and Tank: approve their painted silhouettes, then movement, combat, skills, variants and equipment progression.
-3. Remaining monster families and their animation cycles, followed by shiny, elite and lunar variants. The five base meadow slime families are covered by batches 1 and 3; rat, boar, tortoise and ferret base art is covered by batch 4; the five base Crimson creatures above are covered by batch 5; base Crimson Knight and Crusader art is covered by batch 7. The original base monster table contains 61 sprite sets including variants; expansion folders add more.
-4. World art by region: homes and interiors, pond, remaining Crimson maps, Abyss, mountain/volcano, lunar areas and map screens. Preserve all collision geometry and parallax behavior.
+3. Expansion monster families and their animation cycles, followed by shiny, elite and lunar variants. All 17 original base-table families have painted action sets as of batch 8. The five base meadow slime families are covered by batches 1 and 3; rat, boar, tortoise and ferret base art is covered by batch 4; the five base Crimson creatures above are covered by batch 5; base Crimson Knight and Crusader art is covered by batch 7. The original base monster table contains 61 sprite sets including variants; expansion folders add more.
+4. World art by region: homes and interiors, remaining Crimson maps beyond Bone Hollow, Abyss, mountain/volcano, lunar areas and map screens. Preserve all collision geometry and parallax behavior.
 5. Bosses and live-drawn body parts, NPCs, pets, drops, skill effects and remaining interface assets; final consistency and performance pass.
 
 These are work groups, not claims that the remaining assets are finished. Large groups can be split further without mixing unfinished art into the normal game.
