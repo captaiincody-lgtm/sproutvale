@@ -10,7 +10,7 @@ var cycles = PaintedCycles.new()
 var guard_flash := 0.0
 var previous_hp := 0.0
 var painted := true
-@export_enum("Slimes", "Forest creatures", "Crimson creatures") var encounter := 0
+@export_enum("Slimes", "Forest creatures", "Crimson creatures", "Crimson armor") var encounter := 0
 @export_enum("Meadow", "Mossy Hollow", "Tusk Ridge", "Crimson Wastes") var region := 0
 const REGION_IDS := ["meadow", "hollow", "ridge", "crimson1"]
 const REGION_THEMES := ["meadow", "hollow", "ridge", "crimson"]
@@ -18,6 +18,7 @@ var original_region_art := {}
 var preview_spawn_index := 0
 const PREVIEW_FAMILIES := ["green", "blue", "red", "silver", "gold"]
 const FOREST_FAMILIES := ["rat", "boar", "tortoise", "ferret"]
+const ARMORED_FAMILIES := ["cknight", "ccrusader"]
 const DARK_FAMILIES := ["evileye", "hand", "feet", "torso", "hairball"]
 var original_meadow: Texture2D
 var original_far: Texture2D
@@ -76,7 +77,7 @@ func _ready() -> void:
 	configure_preview_encounter()
 	# Keep these isolated art encounters playable at starter level.
 	SLIME_TYPES = SLIME_TYPES.duplicate(true)
-	for family in PREVIEW_FAMILIES + FOREST_FAMILIES + DARK_FAMILIES:
+	for family in PREVIEW_FAMILIES + FOREST_FAMILIES + DARK_FAMILIES + ARMORED_FAMILIES:
 		for stat in ["lv", "hp", "atk", "def", "exp"]:
 			SLIME_TYPES[family][stat] = SLIME_TYPES.green[stat]
 	startGame()
@@ -86,7 +87,7 @@ func _ready() -> void:
 	_make_sample_label()
 
 func preview_families() -> Array:
-	return [PREVIEW_FAMILIES, FOREST_FAMILIES, DARK_FAMILIES][clampi(encounter,0,2)]
+	return [PREVIEW_FAMILIES, FOREST_FAMILIES, DARK_FAMILIES, ARMORED_FAMILIES][clampi(encounter,0,3)]
 
 func preview_map_id() -> String:
 	return REGION_IDS[clampi(region,0,REGION_IDS.size()-1)]
@@ -170,7 +171,7 @@ func _make_sample_label() -> void:
 	_update_sample_label()
 
 func _update_sample_label() -> void:
-	sample_label.text = "%s | F2 %s - F3 region - V gallery - B compare - R reset | Arrows/Space - Z/X attack - C dodge - Shift block" % [("PAINTED" if painted else "ORIGINAL"), ["Slimes", "Forest", "Crimson"][encounter]]
+	sample_label.text = "%s | F2 %s - F3 region - V gallery - B compare - R reset | Arrows/Space - Z/X attack - C dodge - Shift block" % [("PAINTED" if painted else "ORIGINAL"), ["Slimes", "Forest", "Crimson", "Armor"][encounter]]
 
 func _apply_art_cache() -> void:
 	for path in original_region_art:
@@ -199,7 +200,7 @@ func _input(event: InputEvent) -> void:
 			_update_sample_label()
 			return
 		if event.keycode == KEY_F2:
-			encounter = (encounter + 1) % 3
+			encounter = (encounter + 1) % 4
 			configure_preview_encounter()
 			reset_preview()
 			_update_sample_label()
@@ -379,6 +380,20 @@ func painted_mob_pose(e) -> Dictionary:
 	elif e.state == "hurt" or e.flash > 0:
 		anim = "hurt"
 		frame = clampi(int((1 - e.flash / 0.1) * 4),0,3)
+	elif kind in ARMORED_FAMILIES and e.state in ["wind", "act", "recover"]:
+		anim = e.move if e.move in ["bash", "leap"] else "attack"
+		if e.state == "wind":
+			var duration: float = {"swing":0.35,"bash":0.45,"cleave":0.6,"leap":0.4}.get(e.move,0.4)
+			frame = 0 if e.t < duration * 0.5 else 1
+		elif e.state == "recover":
+			frame = 3
+		elif e.move == "bash":
+			frame = 2
+		elif e.move == "leap":
+			frame = 1 if e.vy < -40 else 2
+		else:
+			# Original sword damage window is 0.06 < t < 0.3 seconds.
+			frame = 1 if e.t <= 0.06 else (2 if e.t < 0.3 else 3)
 	elif kind == "tortoise" and e.state in ["shell", "spin", "wind"]:
 		anim = "spin" if e.state == "spin" else "shell"
 		frame = cycles.frame_at(kind, anim, e.t) if anim == "spin" else clampi(int(e.t / (0.5 if e.state == "wind" else 0.3) * 4),0,3)

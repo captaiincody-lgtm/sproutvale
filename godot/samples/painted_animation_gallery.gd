@@ -10,8 +10,9 @@ var step_frame := 0
 var cells: Array = []
 var page := 0
 const PAGE_SIZE := 12
-const FILTERS := ["All", "Rock", "Slimes", "Forest", "Crimson"]
+const FILTERS := ["All", "Rock", "Slimes", "Forest", "Crimson", "Armor"]
 const FOREST_KINDS := ["rat", "boar", "tortoise", "ferret"]
+const ARMORED_KINDS := ["cknight", "ccrusader"]
 const DARK_KINDS := ["evileye", "hand", "feet", "torso", "hairball"]
 var filter_mode := 0
 
@@ -34,9 +35,11 @@ func rebuild_cells() -> void:
 			continue
 		if filter_mode == 4 and kind not in DARK_KINDS:
 			continue
+		if filter_mode == 5 and kind not in ARMORED_KINDS:
+			continue
 		var animations: Array = cycles.data[kind].keys()
-		if kind in FOREST_KINDS or kind in DARK_KINDS:
-			animations = ["idle", "run", "hop", "attack", "hurt", "dead", "shell", "spin"].filter(func(anim): return cycles.has_cycle(kind, anim))
+		if kind in FOREST_KINDS or kind in DARK_KINDS or kind in ARMORED_KINDS:
+			animations = ["idle", "run", "hop", "attack", "hurt", "dead", "shell", "spin", "bash", "leap"].filter(func(anim): return cycles.has_cycle(kind, anim))
 		for anim in animations:
 			cells.append([kind, anim])
 	page = clampi(page, 0, pages()-1)
@@ -90,6 +93,8 @@ func _draw() -> void:
 		x.save()
 		x.translate(at.x+89,at.y+97)
 		var preview_scale := 1.25 if cell[0] == "hero" else 2.25
+		if cell[0] in ARMORED_KINDS:
+			preview_scale = 1.65
 		if cell[0] == "torso":
 			preview_scale = 1.65
 		x.scale(preview_scale,preview_scale)

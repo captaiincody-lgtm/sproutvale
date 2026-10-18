@@ -1,0 +1,274 @@
+[
+  {
+    "file": "cknight_painted",
+    "kind": "cknight",
+    "folder": "cknight",
+    "xs": [
+      0,
+      384,
+      768,
+      1210,
+      1536
+    ],
+    "ys": [
+      0,
+      256,
+      500,
+      750,
+      1024
+    ],
+    "frame_width": 384,
+    "frame_height": 304,
+    "foot": [
+      184,
+      272
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          40,
+          40,
+          40,
+          40
+        ],
+        "fps": 6
+      },
+      {
+        "name": "run",
+        "heights": [
+          40,
+          40,
+          40,
+          40
+        ],
+        "fps": 12
+      },
+      {
+        "name": "attack",
+        "heights": [
+          40,
+          45,
+          40,
+          40
+        ],
+        "fps": 12
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          40,
+          40,
+          37,
+          40
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "cknight_special",
+    "kind": "cknight",
+    "folder": "cknight",
+    "xs": [
+      0,
+      384,
+      750,
+      1165,
+      1536
+    ],
+    "ys": [
+      0,
+      355,
+      685,
+      1024
+    ],
+    "frame_width": 384,
+    "frame_height": 304,
+    "foot": [
+      184,
+      272
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "hop",
+        "heights": [
+          32,
+          40,
+          36,
+          32
+        ],
+        "fps": 12
+      },
+      {
+        "name": "dead",
+        "heights": [
+          40,
+          32,
+          21,
+          17
+        ],
+        "fps": 12
+      },
+      {
+        "name": "bash",
+        "heights": [
+          35,
+          42,
+          35,
+          32
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "ccrusader_painted",
+    "kind": "ccrusader",
+    "folder": "ccrusader",
+    "xs": [
+      0,
+      430,
+      805,
+      1200,
+      1536
+    ],
+    "ys": [
+      0,
+      256,
+      500,
+      750,
+      1024
+    ],
+    "frame_width": 384,
+    "frame_height": 304,
+    "foot": [
+      184,
+      272
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          42,
+          42,
+          42,
+          42
+        ],
+        "fps": 6
+      },
+      {
+        "name": "run",
+        "heights": [
+          42,
+          42,
+          42,
+          42
+        ],
+        "fps": 12
+      },
+      {
+        "name": "attack",
+        "heights": [
+          42,
+          47,
+          42,
+          42
+        ],
+        "fps": 12
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          42,
+          42,
+          39,
+          42
+        ],
+        "fps": 12
+      }
+    ],
+    "row_regions": [
+      [
+        0,
+        258
+      ],
+      [
+        258,
+        501
+      ],
+      [
+        500,
+        751
+      ],
+      [
+        740,
+        1024
+      ]
+    ]
+  },
+  {
+    "file": "ccrusader_special",
+    "kind": "ccrusader",
+    "folder": "ccrusader",
+    "xs": [
+      0,
+      384,
+      750,
+      1165,
+      1536
+    ],
+    "ys": [
+      0,
+      355,
+      685,
+      1024
+    ],
+    "frame_width": 384,
+    "frame_height": 304,
+    "foot": [
+      184,
+      272
+    ],
+    "isolate": true,
+    "padding": 45,
+    "rows": [
+      {
+        "name": "hop",
+        "heights": [
+          34,
+          42,
+          38,
+          34
+        ],
+        "fps": 12
+      },
+      {
+        "name": "dead",
+        "heights": [
+          42,
+          34,
+          21,
+          17
+        ],
+        "fps": 12
+      },
+      {
+        "name": "leap",
+        "heights": [
+          37,
+          44,
+          37,
+          34
+        ],
+        "fps": 12
+      }
+    ]
+  }
+]

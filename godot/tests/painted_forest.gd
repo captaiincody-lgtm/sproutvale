@@ -113,6 +113,9 @@ func _ready() -> void:
 	require(game.encounter == 2 and game.slimes.any(func(e): return e.type == "evileye"),"F2 did not switch to Crimson encounter")
 	tap(KEY_F2)
 	await get_tree().process_frame
+	require(game.encounter == 3 and game.slimes.any(func(e): return e.type == "cknight"),"F2 did not switch to armored encounter")
+	tap(KEY_F2)
+	await get_tree().process_frame
 	require(game.encounter == 0 and game.slimes.any(func(e): return e.type == "green"),"F2 did not switch to slime encounter")
 	tap(KEY_F2)
 	await get_tree().process_frame

@@ -89,11 +89,26 @@ Validation in Godot 4.7.2: animation manifest and frame checks; all five dark AI
 ![Mossy Hollow](docs/art/hollow-region.webp)
 ![Tusk Ridge](docs/art/ridge-region.webp)
 
+## Batch 7 - Crimson Knight and Crusader
+
+Adds **14 strips / 56 frames**, bringing the published total to **123 strips / 492 frames**. Both armored families have idle, run, hop, sword attack, hurt and death cycles. Crimson Knight also has a shield-bash strip; Crimson Crusader has a leaping-cleave strip. The sprites share burgundy plate armor and bronze trim; shield and short sword distinguish the Knight from the Crusader's two-handed greatsword.
+
+Sword poses follow the original 0.06-0.3 second active damage window. Bash anticipation, active lunge and recovery follow the existing AI; the leaping cleave changes from rising to descending to landing poses using the real velocity and recovery state. Existing hitboxes, physics and AI code are preserved.
+
+Run `godot/samples/painted_armor.tscn` with F6, or use the fourth F2 encounter group. The Armor gallery filter contains all fourteen strips. Return from the gallery preserves both the armor group and the Crimson region. The sample continues to use starter stats and a fresh session with saving disabled. Normal game data, shiny/elite variants and hero equipment art remain unchanged.
+
+Four generated source sheets are normalized through `tools/art/batch7.json` using the shared importer. Published WebP strips load directly during gameplay.
+
+Validation in Godot 4.7.2: 123 strips and 492 nonempty frames with pose changes; actual close/distant AI move selection; sword anticipation without premature damage and strike timing with damage; shield dash contact and recovery; airborne cleave descent and landing damage; hurt/death poses; encounter cycling, gallery filter/return and original-art comparison. Forest, region and controller regressions also pass. Partial-checkout warnings for unrelated original art and existing teardown warnings remain.
+
+![Armored Crimson encounter](docs/art/armor-encounter.webp)
+![Armored animation review](docs/art/animation-batch7.webp)
+
 ## Remaining batches
 
 1. Rock equipment-compatible layers, armor tiers and appearance variants. The starter action set is covered by batch 2.
 2. Archer, Remy, Jojo and Tank: approve their painted silhouettes, then movement, combat, skills, variants and equipment progression.
-3. Remaining monster families and their animation cycles, followed by shiny, elite and lunar variants. The five base meadow slime families are covered by batches 1 and 3; rat, boar, tortoise and ferret base art is covered by batch 4; the five base Crimson families above are covered by batch 5. The original base monster table contains 61 sprite sets including variants; expansion folders add more.
+3. Remaining monster families and their animation cycles, followed by shiny, elite and lunar variants. The five base meadow slime families are covered by batches 1 and 3; rat, boar, tortoise and ferret base art is covered by batch 4; the five base Crimson creatures above are covered by batch 5; base Crimson Knight and Crusader art is covered by batch 7. The original base monster table contains 61 sprite sets including variants; expansion folders add more.
 4. World art by region: homes and interiors, pond, remaining Crimson maps, Abyss, mountain/volcano, lunar areas and map screens. Preserve all collision geometry and parallax behavior.
 5. Bosses and live-drawn body parts, NPCs, pets, drops, skill effects and remaining interface assets; final consistency and performance pass.
 
