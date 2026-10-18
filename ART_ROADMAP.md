@@ -69,12 +69,32 @@ Godot 4.7.2 checks: 78 strips and 312 nonempty frames with pose changes; four cr
 
 Seven generated source sheets are normalized by `tools/art/batch4.json` using the shared importer. The published WebP strips are directly usable assets; no art-generation step runs during gameplay.
 
+## Batch 5 - Crimson creatures
+
+Adds 31 strips / 124 frames for Evil Eye, Hand, Traveler feet, Torso, and Hair Spike. All five have idle, movement, hop, attack, hurt and death cycles; Hair Spike also has a rolling attack. Sprites follow the existing AI windup, attack and damage timers. Traveler pairing remains intact. Source crops and foot anchors are recorded in `tools/art/batch5.json`; the importer now supports larger canvases for wide silhouettes.
+
+The published total is **109 strips / 436 frames**. Crimson is a fourth gallery filter after Rock, Slimes and Forest. F2 cycles the three encounter groups.
+
+![Crimson encounter](docs/art/crimson-encounter.webp)
+![Crimson animation review](docs/art/animation-batch5.webp)
+
+## Batch 6 - Three regional environments
+
+Adds painted backdrops and terrain tiles for Mossy Hollow, Tusk Ridge and the first Crimson Wastes map. F3 cycles the four regional previews, preserving each original map's platforms, ropes and bounds. New scenes `painted_hollow.tscn`, `painted_ridge.tscn` and `painted_crimson.tscn` open their corresponding regions directly. Gallery return preserves both region and encounter; B restores original map and sky textures. Portals remain disabled in the isolated preview.
+
+Regional WebPs are described by `godot/art/painted/environments.json` and normalized by `tools/art/prepare_painted_environments.gd`. No generation or conversion runs during gameplay. Starter stats remain confined to the sample. Later Crimson maps, other regions, UI and production-game integration remain future work.
+
+Validation in Godot 4.7.2: animation manifest and frame checks; all five dark AI attack sequences, paired Travelers, rolling animation, hurt/death playback; all four map geometries and bounds; F2/F3 switching, gallery filter/return, original-art comparison; forest combat regression and movement/jump/attack/dodge/block/reset checks. The partial local checkout lacks unrelated original card portraits, producing warnings.
+
+![Mossy Hollow](docs/art/hollow-region.webp)
+![Tusk Ridge](docs/art/ridge-region.webp)
+
 ## Remaining batches
 
 1. Rock equipment-compatible layers, armor tiers and appearance variants. The starter action set is covered by batch 2.
 2. Archer, Remy, Jojo and Tank: approve their painted silhouettes, then movement, combat, skills, variants and equipment progression.
-3. Remaining monster families and their animation cycles, followed by shiny, elite and lunar variants. The five base meadow slime families are covered by batches 1 and 3; rat, boar, tortoise and ferret base art is covered by batch 4. The original base monster table contains 61 sprite sets including variants; expansion folders add more.
-4. World art by region: homes and interiors, ridge/hollow/pond, Crimson, Abyss, mountain/volcano, lunar areas and map screens. Preserve all collision geometry and parallax behavior.
+3. Remaining monster families and their animation cycles, followed by shiny, elite and lunar variants. The five base meadow slime families are covered by batches 1 and 3; rat, boar, tortoise and ferret base art is covered by batch 4; the five base Crimson families above are covered by batch 5. The original base monster table contains 61 sprite sets including variants; expansion folders add more.
+4. World art by region: homes and interiors, pond, remaining Crimson maps, Abyss, mountain/volcano, lunar areas and map screens. Preserve all collision geometry and parallax behavior.
 5. Bosses and live-drawn body parts, NPCs, pets, drops, skill effects and remaining interface assets; final consistency and performance pass.
 
 These are work groups, not claims that the remaining assets are finished. Large groups can be split further without mixing unfinished art into the normal game.
@@ -84,4 +104,3 @@ These are work groups, not claims that the remaining assets are finished. Large 
 `godot/art/painted/animations.json` describes every published strip, scale, foot anchor and source crop. `godot/samples/painted_animation_library.gd` handles reusable playback. Generated source PNGs from the chat can be normalized with `tools/art/prepare_painted_animations.gd` after placing them in `godot/art/painted/sources/`.
 
 Batch 2 sources can be rebuilt with the same importer, passing the source directory and `tools/art/batch2.json` as two user arguments after `--`. The importer merges new strips into the existing manifest. The final knockout repair entry deliberately replaces the original overlapping source.
-

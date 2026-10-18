@@ -31,9 +31,11 @@ func _initialize() -> void:
 			push_error("Missing animation source: " + sheet.file)
 			quit(1)
 			return
-		var frame_w := 336 if sheet.kind == "hero" else 176
-		var frame_h := 304 if sheet.kind == "hero" else 144
+		var frame_w: int = sheet.get("frame_width", 336 if sheet.kind == "hero" else 176)
+		var frame_h: int = sheet.get("frame_height", 304 if sheet.kind == "hero" else 144)
 		var foot := Vector2i(160,264) if sheet.kind == "hero" else Vector2i(88,132)
+		if sheet.has("foot"):
+			foot = Vector2i(int(sheet.foot[0]), int(sheet.foot[1]))
 		if not manifest.has(sheet.kind):
 			manifest[sheet.kind] = {}
 		for row in sheet.rows.size():
@@ -142,7 +144,3 @@ func isolate_silhouette(cell: Image) -> Image:
 		var py := index / width
 		clean.set_pixel(px,py,cell.get_pixel(px,py))
 	return clean
-
-
-
-

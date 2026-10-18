@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://samples/painted_meadow.gd" id="1"]
+
+[node name="PaintedRidge" type="Node2D"]
+script = ExtResource("1")
+region = 2
+encounter = 1

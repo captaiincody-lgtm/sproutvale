@@ -110,6 +110,9 @@ func _ready() -> void:
 	var original: Texture2D = game.original_meadow
 	tap(KEY_F2)
 	await get_tree().process_frame
+	require(game.encounter == 2 and game.slimes.any(func(e): return e.type == "evileye"),"F2 did not switch to Crimson encounter")
+	tap(KEY_F2)
+	await get_tree().process_frame
 	require(game.encounter == 0 and game.slimes.any(func(e): return e.type == "green"),"F2 did not switch to slime encounter")
 	tap(KEY_F2)
 	await get_tree().process_frame
@@ -147,4 +150,3 @@ func _ready() -> void:
 	returned.queue_free()
 	print("PAINTED_FOREST_PASS: four AI attack sequences, reactions/deaths, F2 switch, gallery filter and return, original comparison" if failures == 0 else "PAINTED_FOREST_FAILED")
 	get_tree().quit(0 if failures == 0 else 1)
-

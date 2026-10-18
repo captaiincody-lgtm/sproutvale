@@ -4,14 +4,21 @@ extends "res://scripts/game.gd"
 const ATLAS: Texture2D = preload("res://art/painted/atlas.webp")
 const BACKDROP: Texture2D = preload("res://art/painted/backdrop.webp")
 const PaintedCycles := preload("res://samples/painted_animation_library.gd")
+const PaintedEnvironments := preload("res://samples/painted_environment_library.gd")
+var environments = PaintedEnvironments.new()
 var cycles = PaintedCycles.new()
 var guard_flash := 0.0
 var previous_hp := 0.0
 var painted := true
-@export_enum("Slimes", "Forest creatures") var encounter := 0
+@export_enum("Slimes", "Forest creatures", "Crimson creatures") var encounter := 0
+@export_enum("Meadow", "Mossy Hollow", "Tusk Ridge", "Crimson Wastes") var region := 0
+const REGION_IDS := ["meadow", "hollow", "ridge", "crimson1"]
+const REGION_THEMES := ["meadow", "hollow", "ridge", "crimson"]
+var original_region_art := {}
 var preview_spawn_index := 0
 const PREVIEW_FAMILIES := ["green", "blue", "red", "silver", "gold"]
 const FOREST_FAMILIES := ["rat", "boar", "tortoise", "ferret"]
+const DARK_FAMILIES := ["evileye", "hand", "feet", "torso", "hairball"]
 var original_meadow: Texture2D
 var original_far: Texture2D
 var original_mid: Texture2D
@@ -37,6 +44,9 @@ func persist() -> void:
 	saveDirty = false
 
 func _ready() -> void:
+	if get_tree().has_meta("painted_return_region"):
+		region = int(get_tree().get_meta("painted_return_region"))
+		get_tree().remove_meta("painted_return_region")
 	if get_tree().has_meta("painted_return_encounter"):
 		encounter = int(get_tree().get_meta("painted_return_encounter"))
 		get_tree().remove_meta("painted_return_encounter")
@@ -44,6 +54,9 @@ func _ready() -> void:
 	original_far = Assets.tex("sky/meadow_far.png")
 	original_mid = Assets.tex("sky/meadow_mid.png")
 	empty_art = ImageTexture.create_from_image(Image.create_empty(1, 1, false, Image.FORMAT_RGBA8))
+	for i in REGION_IDS.size():
+		for path in ["maps/"+REGION_IDS[i]+".png", "sky/"+REGION_THEMES[i]+"_far.png", "sky/"+REGION_THEMES[i]+"_mid.png"]:
+			original_region_art[path] = Assets.tex(path)
 	_apply_art_cache()
 	super._ready()
 	selClass = "rock"
@@ -52,19 +65,20 @@ func _ready() -> void:
 	save.settings.weather = "sunny"
 	save.settings.shake = 0.35
 	save.chars.rock.introSeen = true
-	save.chars.rock.pos = {"map": "meadow", "x": 90, "y": 380}
-	# Keep the art sample inside the meadow; the normal game and its portals are untouched.
-	MAPS.meadow = MAPS.meadow.duplicate(true)
-	MAPS.meadow.portals = []
+	# Preview only: clone each real map, preserving its surfaces and ropes.
+	for id in REGION_IDS:
+		MAPS[id] = MAPS[id].duplicate(true)
+		MAPS[id].portals = []
+		MAPS[id].ignoreUnlock = true
+		MAPS[id].target = 8
+	var id: String = preview_map_id()
+	save.chars.rock.pos = {"map": id, "x": 90, "y": MAPS[id].floorY}
 	configure_preview_encounter()
-	MAPS.meadow.ignoreUnlock = true
-	# This isolated art encounter uses starter combat stats for every family.
-	# Their identities and sizes remain intact; production progression data is untouched.
+	# Keep these isolated art encounters playable at starter level.
 	SLIME_TYPES = SLIME_TYPES.duplicate(true)
-	for family in PREVIEW_FAMILIES + FOREST_FAMILIES:
+	for family in PREVIEW_FAMILIES + FOREST_FAMILIES + DARK_FAMILIES:
 		for stat in ["lv", "hp", "atk", "def", "exp"]:
 			SLIME_TYPES[family][stat] = SLIME_TYPES.green[stat]
-	MAPS.meadow.target = 8
 	startGame()
 	World.t = 0.32
 	clouds.clear()
@@ -72,13 +86,16 @@ func _ready() -> void:
 	_make_sample_label()
 
 func preview_families() -> Array:
-	return PREVIEW_FAMILIES if encounter == 0 else FOREST_FAMILIES
+	return [PREVIEW_FAMILIES, FOREST_FAMILIES, DARK_FAMILIES][clampi(encounter,0,2)]
+
+func preview_map_id() -> String:
+	return REGION_IDS[clampi(region,0,REGION_IDS.size()-1)]
 
 func configure_preview_encounter() -> void:
 	var spawn := {}
 	for family in preview_families():
 		spawn[family] = 1.0
-	MAPS.meadow.spawn = spawn
+	MAPS[preview_map_id()].spawn = spawn
 	preview_spawn_index = 0
 
 func reset_preview() -> void:
@@ -89,11 +106,14 @@ func reset_preview() -> void:
 	P.hp = PS.hp
 	P.en = PS.enMax
 	P.iframes = 1.2
-	loadMap("meadow", 90, 380)
+	var id: String = preview_map_id()
+	loadMap(id, 90, MAPS[id].floorY)
+	clouds.clear()
+	wclouds.clear()
 	setAnim("idle")
 
 func spawnSlime(initial := false) -> void:
-	if mapId != "meadow":
+	if mapId not in REGION_IDS:
 		super.spawnSlime(initial)
 		return
 	# Round robin makes every family available in each fresh art encounter.
@@ -107,7 +127,7 @@ func spawnSlime(initial := false) -> void:
 
 func makeShiny(e) -> void:
 	# Rare variants need their own painted assets in a later batch.
-	if mapId != "meadow":
+	if mapId not in REGION_IDS:
 		super.makeShiny(e)
 
 func _buildLayers() -> void:
@@ -150,14 +170,18 @@ func _make_sample_label() -> void:
 	_update_sample_label()
 
 func _update_sample_label() -> void:
-	sample_label.text = "%s | F2 enemies - V cycles - B compare - R reset | Arrows/Space move - Z/X attack - C dodge - Shift block" % (("PAINTED " if painted else "ORIGINAL ") + ("MEADOW" if encounter == 0 else "FOREST"))
+	sample_label.text = "%s | F2 %s - F3 region - V gallery - B compare - R reset | Arrows/Space - Z/X attack - C dodge - Shift block" % [("PAINTED" if painted else "ORIGINAL"), ["Slimes", "Forest", "Crimson"][encounter]]
 
 func _apply_art_cache() -> void:
+	for path in original_region_art:
+		Assets._tex[path] = (ATLAS if str(path).begins_with("maps/") else empty_art) if painted else original_region_art[path]
 	Assets._tex["maps/meadow.png"] = ATLAS if painted else original_meadow
 	Assets._tex["sky/meadow_far.png"] = empty_art if painted else original_far
 	Assets._tex["sky/meadow_mid.png"] = empty_art if painted else original_mid
 
 func _exit_tree() -> void:
+	for path in original_region_art:
+		Assets._tex[path] = original_region_art[path]
 	# The cache belongs to the autoload, which outlives this sample and the gallery.
 	# Restore it so a second sample's B comparison still has genuine original art.
 	if original_meadow != null:
@@ -167,14 +191,22 @@ func _exit_tree() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F3:
+			region = (region + 1) % REGION_IDS.size()
+			encounter = [0, 0, 1, 2][region]
+			configure_preview_encounter()
+			reset_preview()
+			_update_sample_label()
+			return
 		if event.keycode == KEY_F2:
-			encounter = 1 - encounter
+			encounter = (encounter + 1) % 3
 			configure_preview_encounter()
 			reset_preview()
 			_update_sample_label()
 			return
 		if event.keycode == KEY_V:
 			get_tree().set_meta("painted_return_encounter", encounter)
+			get_tree().set_meta("painted_return_region", region)
 			get_tree().change_scene_to_file("res://samples/painted_animation_gallery.tscn")
 			return
 		if event.keycode == KEY_B:
@@ -196,19 +228,32 @@ func _process(delta: float) -> void:
 	previous_hp = P.hp
 	World.t = 0.32
 
+func drawCrimsonSky(x: Ctx) -> void:
+	if painted and mapId == "crimson1":
+		drawSky(x, dayInfo())
+	else:
+		super.drawCrimsonSky(x)
+
 func drawSky(x: Ctx, D: Dictionary) -> void:
-	if not painted:
+	if not painted or mapId not in REGION_IDS:
 		super.drawSky(x, D)
 		return
 	# Overscan permits a slow horizontal drift without repeating an obvious seam.
 	var width := VW * 1.22
 	var shift := (cam.x / maxf(1.0, M.w - VW)) * (width - VW)
-	x.drawImage(BACKDROP, -shift, 0, width, VH)
+	var background: Texture2D = environments.texture(mapId, "backdrop") if environments.has_region(mapId) else BACKDROP
+	x.drawImage(background, -shift, 0, width, VH)
 
 func drawTerrain(x: Ctx, mt: Texture2D, sx: float, sy: float) -> void:
-	if not painted or mapId != "meadow":
+	if not painted or mapId not in REGION_IDS:
 		super.drawTerrain(x, mt, sx, sy)
 		return
+	var tile: Texture2D = environments.texture(mapId, "tile") if environments.has_region(mapId) else ATLAS
+	var source := Rect2(0,0,tile.get_width(),tile.get_height()) if environments.has_region(mapId) else Rect2(8,1038,333,207)
+	var ground_offset: float = environments.data[mapId].ground_offset if environments.has_region(mapId) else 7.0
+	var soil: String = environments.data[mapId].soil if environments.has_region(mapId) else "#354337"
+	var tile_unit: float = environments.data[mapId].tile_width if environments.has_region(mapId) else 64.0
+	var step := tile_unit - 4.0
 	# Align art to the existing collision surfaces, including all raised platforms.
 	for surface in surfaces:
 		var left: float = surface.x0 - sx
@@ -217,20 +262,21 @@ func drawTerrain(x: Ctx, mt: Texture2D, sx: float, sy: float) -> void:
 		if left > VW or left + width < 0:
 			continue
 		if surface.floor:
-			x.fillStyle = "#354337"
+			x.fillStyle = soil
 			x.fillRect(maxf(0, left), top + 20, minf(VW, left + width) - maxf(0, left), maxf(0, VH - top))
-		var start := maxf(0, floorf(-left / 60.0) * 60.0)
+		var start := maxf(0, floorf(-left / step) * step)
 		var at := start
 		while at < width:
-			var tile_width := minf(64, width - at)
-			x.drawImageRegion(ATLAS, 8, 1038, 333 * tile_width / 64.0, 207,
-				left + at, top - 7, tile_width, 42)
-			at += 60
+			var tile_width := minf(tile_unit, width - at)
+			x.drawImageRegion(tile, source.position.x, source.position.y, source.size.x * tile_width / tile_unit, source.size.y,
+				left + at, top - ground_offset, tile_width, 42)
+			at += step
 	# Decorative trees sit on the floor and never change collision or jump clearance.
-	for tx in [55.0, 375.0, 755.0, 1155.0, 1635.0]:
-		var screen_x: float = tx - sx
-		if screen_x > -70 and screen_x < VW + 70:
-			x.drawImageRegion(ATLAS, 350, 945, 300, 300, screen_x - 30, M.floorY - sy - 64, 60, 64)
+	if mapId == "meadow":
+		for tx in [55.0, 375.0, 755.0, 1155.0, 1635.0]:
+			var screen_x: float = tx - sx
+			if screen_x > -70 and screen_x < VW + 70:
+				x.drawImageRegion(ATLAS, 350, 945, 300, 300, screen_x - 30, M.floorY - sy - 64, 60, 64)
 	# Keep the existing climb ropes readable over the painted background.
 	x.strokeStyle = "#a47745"
 	x.lineWidth = 0.8
@@ -336,15 +382,22 @@ func painted_mob_pose(e) -> Dictionary:
 	elif kind == "tortoise" and e.state in ["shell", "spin", "wind"]:
 		anim = "spin" if e.state == "spin" else "shell"
 		frame = cycles.frame_at(kind, anim, e.t) if anim == "spin" else clampi(int(e.t / (0.5 if e.state == "wind" else 0.3) * 4),0,3)
-	elif cycles.has_cycle(kind, "attack") and e.state in ["wind", "lunge", "charge", "recover"]:
+	elif kind == "hairball" and e.state == "act":
+		anim = "spin"
+		frame = cycles.frame_at(kind, anim, e.t)
+	elif cycles.has_cycle(kind, "attack") and e.state in ["wind", "lunge", "charge", "recover", "act"]:
 		anim = "attack"
 		if e.state == "charge":
 			anim = "run"
 			frame = int(e.t * 22) % 4
 		elif e.state == "wind":
-			frame = 0 if e.t < (0.225 if kind == "boar" else 0.15) else 1
+			var duration: float = 0.45 if kind == "boar" or e.T.get("fly",false) else {"crawler":0.35,"feet":0.3,"roller":0.45}.get(e.move,0.3)
+			frame = 0 if e.t < duration * 0.5 else 1
 		else:
 			frame = 3 if e.state == "recover" else 2
+	elif e.T.get("fly", false):
+		anim = "idle" if e.state == "idle" else "run"
+		frame = cycles.frame_at(kind, anim, e.t)
 	elif e.y < e.surf.y - 1:
 		anim = "hop"
 		frame = 1 if e.vy < -40 else (2 if e.vy < 40 else 3)
@@ -373,4 +426,3 @@ func drawMob(x: Ctx, e, sx: float, sy: float) -> void:
 		x.fillRect(e.x-sx-12,e.y-sy-36*size,24,3)
 		x.fillStyle = "#e97b72"
 		x.fillRect(e.x-sx-11,e.y-sy-36*size+1,22*maxf(0,e.hp/e.maxHp),1)
-

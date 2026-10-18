@@ -1,0 +1,645 @@
+[
+  {
+    "file": "evileye_crimson",
+    "kind": "evileye",
+    "folder": "evileye",
+    "xs": [
+      0,
+      335,
+      755,
+      1215,
+      1536
+    ],
+    "ys": [
+      0,
+      256,
+      512,
+      768,
+      1024
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          18,
+          18,
+          18,
+          18
+        ],
+        "fps": 6
+      },
+      {
+        "name": "run",
+        "heights": [
+          18,
+          18,
+          18,
+          18
+        ],
+        "fps": 12
+      },
+      {
+        "name": "attack",
+        "heights": [
+          18,
+          20,
+          18,
+          18
+        ],
+        "fps": 12
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          23,
+          18,
+          18,
+          18
+        ],
+        "fps": 12
+      }
+    ],
+    "frame_width": 256,
+    "frame_height": 192,
+    "foot": [
+      128,
+      176
+    ]
+  },
+  {
+    "file": "hand_crimson",
+    "kind": "hand",
+    "folder": "hand",
+    "xs": [
+      0,
+      380,
+      760,
+      1130,
+      1487
+    ],
+    "ys": [
+      0,
+      270,
+      530,
+      790,
+      1058
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          14,
+          14,
+          14,
+          14
+        ],
+        "fps": 6
+      },
+      {
+        "name": "run",
+        "heights": [
+          14,
+          16,
+          13,
+          14
+        ],
+        "fps": 12
+      },
+      {
+        "name": "attack",
+        "heights": [
+          12,
+          18,
+          14,
+          13
+        ],
+        "fps": 12
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          16,
+          16,
+          16,
+          14
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "feet_crimson_clean",
+    "kind": "feet",
+    "folder": "feet",
+    "xs": [
+      0,
+      335,
+      670,
+      1035,
+      1339
+    ],
+    "ys": [
+      0,
+      300,
+      590,
+      880,
+      1174
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          15,
+          15,
+          15,
+          15
+        ],
+        "fps": 6
+      },
+      {
+        "name": "run",
+        "heights": [
+          17,
+          17,
+          15,
+          15
+        ],
+        "fps": 12
+      },
+      {
+        "name": "attack",
+        "heights": [
+          15,
+          20,
+          14,
+          17
+        ],
+        "fps": 12
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          15,
+          16,
+          15,
+          15
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "torso_crimson",
+    "kind": "torso",
+    "folder": "torso",
+    "xs": [
+      0,
+      390,
+      780,
+      1240,
+      1536
+    ],
+    "ys": [
+      0,
+      256,
+      512,
+      768,
+      1024
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          28,
+          28,
+          28,
+          28
+        ],
+        "fps": 6
+      },
+      {
+        "name": "run",
+        "heights": [
+          28,
+          28,
+          28,
+          28
+        ],
+        "fps": 12
+      },
+      {
+        "name": "attack",
+        "heights": [
+          23,
+          28,
+          25,
+          25
+        ],
+        "fps": 12
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          28,
+          24,
+          26,
+          28
+        ],
+        "fps": 12
+      }
+    ],
+    "frame_width": 336,
+    "frame_height": 192,
+    "foot": [
+      160,
+      168
+    ]
+  },
+  {
+    "file": "hairball_crimson",
+    "kind": "hairball",
+    "folder": "hairball",
+    "xs": [
+      0,
+      375,
+      710,
+      1090,
+      1402
+    ],
+    "ys": [
+      0,
+      290,
+      580,
+      850,
+      1122
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "idle",
+        "heights": [
+          22,
+          22,
+          22,
+          22
+        ],
+        "fps": 6
+      },
+      {
+        "name": "run",
+        "heights": [
+          20,
+          22,
+          20,
+          22
+        ],
+        "fps": 12
+      },
+      {
+        "name": "attack",
+        "heights": [
+          15,
+          22,
+          18,
+          22
+        ],
+        "fps": 12
+      },
+      {
+        "name": "hurt",
+        "heights": [
+          22,
+          22,
+          22,
+          22
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "crimson_deaths",
+    "kind": "evileye",
+    "folder": "evileye",
+    "xs": [
+      0,
+      395,
+      800,
+      1200,
+      1536
+    ],
+    "ys": [
+      0,
+      300
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "dead",
+        "heights": [
+          30,
+          28,
+          25,
+          25
+        ],
+        "fps": 12
+      }
+    ],
+    "frame_width": 256,
+    "frame_height": 192,
+    "foot": [
+      128,
+      176
+    ]
+  },
+  {
+    "file": "crimson_deaths",
+    "kind": "hand",
+    "folder": "hand",
+    "xs": [
+      0,
+      395,
+      800,
+      1200,
+      1536
+    ],
+    "ys": [
+      300,
+      525
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "dead",
+        "heights": [
+          16,
+          14,
+          10,
+          10
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "crimson_deaths",
+    "kind": "feet",
+    "folder": "feet",
+    "xs": [
+      0,
+      395,
+      800,
+      1200,
+      1536
+    ],
+    "ys": [
+      525,
+      735
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "dead",
+        "heights": [
+          17,
+          17,
+          12,
+          12
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "crimson_deaths",
+    "kind": "torso",
+    "folder": "torso",
+    "xs": [
+      0,
+      395,
+      800,
+      1200,
+      1536
+    ],
+    "ys": [
+      735,
+      1024
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "dead",
+        "heights": [
+          28,
+          26,
+          22,
+          20
+        ],
+        "fps": 12
+      }
+    ],
+    "frame_width": 336,
+    "frame_height": 192,
+    "foot": [
+      160,
+      168
+    ]
+  },
+  {
+    "file": "crimson_hops",
+    "kind": "evileye",
+    "folder": "evileye",
+    "xs": [
+      0,
+      370,
+      740,
+      1110,
+      1448
+    ],
+    "ys": [
+      0,
+      270
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "hop",
+        "heights": [
+          20,
+          32,
+          26,
+          22
+        ],
+        "fps": 12
+      }
+    ],
+    "frame_width": 256,
+    "frame_height": 192,
+    "foot": [
+      128,
+      176
+    ]
+  },
+  {
+    "file": "crimson_hops",
+    "kind": "hand",
+    "folder": "hand",
+    "xs": [
+      0,
+      370,
+      740,
+      1110,
+      1448
+    ],
+    "ys": [
+      270,
+      530
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "hop",
+        "heights": [
+          14,
+          17,
+          17,
+          13
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "crimson_hops",
+    "kind": "feet",
+    "folder": "feet",
+    "xs": [
+      0,
+      370,
+      740,
+      1110,
+      1448
+    ],
+    "ys": [
+      530,
+      790
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "hop",
+        "heights": [
+          17,
+          20,
+          16,
+          17
+        ],
+        "fps": 12
+      }
+    ]
+  },
+  {
+    "file": "crimson_hops",
+    "kind": "torso",
+    "folder": "torso",
+    "xs": [
+      0,
+      370,
+      740,
+      1110,
+      1448
+    ],
+    "ys": [
+      790,
+      1086
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "hop",
+        "heights": [
+          28,
+          32,
+          26,
+          28
+        ],
+        "fps": 12
+      }
+    ],
+    "frame_width": 336,
+    "frame_height": 192,
+    "foot": [
+      160,
+      168
+    ]
+  },
+  {
+    "file": "hairball_special",
+    "kind": "hairball",
+    "folder": "hairball",
+    "xs": [
+      0,
+      380,
+      740,
+      1110,
+      1448
+    ],
+    "ys": [
+      0,
+      380,
+      740,
+      1086
+    ],
+    "isolate": true,
+    "padding": 0,
+    "rows": [
+      {
+        "name": "hop",
+        "heights": [
+          13,
+          28,
+          22,
+          13
+        ],
+        "fps": 12
+      },
+      {
+        "name": "dead",
+        "heights": [
+          20,
+          14,
+          12,
+          12
+        ],
+        "fps": 12
+      },
+      {
+        "name": "spin",
+        "heights": [
+          22,
+          22,
+          22,
+          22
+        ],
+        "fps": 18
+      }
+    ]
+  }
+]
