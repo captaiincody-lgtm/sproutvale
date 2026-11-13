@@ -92,8 +92,8 @@ func _place() -> void:
 			game.slimes.append(e)
 	game.slimes = game.slimes.filter(func(e): return e.id >= 9000)   # nothing else spawns into the shot
 	var n = game.slimes.size()
-	var spacing = 44.0
-	var x0 = P.x + 30.0
+	var spacing = 50.0
+	var x0 = P.x + 62.0
 	for i in n:
 		var e = game.slimes[i]
 		e.x = clampf(x0 + i * spacing, floor.x0 + 10, floor.x1 - 10)

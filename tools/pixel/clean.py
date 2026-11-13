@@ -190,6 +190,31 @@ def find_sprites(a, grid=None, gap=None):
 # ---------------------------------------------------------------------------- resampling
 
 
+def resample_paint(a, box, f, pad=2, sharpen=0.6):
+    """For painted (not pixel-grid) art: shrink a sprite's box by f with an area filter, so every art
+    pixel is the average of the paint under it, then sharpen a little so edges stay crisp."""
+    from PIL import Image
+    y0, y1, x0, x1 = box
+    H, W = a.shape[:2]
+    y0, x0 = max(0, int(y0 - pad * f)), max(0, int(x0 - pad * f))
+    y1, x1 = min(H, int(y1 + pad * f)), min(W, int(x1 + pad * f))
+    crop = a[y0:y1, x0:x1].astype(np.float32)
+    pm = np.concatenate([crop[..., :3] * crop[..., 3:4], crop[..., 3:4]], -1)
+    w, h = max(1, round((x1 - x0) / f)), max(1, round((y1 - y0) / f))
+    chans = [np.asarray(Image.fromarray(pm[..., c], "F").resize((w, h), Image.BOX)) for c in range(4)]
+    out = np.stack(chans, -1)
+    al = out[..., 3:4]
+    rgb = np.where(al > 1e-3, out[..., :3] / np.maximum(al, 1e-3), 0)
+    if sharpen:
+        blur = np.stack([ndimage.gaussian_filter(rgb[..., c], 0.8) for c in range(3)], -1)
+        rgb = np.clip(rgb + sharpen * (rgb - blur), 0, 1)
+    res = np.zeros((h, w, 4), np.float32)
+    solid = al[..., 0] >= 0.5
+    res[solid, :3] = rgb[solid]
+    res[solid, 3] = 1
+    return res
+
+
 def resample(a, box, s, pad=2):
     """Read one colour per art pixel out of a sprite's box. Returns RGBA float (h, w, 4)."""
     y0, y1, x0, x1 = box
@@ -358,7 +383,11 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--colors", type=int, default=32, help="palette size when no --palette is given")
     ap.add_argument("--palette", help="snap to this palette instead (.hex/.txt list, .json list or a swatch .png)")
-    ap.add_argument("--px", default="auto", help="size of one art pixel in the sheet, e.g. 4 or 4.15 (auto measures it)")
+    ap.add_argument("--px", default="auto", help="size of one art pixel in the sheet, e.g. 4 or 4.15 (auto measures it); "
+                    "'paint' for painted art with no pixel grid (it is shrunk with an area filter instead)")
+    ap.add_argument("--width", type=int, help="make the first frame of the first row this many art pixels wide "
+                    "(to match a monster's current size) instead of --scale")
+    ap.add_argument("--rows", help="only these rows of the sheet, e.g. 0 or 1,3 (counted from 0, top to bottom)")
     ap.add_argument("--scale", default="fit", help="shrink the art: 2 reads one pixel per 2x2 art pixels; 'fit' (default) "
                     "shrinks only as much as needed to fit the frame; 1 keeps the sheet's own resolution")
     ap.add_argument("--grid", help="COLSxROWS: split the sheet evenly instead of finding sprites automatically")
@@ -374,8 +403,14 @@ def main():
     rows = find_sprites(a, grid)
     if not rows:
         sys.exit("no sprites found (is the background removed? try --bg)")
-    s = measure_px(a) if args.px == "auto" else float(args.px)
-    if args.scale == "fit":
+    if args.rows:
+        rows = [rows[int(i)] for i in args.rows.split(",")]
+    paint = args.px == "paint"
+    s = 1.0 if paint else measure_px(a) if args.px == "auto" else float(args.px)
+    if args.width:
+        b = rows[0][0]
+        scale = max(1.0, (b[3] - b[2]) / s / args.width)
+    elif args.scale == "fit":
         scale = 1.0
         if args.frame != "tight":
             fw, fh = (int(v) for v in args.frame.lower().split("x"))
@@ -389,10 +424,10 @@ def main():
         scale = float(args.scale)
     args.scale = round(scale, 3)
     s_used = s * scale
-    print("art pixel = %.2f image pixels%s; %d rows: %s" % (s, " (shrunk %.2fx to fit)" % scale if scale != 1 else "",
+    print("art pixel = %.2f image pixels%s; %d rows: %s" % (s, " (shrunk %.2fx)" % scale if scale != 1 else "",
                                                           len(rows), ", ".join(str(len(r)) for r in rows)))
 
-    low = [[resample(a, b, s_used) for b in row] for row in rows]
+    low = [[(resample_paint(a, b, s_used) if paint else resample(a, b, s_used)) for b in row] for row in rows]
     low = [[defringe(f, bgs) for f in row] for row in low]
     if not args.keep_orphans:
         low = [[drop_orphans(f) for f in row] for row in low]

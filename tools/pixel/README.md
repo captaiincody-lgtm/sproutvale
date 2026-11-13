@@ -6,16 +6,28 @@ Python 3 with Pillow, NumPy and SciPy (`pip install pillow numpy scipy`).
 | Script | What it's for |
 |---|---|
 | `shade.py` | Gives flat-coloured sprites real volume: form shading, hue-shifted shadows and highlights, contact shadows, a rim light and a tinted outline. Works on the game's monsters, or on anything you paint in flat colours. |
-| `clean.py` | Turns an AI-made, upscaled or blurry sprite sheet into true pixel art: measures the real pixel size, snaps to the grid, locks every frame to one shared palette, and slices the frames out on the game's frame size. |
+| `clean.py` | Turns an AI-made, upscaled or blurry sprite sheet (or a painting: `--px paint`) into true pixel art: measures the real pixel size, snaps to the grid, locks every frame to one shared palette, and slices the frames out on the game's frame size. |
 | `mobset.py` | Builds a complete monster folder the game can load (all the poses, the hit flash, the shiny and elite recolours, the `mobs.json` entry) from a handful of cleaned frames and a small recipe. |
+| `painter.py`, `beasts.py` | Paint detailed creatures in code: body parts with form shading, fur texture, tufted edges, inked contours and colour zones, drawn at 4x and shrunk onto the pixel grid, then palette-locked and outlined. `beasts.py` holds the rat, boar, ferret and tortoise (every pose, plus shiny and elite). |
 | `pixelkit.py` | The shared helpers (OKLab colour, k-means, colour ramps, the game's shiny/elite recolours). |
+
+## Painting the meadow beasts
+
+```
+python3 tools/pixel/beasts.py rat boar ferret tortoise --out godot/art/mobs --preview /tmp/beasts
+```
+
+repaints those four monsters (all poses, their `_shiny` and `_elite` recolours) from the drawing code in
+`beasts.py`. Each creature is a function that places its parts from a pose (body offset and tilt, head
+pitch, foot positions, face): change colours in the `BOAR`/`RAT`/`FERRET`/`TORTOISE` tables, or shapes in
+`paint_boar` and friends, and run it again. `--preview` writes a 4x sheet of every frame.
 
 ## Shading the game's monsters
 
 The monsters are baked from the prototype's drawing code as flat colours. To shade some of them in place:
 
 ```
-python3 tools/pixel/shade.py --mobs godot/art/mobs green blue red silver gold rat boar ferret tortoise evileye
+python3 tools/pixel/shade.py --mobs godot/art/mobs green blue red silver gold evileye
 ```
 
 Each monster's `_shiny` and `_elite` folders are shaded too. Run it on fresh, flat art only: shading art
@@ -39,6 +51,8 @@ python3 tools/pixel/clean.py sheet.png work/mymonster --names idle_row,run_row
   and removed (or pass `--bg "#ffffff"`).
 * Grid: `--px auto` measures the art-pixel size (e.g. 2.67 screen pixels per art pixel for a typical AI
   upscale). Each sprite gets its own grid alignment, so slow drift across the sheet doesn't matter.
+* Painted art with no pixel grid: `--px paint --width 80` shrinks it with an area filter so the first
+  frame is 80 art pixels wide (match the monster's current size), then palette-locks it the same way.
 * Size: `--scale fit` (default) shrinks the art just enough that the biggest frame fits the
   `--frame 88x72` canvas with the feet on `--anchor 44,66`. `--scale 1` keeps the sheet's own resolution.
 * Palette: `--colors 32` (k-means in OKLab, plus a few accent colours so small bright details like a

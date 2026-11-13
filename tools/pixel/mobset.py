@@ -112,7 +112,7 @@ def main():
         keys = dict(old.get("keys", {}))
         keys.update(counts)
         man["sets"][n] = {"w": fw, "h": fh, "dim": old.get("dim"), "keys": keys}
-    json.dump(man, open(man_path, "w"), separators=(",", ":"))
+    json.dump(man, open(man_path, "w"), indent=1)
     print("wrote %s (%s)" % (", ".join(names), ", ".join("%s %d" % kv for kv in counts.items())))
 
 

@@ -5,3 +5,4 @@ godot/dist/
 *.exe
 *.pck
 node_modules/
+__pycache__/
