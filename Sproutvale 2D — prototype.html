@@ -647,8 +647,8 @@ function buildMelody(T) {
    Gear tiers (Rock)
    ========================================================= */
 const ARMOR_TIERS = [
-  { lv: 1, name: 'Training Garb', desc: 'A pinstriped academy tunic, arm warmers and sturdy boots. Every adventurer starts here.', hp: 0, def: 0, coins: 0, mats: {},
-    look: { vest: 0xe8dcb0, shirt: 0xf6f6f2, pants: 0x3a3634, boots: 0x3b3532, bracer: 0x2d2a30, trim: 0xd9d8d2, scarf: 0x1d1a20, pauldron: 0, cape: null, glow: null, plate: false, crown: null } },
+  { lv: 1, name: 'Training Garb', desc: 'A grey-green vest over a linen shirt, leather gloves, a blue scarf and sturdy boots. Every adventurer starts here.', hp: 0, def: 0, coins: 0, mats: {},
+    look: { vest: 0x5a6b5c, shirt: 0xdccba2, pants: 0x34353d, boots: 0x6c4830, bracer: 0x75502f, trim: 0x46544a, scarf: 0x3a6db5, pauldron: 0, cape: null, glow: null, plate: false, crown: null } },
   { lv: 10, name: 'Iron Vanguard', desc: 'Riveted iron and a blue tabard. Real armor at last.', hp: 40, def: 8, coins: 600, mats: { green: 15, blue: 10 },
     look: { vest: 0xa3adbb, shirt: 0x3f6fb5, pants: 0x3b4a6b, boots: 0x5a5f6a, bracer: 0xa3adbb, trim: 0xd9e1ea, scarf: 0x3f6fb5, pauldron: 1, cape: null, glow: null, plate: true, crown: null } },
   { lv: 20, name: "Knight's Bulwark", desc: 'Polished silver with gold trim and a proper red cape.', hp: 100, def: 18, coins: 2500, mats: { blue: 20, red: 15 },
@@ -1350,14 +1350,42 @@ Frame.prototype.commit = function (colFn, opt = {}) {
       }
     }
   }
+  // form shading: a height field from each pixel's distance to the shape's edge, lit from the upper right,
+  // read out as five tones (deep shadow, shadow, base, light, highlight) instead of flat edge bands
+  const bw = X1 - X0 + 1, bh = Y1 - Y0 + 1, D = new Float32Array(bw * bh), BIG = 1e6;
+  for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) D[y * bw + x] = m[(y + Y0) * this.w + x + X0] ? BIG : 0;
+  const S2 = 1.4142;
+  for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+    const i = y * bw + x; if (!D[i]) continue;
+    let d = D[i];
+    d = Math.min(d, x > 0 ? D[i - 1] + 1 : 1, y > 0 ? D[i - bw] + 1 : 1, x > 0 && y > 0 ? D[i - bw - 1] + S2 : S2, x < bw - 1 && y > 0 ? D[i - bw + 1] + S2 : S2);
+    D[i] = d;
+  }
+  for (let y = bh - 1; y >= 0; y--) for (let x = bw - 1; x >= 0; x--) {
+    const i = y * bw + x; if (!D[i]) continue;
+    D[i] = Math.min(D[i], x < bw - 1 ? D[i + 1] + 1 : 1, y < bh - 1 ? D[i + bw] + 1 : 1, x < bw - 1 && y < bh - 1 ? D[i + bw + 1] + S2 : S2, x > 0 && y < bh - 1 ? D[i + bw - 1] + S2 : S2);
+  }
+  const R = (opt.round || 2.6) * k * (opt.band ? Math.max(1, opt.band * 0.8) : 1);
+  const H = i => { const t = Math.min(1, D[i] / R); return R * Math.sqrt(1 - (1 - t) * (1 - t)); };
+  const L3 = [0.5, -0.66, 0.56], LN = Math.hypot(L3[0], L3[1], L3[2]);
+  const deepC = c => mix(c, opt.outline || PAL.outline, 0.32), hiC = c => mix(c, [255, 250, 236], 0.22);
   for (let y = Y0; y <= Y1; y++) for (let x = X0; x <= X1; x++) {
     if (!m[y * this.w + x]) continue;
-    let tone = 0;
-    if (!has(x + LIGHT[0], y + LIGHT[1]) || !has(x, y - 1) && !has(x + 1, y)) tone = 2;
-    for (let j = 1; j <= band; j++) if (!has(x - LIGHT[0] * j, y - LIGHT[1] * j) || !has(x, y + j)) { tone = 1; break; }
-    if (opt.flat) tone = 0;
-    const c = colFn((x + 0.5) / k, (y + 0.5) / k, tone);
-    if (c) this.setFine(x, y, c);
+    let tone = 0, deep = false, hi = false;
+    if (!opt.flat) {
+      const lx = x - X0, ly = y - Y0, i = ly * bw + lx;
+      const hx = (lx < bw - 1 ? H(i + 1) : 0) - (lx > 0 ? H(i - 1) : 0), hy = (ly < bh - 1 ? H(i + bw) : 0) - (ly > 0 ? H(i - bw) : 0);
+      const nx = -hx / 2, ny = -hy / 2, nl = Math.hypot(nx, ny, 1);
+      const lum = (nx * L3[0] + ny * L3[1] + L3[2]) / (nl * LN) - L3[2] / LN;
+      if (lum < -0.3) { tone = 1; deep = true; } else if (lum < -0.1) tone = 1; else if (lum > 0.26) { tone = 2; hi = true; } else if (lum > 0.12) tone = 2;
+      // keep the crisp rim light on edges facing the light, and the old shadow band on the far edges
+      if (!has(x + LIGHT[0], y + LIGHT[1]) && !deep) tone = 2;
+      if (!has(x, y + 1) && tone === 0) tone = 1;
+    }
+    let c = colFn((x + 0.5) / k, (y + 0.5) / k, tone);
+    if (!c) continue;
+    if (deep && !opt.noDeep) c = deepC(c); else if (hi && !opt.noHi) c = hiC(c);
+    this.setFine(x, y, c);
   }
   this.clearMask();
 };
@@ -1478,14 +1506,19 @@ function drawRock(P) {
     const col = near ? 0 : 1;   // far limbs are a touch darker
     const dk = c => col ? mix(c, PAL.outline, 0.12) : c;
     const [sx, sy] = TT(A.sh), [ex, ey] = TT(A.el), [hx, hy] = TT(A.hd);
+    const R0 = LOOK.kind === 'rock' && LOOK.gA === 0 && !LOOK.armored;   // starter outfit: rolled linen sleeves, bare forearms, leather gloves
     F.capsule(sx, sy, ex, ey, 1.9, 1.7);
-    F.commit(along(A.sh, A.el, (t, tone) => t < 0.42 ? dk(pick(PAL.skin, PAL.skinS, PAL.skinL, tone)) : t < 0.52 ? dk(pick(PAL.trim, PAL.trimS, PAL.trim, tone)) : dk(pick(PAL.warm, PAL.warmS, PAL.warmL, tone))));
+    if (R0) F.commit(along(A.sh, A.el, (t, tone) => t < 0.74 ? dk(pick(PAL.collar, PAL.collarS, PAL.collarL, tone)) : dk(pick(PAL.collarS, mix(PAL.collarS, PAL.outline, 0.25), PAL.collar, tone))));
+    else F.commit(along(A.sh, A.el, (t, tone) => t < 0.42 ? dk(pick(PAL.skin, PAL.skinS, PAL.skinL, tone)) : t < 0.52 ? dk(pick(PAL.trim, PAL.trimS, PAL.trim, tone)) : dk(pick(PAL.warm, PAL.warmS, PAL.warmL, tone))));
     F.capsule(ex, ey, hx, hy, 1.8, 1.6);
-    F.commit(along(A.el, A.hd, (t, tone) => t < 0.28 ? dk(pick(PAL.warm, PAL.warmS, PAL.warmL, tone)) : t < 0.42 ? dk(pick(PAL.trim, PAL.trimS, PAL.trim, tone)) : dk(pick(PAL.tunic, PAL.tunicS, PAL.tunicL, tone))));
+    if (R0) F.commit(along(A.el, A.hd, (t, tone) => t < 0.3 ? dk(pick(PAL.skin, PAL.skinS, PAL.skinL, tone)) : t < 0.44 ? dk(pick(PAL.leatherL, PAL.warmS, PAL.leatherL, tone)) : dk(pick(PAL.warm, PAL.warmS, PAL.warmL, tone))));
+    else F.commit(along(A.el, A.hd, (t, tone) => t < 0.28 ? dk(pick(PAL.warm, PAL.warmS, PAL.warmL, tone)) : t < 0.42 ? dk(pick(PAL.trim, PAL.trimS, PAL.trim, tone)) : dk(pick(PAL.tunic, PAL.tunicS, PAL.tunicL, tone))));
     return [hx, hy];
   };
+  const dk2 = (near, c) => near ? c : mix(c, PAL.outline, 0.12);
   const drawFist = (h, near) => {
     F.ellipse(h[0], h[1], 2.1, 2.1);
+    if (LOOK.kind === 'rock' && LOOK.gA === 0 && !LOOK.armored) { F.commit((x, y, t) => dk2(near, pick(PAL.warm, PAL.warmS, PAL.warmL, t))); return; }   // gloved
     F.commit((x, y, t) => (y > h[1] + 0.6 ? pick(PAL.skin, PAL.skinS, PAL.skinL, t) : pick(PAL.tunic, PAL.tunicS, PAL.tunicL, t)));
   };
   const drawLeg = (Lg, near) => {
@@ -1509,10 +1542,12 @@ function drawRock(P) {
     }
     F.capsule(hx, hy, kx, ky, FEMH ? 3.0 : 2.7, 2.2);
     const ROCKLEG = LOOK.kind === 'rock' && !LOOK.armored;   // full-length legs: trousers, or plate cuisses and greaves on armoured tiers
-    if (ROCKLEG) F.commit(along(Lg.hip, Lg.kn, (t, tone) => PAL.legPlate && t > 0.12 && t < 0.78 ? dk(pick(PAL.greave, PAL.greaveS, PAL.greaveL, tone)) : t > 0.86 ? dk(pick(PAL.trim, PAL.trimS, PAL.trim, tone)) : dk(pick(PAL.shorts, PAL.shortsS, PAL.shortsL, tone))));
+    const R0L = ROCKLEG && LOOK.gA === 0;   // starter trousers: no knee band, tall cuffed boots
+    if (ROCKLEG) F.commit(along(Lg.hip, Lg.kn, (t, tone) => PAL.legPlate && t > 0.12 && t < 0.78 ? dk(pick(PAL.greave, PAL.greaveS, PAL.greaveL, tone)) : t > 0.86 && !R0L ? dk(pick(PAL.trim, PAL.trimS, PAL.trim, tone)) : dk(pick(PAL.shorts, PAL.shortsS, PAL.shortsL, tone))));
     else F.commit(along(Lg.hip, Lg.kn, (t, tone) => t < 0.52 ? dk(pick(PAL.shorts, PAL.shortsS, PAL.shortsL, tone)) : t < 0.64 ? dk(pick(PAL.trim, PAL.trimS, PAL.trim, tone)) : dk(pick(PAL.skin, PAL.skinS, PAL.skinL, tone))));
     F.capsule(kx, ky, ax, ay, 2.1, 2.3);
-    if (ROCKLEG) F.commit(along(Lg.kn, Lg.an, (t, tone) => t < 0.14 ? dk(PAL.legPlate ? pick(PAL.greaveL, PAL.greave, PAL.greaveL, tone) : pick(PAL.shorts, PAL.shortsS, PAL.shortsL, tone)) : PAL.legPlate ? (t < 0.7 ? dk(pick(PAL.greave, PAL.greaveS, PAL.greaveL, tone)) : dk(pick(PAL.boot, PAL.bootS, PAL.bootL, tone))) : (t < 0.32 ? dk(pick(PAL.shorts, PAL.shortsS, PAL.shortsL, tone)) : (t > 0.58 && t < 0.68) ? dk(pick(PAL.leather, PAL.leatherS, PAL.leatherL, tone)) : dk(pick(PAL.boot, PAL.bootS, PAL.bootL, tone)))));
+    if (R0L) F.commit(along(Lg.kn, Lg.an, (t, tone) => t < 0.34 ? dk(pick(PAL.shorts, PAL.shortsS, PAL.shortsL, tone)) : t < 0.47 ? dk(pick(PAL.bootL, PAL.boot, mix(PAL.bootL, [255, 240, 220], 0.2), tone)) : t < 0.5 ? dk(PAL.bootS) : dk(pick(PAL.boot, PAL.bootS, PAL.bootL, tone))));
+    else if (ROCKLEG) F.commit(along(Lg.kn, Lg.an, (t, tone) => t < 0.14 ? dk(PAL.legPlate ? pick(PAL.greaveL, PAL.greave, PAL.greaveL, tone) : pick(PAL.shorts, PAL.shortsS, PAL.shortsL, tone)) : PAL.legPlate ? (t < 0.7 ? dk(pick(PAL.greave, PAL.greaveS, PAL.greaveL, tone)) : dk(pick(PAL.boot, PAL.bootS, PAL.bootL, tone))) : (t < 0.32 ? dk(pick(PAL.shorts, PAL.shortsS, PAL.shortsL, tone)) : (t > 0.58 && t < 0.68) ? dk(pick(PAL.leather, PAL.leatherS, PAL.leatherL, tone)) : dk(pick(PAL.boot, PAL.bootS, PAL.bootL, tone)))));
     else F.commit(along(Lg.kn, Lg.an, (t, tone) => t < 0.16 ? dk(pick(PAL.skin, PAL.skinS, PAL.skinL, tone)) : t < 0.3 ? dk(pick(PAL.trim, PAL.trimS, PAL.trim, tone)) : (t > 0.58 && t < 0.68) ? dk(pick(PAL.leather, PAL.leatherS, PAL.leatherL, tone)) : dk(pick(PAL.boot, PAL.bootS, PAL.bootL, tone))));
     // foot — follows the shin a little, stays mostly flat on the ground
     const fa = (Lg.sa) * 0.45;
@@ -1561,6 +1596,7 @@ function drawRock(P) {
     const pts = [[-4.3 + fw * 0.5, -10.4], [3.6 - fw * 0.5, -10.6], ...bust, [4.5 - fw, -2.2], ...hipF, [6.1 + hem * 0.3 - cl * 0.4 + (FEMB ? 0.5 : 0), 4.8 + hem - cl * 0.15], [0.2 - cl * 0.5, 5.2 + hem], [-5.7 - hem * 0.3 - cl - (FEMB ? 0.7 : 0), 4.8 + hem - cl * 0.35], ...hipB, [-4.7 + fw, -2.2], [-5.1 + fw * 0.3, -7.2]].map(([x, y]) => TT(torso(x, y)));
     F.poly(pts);
     const inv = (x0, y0) => { const [x, y] = unS(x0, y0); let X = x; if (P.mirror) X = 2 * RX - X; const dx = X - piv[0], dy = y - piv[1]; const ux = piv[0] + dx * cr + dy * sr, uy = piv[1] - dx * sr + dy * cr; const [lx, ly] = rot(ux - root[0], uy - root[1], -P.t); return [lx, ly]; };
+    const R0T = LOOK.kind === 'rock' && LOOK.gA === 0 && !LOOK.armored && !PUNK;
     F.commit((x, y, tone) => {
       const [lx, ly] = inv(x, y);
       if (PUNK) {   // bare shoulders, a black tube top, bare midriff, a studded belt and a short plaid skirt
@@ -1578,6 +1614,14 @@ function drawRock(P) {
       }
       if (FEMB && lx > 4.4 && ly > -5.5 && ly < -4.4) return PAL.tunicS;   // the shadow under her bust
       if (FEMB && lx > 5.6 && lx < 7.4 && ly > -9 && ly < -7.6 && tone === 0) return PAL.tunicL;   // and its highlight
+      if (R0T) {
+        // a leather strap from the near shoulder to the back hip
+        const sd = Math.abs((lx - 3.2) * 8.2 + (ly + 10.4) * 7.6) / 11.2;
+        if (sd < 0.75 && ly < -1.9) return sd > 0.45 && tone !== 2 ? PAL.leatherS : pick(PAL.leather, PAL.leatherS, PAL.leatherL, tone);
+        // the open front of the vest shows the linen shirt
+        if (lx > 3.3 - Math.max(0, ly + 6) * 0.25 && ly < (FEMB ? -8.8 : -2.2)) return lx < 3.9 - Math.max(0, ly + 6) * 0.25 ? PAL.tunicS : pick(PAL.collar, PAL.collarS, PAL.collarL, tone);
+        if (Math.abs(lx + 0.6) < 0.3 && ly < -2.4 && ly > -9.4 && tone !== 2) return PAL.tunicS;   // a seam down the vest
+      }
       const base = pick(PAL.tunic, PAL.tunicS, PAL.tunicL, tone);
       if (LOOK.kind === 'rock' && tone === 0 && ((Math.floor(lx + 20)) % 2 === 0)) return PAL.stripe;
       return base;
@@ -1591,6 +1635,7 @@ function drawRock(P) {
     const pc = [[-2.6, -1.2], [0.4, -1.2], [0.6, 2.2], [-2.8, 2.2]].map(([x, y]) => TT(torso(x, y)));
     F.poly(pc); F.commit((x, y, t) => pick(PAL.leather, PAL.leatherS, PAL.leatherL, t));
     const rb = TT(torso(-1.1, 0.3)); F.set(Math.floor(rb[0]), Math.floor(rb[1]), hex(0xc0392b));
+    if (R0T) return;   // the starter outfit wears a scarf instead (drawn over the neck, after the head)
     // collar + ribbon
     const cp = [[-1.8, -11.6], [3.4, -11.9], [4.3, -10.2], [-1.2, -9.9]].map(([x, y]) => TT(torso(x, y)));
     F.poly(cp); F.commit((x, y, t) => pick(PAL.collar, PAL.collarS, PAL.collar, t));
@@ -1865,6 +1910,25 @@ function drawRock(P) {
     if (big) for (const [dx, dy] of [[-2, 0], [2, 0], [0, -2], [0, 2]]) F.set(X + dx, Y + dy, col);
   };
   const OUTD = hex(0x1a1030);
+  // the starter outfit's blue scarf: a tail streaming back behind the body, and a wrap round the neck
+  const SCARF = LOOK.kind === 'rock' && GA === 0 && !LOOK.armored;
+  const scarfC = (x, y, t) => pick(PAL.scarf, PAL.scarfS, PAL.scarfL, t);
+  const drawScarfTail = () => {
+    if (!SCARF) return;
+    const B = Math.max(-0.6, (P.hair || 0) * 0.8 + (P.wind || 0) * 0.9), drop = Math.max(0, 2.6 - B) * 1.5, wv = Math.sin((P.hair || 0) * 1.7 + (P.wind || 0) * 2.1) * 0.7;
+    const pts = [[-1.2, -12.4], [-4.6 - B * 0.8, -12 + drop * 0.25 + wv * 0.5], [-8.2 - B * 1.6, -11 + drop * 0.7 + wv], [-9.8 - B * 2, -10.2 + drop + wv * 1.3], [-8.4 - B * 1.7, -9.4 + drop * 0.95 + wv], [-9.4 - B * 1.9, -8.2 + drop * 1.05 + wv * 1.2], [-7.4 - B * 1.5, -8.1 + drop * 0.85 + wv], [-4.2 - B * 0.7, -9.4 + drop * 0.3 + wv * 0.4], [-1.2, -10.2]];
+    F.poly(ptsT(torso, pts)); F.commit(scarfC, { band: 1 });
+  };
+  const drawScarfFront = () => {
+    if (!SCARF) return;
+    const a = TT(torso(-2.6, -11.2)), b = TT(torso(3.6, -11.5));
+    F.capsule(a[0], a[1], b[0], b[1], 1.45, 1.35); F.commit((x, y, t) => {
+      const fold = Math.floor((x - a[0]) * 0.55 + (y - a[1]) * 0.3 + 40) % 3 === 0;   // wrapped folds
+      return fold && t === 0 ? PAL.scarfS : scarfC(x, y, t);
+    }, { band: 1 });
+    const k = TT(torso(3.4, -9.7)); F.ellipse(k[0], k[1], 1.3, 1.2); F.commit(scarfC, { band: 1 });   // the knot
+    const e = TT(torso(3.9 - Math.max(-0.6, (P.wind || 0)) * 0.3, -7.6)); F.poly([TT(torso(2.6, -9.6)), TT(torso(4.2, -9.4)), [e[0] + 0.8, e[1]], [e[0] - 0.6, e[1] + 0.2]]); F.commit(scarfC, { band: 1 });   // its short front end
+  };
   // a cape hanging from the shoulders, swaying back with motion and wind
   const drawCape = () => {
     if (!GX.cape) return;
@@ -2027,7 +2091,7 @@ function drawRock(P) {
     }
   };
   // shields: shape, size and emblem grow with the tier
-  const SHIELD_EMB = [0, 1, 1, 2, 3, 4, 5, 6, 4, 7, 8];   // none, boss, stripe, cross, leaf, bolt, flame, star, sun
+  const SHIELD_EMB = [1, 1, 1, 2, 3, 4, 5, 6, 4, 7, 8];   // none, boss, stripe, cross, leaf, bolt, flame, star, sun
   const drawShieldG = () => {
     const look = WEAPON_TIERS[GW].look, shape = look.shape, emb = SHIELD_EMB[GW], glow = look.glow;
     const W = PAL.wood, Wd = [PAL.wood, PAL.woodS, PAL.woodL], R = [PAL.rim, PAL.rimS, PAL.rimL];
@@ -2241,11 +2305,11 @@ function drawRock(P) {
     drawFist(nh, true);
     wslot(3, () => { if (P.guard && !P.noWeapon) { const g = torso(6.5, -6); drawString(bow(g, Math.PI / 2 + P.t), Math.PI / 2 + P.t, null); } });
   } else {
-  backHair(); drawCape();
+  backHair(); drawCape(); drawScarfTail();
   wslot(0, () => { if (!P.guard && !P.noWeapon && !LOOK.noShield) (G ? drawShieldG : drawShield)(); });
   armFar(); legs();
   drawTorso(); drawChest();
-  headAll();
+  headAll(); drawScarfFront();
   wslot(1, () => { if (!P.noWeapon) (G ? drawSwordG : drawSword)(armN.hd, armN.fa); });
   const nh = drawArm(armN, true); drawFist(nh, true); drawPauldron(armN, true);
   wslot(2, () => { if (P.guard && !LOOK.noShield) (G ? drawShieldG : drawShield)(); });
@@ -3599,14 +3663,21 @@ function applyTierPalette(armor, weapon, charm = CH().charm, cls = classId, arro
   if (cls === 'summoner') return applySummonerPalette(armor, weapon, charm);
   if (cls === 'mage') return applyMagePalette(armor, weapon, charm, (save.chars.mage || {}).staffPreview ?? (save.chars.mage || {}).staff ?? 0);
   CHARM = charm >= 0 ? { on: true, col: hex(CHARM_TIERS[charm].color), shape: CHARM_TIERS[charm].shape } : { on: false };
-  if (armor > 0) {
+  if (armor >= 0) {
     const L = ARMOR_TIERS[armor].look;
     const tri3 = (h, key) => { PAL[key] = hex(h); PAL[key + 'S'] = shadeHex(h, -0.28); PAL[key + 'L'] = shadeHex(h, 0.3); };
     tri3(L.vest, 'tunic'); PAL.stripe = shadeHex(L.vest, -0.1);
     tri3(L.pants, 'shorts'); tri3(L.boots, 'boot'); tri3(L.bracer, 'warm');
     tri3(L.plate ? L.vest : L.pants, 'greave'); PAL.legPlate = !!L.plate;   // Rock's legs are armoured to match the chest
     PAL.trim = hex(L.trim); PAL.trimS = shadeHex(L.trim, -0.25); PAL.ribbon = hex(L.scarf);
+    if (armor === 0) {   // the starter outfit: linen shirt, brown leather belt and strap, brass fittings, a blue scarf
+      PAL.collar = hex(L.shirt); PAL.collarS = shadeHex(L.shirt, -0.2); PAL.collarL = shadeHex(L.shirt, 0.3); PAL.stripe = PAL.tunic;
+      PAL.leather = hex(0x7a5233); PAL.leatherS = shadeHex(0x7a5233, -0.3); PAL.leatherL = shadeHex(0x7a5233, 0.28);
+      PAL.buckleA = hex(0xe6c25a); PAL.buckleB = hex(0x9a6e22);
+      PAL.scarf = hex(L.scarf); PAL.scarfS = shadeHex(L.scarf, -0.32); PAL.scarfL = shadeHex(L.scarf, 0.3);
+    }
   }
+  if (weapon === 0) { PAL.rim = hex(0xc0913c); PAL.rimS = shadeHex(0xc0913c, -0.32); PAL.rimL = shadeHex(0xc0913c, 0.45); }   // the buckler's brass rim and boss
   if (weapon > 0) {
     const W = WEAPON_TIERS[weapon].look;
     PAL.blade = hex(W.blade); PAL.bladeS = shadeHex(W.blade, -0.35); PAL.bladeL = shadeHex(W.blade, 0.55);
