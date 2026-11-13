@@ -37,6 +37,13 @@ weapon tier without a separate drawing for each combination:
 - One strip per pose, e.g. `mobs/green/hop.png`. Frames are **88 × 72** px,
   with the feet at **x 44, y 66**. Frame counts are in `mobs/mobs.json`.
 - `<monster>_shiny/` folders hold the rare shiny recolours.
+- The slimes, rat, boar, ferret, tortoise and eyeball (and their shiny and elite recolours) have been
+  shaded with `tools/pixel/shade.py`, which adds form shading, hue-shifted shadows and highlights and a
+  tinted outline to the flat baked art. Re-baking with `bake.mjs` brings back the flat versions; run
+  `python3 tools/pixel/shade.py --mobs godot/art/mobs <names>` again afterwards.
+- Your own monster art: see `tools/pixel/README.md`. `clean.py` snaps an AI-made or upscaled sheet to a
+  true pixel grid with one shared palette and slices it into frames, and `mobset.py` turns a few frames
+  into a full monster folder.
 
 ## Everything else
 
