@@ -1462,7 +1462,7 @@ function drawRock(P) {
   const shoulderN = torso(0.6, -9.2), shoulderF = torso(-0.6, -9.6);
   const neck = torso(-0.7, -10.4);   // set back a little: anime necks sit toward the back of the shoulders
   const headAng = P.t * 0.35 + P.h;
-  const RH = LOOK.kind === 'rock' && !LOOK.armored;   // Rock: a smaller, more natural head (profile nose, small eyes, stubble, swept hair)
+  const RH = (LOOK.kind === 'rock' || LOOK.kind === 'archer') && !LOOK.armored;   // Rock: a smaller, more natural head (profile nose, small eyes, stubble, swept hair)
   const HS = LOOK.kind === 'mage' ? 0.86 / SC : LOOK.kind === 'summoner' ? 0.88 / SC : RH ? 0.74 : 0.88;   // Remy: a normal-sized face on a smaller body, so features sit like the others'
   const HC = (() => { const [a, b] = LOOK.kind === 'mage' ? rot(1.2, -12.6, headAng) : RH ? rot(1.3, -9.3, headAng) : rot(1.0, -10.6, headAng); return [neck[0] + a, neck[1] + b]; })();
   const head = (lx, ly) => { const [a, b] = rot(lx * HS, ly * HS, headAng); return [HC[0] + a, HC[1] + b]; };
@@ -1522,7 +1522,7 @@ function drawRock(P) {
   const dk2 = (near, c) => near ? c : mix(c, PAL.outline, 0.12);
   const drawFist = (h, near) => {
     F.ellipse(h[0], h[1], 2.1, 2.1);
-    if (LOOK.kind === 'rock' && LOOK.gA === 0 && !LOOK.armored) { F.commit((x, y, t) => dk2(near, pick(PAL.warm, PAL.warmS, PAL.warmL, t))); return; }   // gloved
+    if ((LOOK.kind === 'rock' || LOOK.kind === 'archer') && LOOK.gA === 0 && !LOOK.armored) { F.commit((x, y, t) => dk2(near, pick(PAL.warm, PAL.warmS, PAL.warmL, t))); return; }   // gloved
     F.commit((x, y, t) => (y > h[1] + 0.6 ? pick(PAL.skin, PAL.skinS, PAL.skinL, t) : pick(PAL.tunic, PAL.tunicS, PAL.tunicL, t)));
   };
   const drawLeg = (Lg, near) => {
@@ -1662,12 +1662,12 @@ function drawRock(P) {
       const stub = mix(PAL.skinS, PAL.hairS || PAL.hair, 0.42), stubL = mix(PAL.skin, PAL.hair, 0.28);
       F.commit((x, y, t) => {
         const [lx, ly] = invH(x, y);
-        if (!LOOK.female && lx > -4.2 && ly > 6 + Math.max(0, lx - 4.6) * 0.3 - Math.max(0, -1 - lx) * 0.9 && !(lx > 6.6 && ly < 7.6)) {   // scruffy stubble along the jaw and chin
+        if (!LOOK.female && LOOK.kind === 'rock' && lx > -4.2 && ly > 6 + Math.max(0, lx - 4.6) * 0.3 - Math.max(0, -1 - lx) * 0.9 && !(lx > 6.6 && ly < 7.6)) {   // scruffy stubble along the jaw and chin
           const X = Math.floor(x * 2), Y = Math.floor(y * 2), h = ((X * 73856093) ^ (Y * 19349663)) >>> 0, dens = ly > 9.4 ? 0.85 : 0.45;
           if ((h % 100) / 100 < dens) return t === 1 ? stub : stubL;
           return pick(PAL.skin, PAL.skinS, PAL.skinL, t);
         }
-        if (!LOOK.female && lx > -3.4 && lx < -1.6 && ly > -1 && ly < 4.8) return stub;   // sideburn
+        if (!LOOK.female && LOOK.kind === 'rock' && lx > -3.4 && lx < -1.6 && ly > -1 && ly < 4.8) return stub;   // sideburn
         return pick(PAL.skin, PAL.skinS, PAL.skinL, t);
       }, { band: 1 });
     } else {
@@ -1983,16 +1983,16 @@ function drawRock(P) {
     if (!BAND) return;
     const B = Math.max(-0.6, (P.hair || 0) * 0.8 + (P.wind || 0) * 0.9), drop = Math.max(0, 2.6 - B) * 1.4, wv = Math.sin((P.hair || 0) * 1.9 + (P.wind || 0) * 2.3) * 0.8;
     for (const [o, len] of [[0, 1], [1.4, 0.8]]) {
-      const pts = [[-7, -4.2 + o * 0.5], [-10 - B * 1.2 * len, -4 + o + drop * 0.5 * len + wv * 0.5], [-13.4 - B * 1.9 * len, -3.4 + o + drop * len + wv], [-13 - B * 1.8 * len, -1.8 + o + drop * len + wv], [-9.8 - B * 1.1 * len, -2.4 + o + drop * 0.5 * len + wv * 0.5], [-7, -2.6 + o * 0.5]];
+      const pts = [[-7, -3 + o * 0.5], [-10 - B * 1.2 * len, -4 + o + drop * 0.5 * len + wv * 0.5], [-13.4 - B * 1.9 * len, -3.4 + o + drop * len + wv], [-13 - B * 1.8 * len, -1.8 + o + drop * len + wv], [-9.8 - B * 1.1 * len, -2.4 + o + drop * 0.5 * len + wv * 0.5], [-7, -2.6 + o * 0.5]];
       F.poly(ptsT(head, pts.map(([x, y]) => [x * len + (1 - len) * -7, y])));
     }
     F.commit(bandC, { band: 1 });
   };
   const drawHeadband = () => {
     if (!BAND) return;
-    F.poly(ptsT(head, [[-8.4, -4.4], [-3, -6.4], [3, -7.6], [7.6, -7.4], [7.9, -5.7], [3, -5.9], [-3, -4.7], [-8.2, -2.6]]));
+    F.poly(ptsT(head, [[-8.6, -3], [-3, -5], [3, -6.2], [8.2, -5.8], [8.5, -4.1], [3, -4.5], [-3, -3.3], [-8.4, -1.2]]));
     F.commit(bandC, { band: 1 });
-    const k = TT(head(-7.6, -3.4)); F.ellipse(k[0], k[1], 1.4, 1.4); F.commit(bandC, { band: 1 });   // the knot
+    const k = TT(head(-7.6, -2.2)); F.ellipse(k[0], k[1], 1.4, 1.4); F.commit(bandC, { band: 1 });   // the knot
   };
   // a cape hanging from the shoulders, swaying back with motion and wind
   const drawCape = () => {
